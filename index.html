@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Solar System Explorer · Customize</title>
+    <title>Solar System Explorer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        /* ── RESET & BASE ── */
+        /* ── RESET & BASE ── (same as before, omitted for brevity) */
         *,
         *::before,
         *::after {
@@ -992,6 +992,48 @@
             overflow: hidden
         }
 
+        /* ── ACHIEVEMENT TOAST ── */
+        .achievement-toast {
+            position: fixed;
+            top: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(18, 24, 44, 0.95);
+            border: 2px solid #ffd700;
+            border-radius: 16px;
+            padding: 14px 28px;
+            color: #fff;
+            z-index: 35;
+            font-family: 'Space Grotesk', sans-serif;
+            text-align: center;
+            box-shadow: 0 0 60px rgba(255, 215, 0, 0.3);
+            pointer-events: none;
+            opacity: 0;
+            transform: translateX(-50%) translateY(-20px) scale(0.9);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            max-width: 90vw;
+            border-color: #ffd700;
+        }
+        .achievement-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0) scale(1);
+        }
+        .achievement-toast .ach-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffd700;
+        }
+        .achievement-toast .ach-desc {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 2px;
+        }
+        .achievement-toast .ach-reward {
+            font-size: 12px;
+            color: #6fcbff;
+            margin-top: 4px;
+        }
+
         @media (max-width:500px) {
             .menu-card {
                 padding: 26px 18px 22px
@@ -1050,6 +1092,14 @@
             .difficulty-btn {
                 font-size: 12px;
                 padding: 10px 6px
+            }
+            .achievement-toast {
+                top: 100px;
+                padding: 12px 18px;
+                max-width: 95vw;
+            }
+            .achievement-toast .ach-title {
+                font-size: 15px;
             }
         }
     </style>
@@ -1220,6 +1270,11 @@
     </div>
 
     <div class="mission-toast" id="missionToast"></div>
+    <div class="achievement-toast" id="achievementToast">
+        <div class="ach-title" id="achTitle">🏆 Achievement Unlocked</div>
+        <div class="ach-desc" id="achDesc">Description</div>
+        <div class="ach-reward" id="achReward">+10 data points</div>
+    </div>
 
     <script>
         (function() {
@@ -1318,7 +1373,11 @@
                 pauseOverlay = $('pauseOverlay'),
                 pauseResumeBtn = $('pauseResumeBtn'),
                 pauseQuitBtn = $('pauseQuitBtn'),
-                missionToast = $('missionToast');
+                missionToast = $('missionToast'),
+                achievementToast = $('achievementToast'),
+                achTitle = $('achTitle'),
+                achDesc = $('achDesc'),
+                achReward = $('achReward');
 
             const store = {
                 get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } },
@@ -1422,6 +1481,111 @@
                     </svg>`;
             }
 
+            // ─── ACHIEVEMENTS ──────────────────────────────────────────────────────
+            const ACHIEVEMENTS = [
+                { id: 'first_destroy', name: 'First Strike', desc: 'Destroy your first asteroid', target: 1,
+                reward: 10 },
+                { id: 'destroy_10', name: 'Asteroid Slayer', desc: 'Destroy 10 asteroids', target: 10, reward: 20 },
+                { id: 'destroy_50', name: 'Rock Breaker', desc: 'Destroy 50 asteroids', target: 50, reward: 50 },
+                { id: 'destroy_100', name: 'Asteroid Annihilator', desc: 'Destroy 100 asteroids', target: 100,
+                    reward: 100 },
+                { id: 'destroy_500', name: 'Planetary Defense', desc: 'Destroy 500 asteroids', target: 500,
+                    reward: 200 },
+                { id: 'coins_10', name: 'Data Collector', desc: 'Collect 10 data points', target: 10, reward: 5 },
+                { id: 'coins_50', name: 'Data Miner', desc: 'Collect 50 data points', target: 50, reward: 15 },
+                { id: 'coins_200', name: 'Data Hoarder', desc: 'Collect 200 data points', target: 200, reward: 40 },
+                { id: 'coins_1000', name: 'Data Lord', desc: 'Collect 1000 data points', target: 1000, reward: 100 },
+                { id: 'dist_100', name: 'Wanderer', desc: 'Reach distance 100', target: 100, reward: 10 },
+                { id: 'dist_500', name: 'Explorer', desc: 'Reach distance 500', target: 500, reward: 25 },
+                { id: 'dist_2000', name: 'Voyager', desc: 'Reach distance 2000', target: 2000, reward: 60 },
+                { id: 'dist_5000', name: 'Pioneer', desc: 'Reach distance 5000', target: 5000, reward: 150 },
+                { id: 'combo_10', name: 'Sync Master', desc: 'Reach Sync ×10', target: 10, reward: 30 },
+                { id: 'combo_20', name: 'Sync Legend', desc: 'Reach Sync ×20', target: 20, reward: 70 },
+            ];
+
+            // Track progress
+            let achProgress = {};
+            let totalAsteroidsDestroyed = 0;
+            let totalCoinsCollected = 0;
+            let maxDistanceEver = 0;
+            let maxComboEver = 0;
+
+            // Load achievements state
+            function loadAchievements() {
+                const saved = parseJSON(store.get('fps_achievements', '{}'), {});
+                achProgress = saved.progress || {};
+                totalAsteroidsDestroyed = saved.totalAsteroidsDestroyed || 0;
+                totalCoinsCollected = saved.totalCoinsCollected || 0;
+                maxDistanceEver = saved.maxDistanceEver || 0;
+                maxComboEver = saved.maxComboEver || 0;
+                // Ensure all achievements exist in progress
+                ACHIEVEMENTS.forEach(a => {
+                    if (!(a.id in achProgress)) achProgress[a.id] = 0;
+                });
+            }
+
+            function saveAchievements() {
+                store.set('fps_achievements', JSON.stringify({
+                    progress: achProgress,
+                    totalAsteroidsDestroyed,
+                    totalCoinsCollected,
+                    maxDistanceEver,
+                    maxComboEver
+                }));
+            }
+
+            function checkAchievements() {
+                let unlocked = [];
+                ACHIEVEMENTS.forEach(a => {
+                    // Already completed?
+                    if (achProgress[a.id] >= a.target) return;
+                    let current = achProgress[a.id] || 0;
+                    let completed = false;
+                    // Check based on type
+                    if (a.id.startsWith('destroy_')) {
+                        if (totalAsteroidsDestroyed >= a.target) completed = true;
+                    } else if (a.id.startsWith('coins_')) {
+                        if (totalCoinsCollected >= a.target) completed = true;
+                    } else if (a.id.startsWith('dist_')) {
+                        if (maxDistanceEver >= a.target) completed = true;
+                    } else if (a.id.startsWith('combo_')) {
+                        if (maxComboEver >= a.target) completed = true;
+                    }
+                    if (completed) {
+                        achProgress[a.id] = a.target;
+                        unlocked.push(a);
+                        // Reward: add coins
+                        totalCoins += a.reward;
+                        saveAchievements();
+                        // Show achievement toast
+                        showAchievement(a);
+                    }
+                });
+                // Update menu stats if any unlocked
+                if (unlocked.length) updateMenuStats();
+            }
+
+            let achToastTimeout = null;
+
+            function showAchievement(ach) {
+                achTitle.textContent = '🏆 ' + ach.name;
+                achDesc.textContent = ach.desc;
+                achReward.textContent = '+' + ach.reward + ' data points';
+                achievementToast.classList.add('show');
+                // Flash and shake
+                sim.flash = 0.5;
+                sim.flashC = '255,215,0';
+                sim.shake = 12;
+                // Play a special sound (we'll use a high tone)
+                Sfx.tone(1200, 0.3, 'square', 0.2, 0);
+                Sfx.tone(1600, 0.3, 'square', 0.15, 0, 0.1);
+
+                clearTimeout(achToastTimeout);
+                achToastTimeout = setTimeout(() => {
+                    achievementToast.classList.remove('show');
+                }, 3500);
+            }
+
             // ─── STORE ─────────────────────────────────────────────────────────────
             let sessionCount = parseInt(store.get('fps_sessions', '0')) || 0;
             let bestScore = parseInt(store.get('fps_best', '0')) || 0;
@@ -1433,6 +1597,9 @@
             let unlockedShips = parseJSON(store.get('fps_unlocked_ships', '[0]'), [0]);
             if (!Array.isArray(unlockedShips) || !unlockedShips.length) unlockedShips = [0];
             let dailyMissions = parseJSON(store.get('fps_daily_missions', '{}'), {});
+
+            // Load achievements
+            loadAchievements();
 
             function getExpMult() { return 1 + Math.min(0.6, totalFlown / 9000); }
 
@@ -1460,7 +1627,6 @@
             const zoneOf = i => ZONES[Math.max(0, Math.min(i, ZONES.length - 1))];
 
             // ─── SHIPS ─────────────────────────────────────────────────────────────
-            // Replaced Fighter with Cleaner (auto-magnet)
             const SHIPS = [
                 { id: 'scout', name: 'Scout', cost: 0, desc: 'Balanced platform', speedMult: 1.00, shieldBonus: 0,
                     hull: '#c9d4e2', accent: '#6fcbff', w: 12, hitR: 11, icon: 'rocket' },
@@ -1706,6 +1872,7 @@
                 bullets: [],
                 missiles: [],
                 missileCooldown: 0,
+                autoMissileCooldown: 0, // for auto-spawn
                 fireCooldown: 0,
                 dist: 0,
                 segStart: 0,
@@ -1745,7 +1912,6 @@
                 flash: 0,
                 flashC: '255,255,255',
                 aliens: [],
-                // difficulty multipliers
                 diffSpeedMult: 1,
                 diffAstMult: 1,
                 diffHazardMult: 1,
@@ -1758,7 +1924,6 @@
                 sim.speedFactor = (ship.speedMult || 1) * (1 + 0.06 * sim.up.speed) * sim.diffSpeedMult;
                 sim.maxLives = Math.min(4, 1 + sim.up.shields + (ship.shieldBonus || 0)) + sim.diffExtraLives;
                 sim.magnetRange = 110 * (1 + 0.5 * sim.up.magnet);
-                // Cleaner auto-magnet: always active (but we already have magnetT for powerup)
                 sim.distMult = sim.up.mult;
             }
 
@@ -1779,6 +1944,7 @@
                 store.set('fps_unlocked_ships', JSON.stringify(unlockedShips));
                 store.set('fps_daily_missions', JSON.stringify(dailyMissions));
                 saveCustom();
+                saveAchievements();
             }
 
             function slowmo(f, d) { sim.slowmoF = f;
@@ -2097,6 +2263,8 @@
                 sim.flow++;
                 sim.flowT = 3.5;
                 if (sim.flow > sim.maxFlow) sim.maxFlow = sim.flow;
+                if (sim.flow > maxComboEver) { maxComboEver = sim.flow;
+                    checkAchievements(); }
                 missionEvent('flow', sim.flow, true);
                 missionEvent('near', 1);
                 sim.dist += 3;
@@ -2113,6 +2281,7 @@
             function collectCoin(c) {
                 let bonus = sim.diffCoinBonus || 0;
                 totalCoins += 1 + bonus;
+                totalCoinsCollected += 1 + bonus;
                 sim.runCoins += 1 + bonus;
                 sim.dist += 2;
                 sim.coinStreak++;
@@ -2121,6 +2290,8 @@
                 burst(c.x, c.y, '255,210,74', 4, 150);
                 missionEvent('coins', 1 + bonus);
                 if (sim.runCoins % 25 === 0) saveProgress();
+                // Check achievements after coin
+                checkAchievements();
             }
 
             function applyPup(p) {
@@ -2226,9 +2397,15 @@
                     const d = Math.hypot(h.x - rk.x, h.y - rk.y);
                     if (d < h.r + hr) {
                         if (sim.invincible <= 0) {
+                            // Destroy asteroid
+                            totalAsteroidsDestroyed++;
+                            // Check achievements
+                            checkAchievements();
                             burst(h.x, h.y, '200,190,170', 8, 240);
                             burst(h.x, h.y, '255,160,80', 6, 200);
                             sim.hazards.splice(i, 1);
+                            // Auto-spawn missile (if there are other asteroids)
+                            autoLaunchMissile(h.x, h.y);
                             damage();
                             continue;
                         }
@@ -2239,6 +2416,52 @@
                     }
                     if (h.y > H + 180 || h.x < -280 || h.x > W + 280) sim.hazards.splice(i, 1);
                 }
+            }
+
+            // ─── AUTO MISSILE LAUNCH ──────────────────────────────────────────────
+            function autoLaunchMissile(x, y) {
+                if (sim.autoMissileCooldown > 0) return;
+                // Find nearest asteroid
+                let nearest = null,
+                    minD = Infinity;
+                for (const h of sim.hazards) {
+                    if (h.type === 'ast') {
+                        const d = Math.hypot(h.x - x, h.y - y);
+                        if (d < minD) { minD = d;
+                            nearest = h; }
+                    }
+                }
+                if (!nearest) return;
+                // Launch missile from the destroyed asteroid position toward the nearest
+                const dx = nearest.x - x,
+                    dy = nearest.y - y;
+                const len = Math.hypot(dx, dy) || 1;
+                const speed = 400;
+                const vx = (dx / len) * speed;
+                const vy = (dy / len) * speed;
+                // Add some randomness
+                const angleOff = (Math.random() - 0.5) * 0.3;
+                const cos = Math.cos(angleOff),
+                    sin = Math.sin(angleOff);
+                const finalVx = vx * cos - vy * sin;
+                const finalVy = vx * sin + vy * cos;
+
+                sim.missiles.push({
+                    x: x + (dx / len) * 20,
+                    y: y + (dy / len) * 20,
+                    vx: finalVx,
+                    vy: finalVy,
+                    life: 2.0,
+                    targetX: nearest.x + (Math.random() - 0.5) * 40,
+                    targetY: nearest.y + (Math.random() - 0.5) * 40,
+                    exploded: false,
+                    radius: 130,
+                    trail: []
+                });
+                sim.autoMissileCooldown = 0.3; // 0.3s cooldown
+                Sfx.missileLaunch();
+                // small burst
+                burst(x, y, '255,200,100', 4, 100);
             }
 
             function updateClouds(sdt) {
@@ -2268,8 +2491,6 @@
                 if (!inside) sim.rad = Math.max(0, sim.rad - sdt * 1.5);
             }
 
-            // ─── ALIEN UFO DRAW ──────────────────────────────────────────────────
-            // Replace alien head with UFO
             function updateAliens(sdt) {
                 const rk = sim.rocket,
                     hr = shipHitR();
@@ -2315,7 +2536,6 @@
                 if (sim.aliens.length > 6) sim.aliens.splice(0, sim.aliens.length - 6);
             }
 
-            // ─── MISSILE SYSTEM ────────────────────────────────────────────────────
             function fireMissile() {
                 if (sim.state !== 'playing' || sim.missileCooldown > 0) return;
                 if (!shipIsVestal()) return;
@@ -2347,6 +2567,7 @@
 
             function updateMissiles(sdt) {
                 if (sim.missileCooldown > 0) sim.missileCooldown -= sdt;
+                if (sim.autoMissileCooldown > 0) sim.autoMissileCooldown -= sdt;
                 for (let i = sim.missiles.length - 1; i >= 0; i--) {
                     const m = sim.missiles[i];
                     m.life -= sdt;
@@ -2381,9 +2602,13 @@
                                 if (d < blastRadius) {
                                     burst(h.x, h.y, '255,200,120', 16, 300);
                                     totalCoins += 1 + sim.diffCoinBonus;
+                                    totalCoinsCollected += 1 + sim.diffCoinBonus;
                                     sim.runCoins += 1 + sim.diffCoinBonus;
+                                    totalAsteroidsDestroyed++;
                                     destroyed++;
                                     sim.hazards.splice(j, 1);
+                                    // Trigger auto-missile from destroyed asteroid position
+                                    autoLaunchMissile(h.x, h.y);
                                 }
                             }
                         }
@@ -2410,6 +2635,8 @@
                                     color: '255,180,80'
                                 });
                             }
+                            // Check achievements after missile explosion
+                            checkAchievements();
                         } else {
                             burst(m.x, m.y, '180,180,200', 8, 120);
                         }
@@ -2419,7 +2646,6 @@
                 }
             }
 
-            // ─── BULLET SYSTEM ────────────────────────────────────────────────────
             function fireBullet() {
                 if (sim.state !== 'playing' || sim.fireCooldown > 0) return;
                 const rk = sim.rocket;
@@ -2462,11 +2688,16 @@
                                 burst(h.x, h.y, '255,200,120', 14, 280);
                                 sim.hazards.splice(j, 1);
                                 totalCoins += 1 + sim.diffCoinBonus;
+                                totalCoinsCollected += 1 + sim.diffCoinBonus;
                                 sim.runCoins += 1 + sim.diffCoinBonus;
+                                totalAsteroidsDestroyed++;
                                 pushText(h.x, h.y - 20, '+1 data', '#ffd700');
                                 sim.flash = 0.15;
                                 sim.flashC = '255,240,200';
                                 Sfx.shoot();
+                                // Auto-missile
+                                autoLaunchMissile(h.x, h.y);
+                                checkAchievements();
                             }
                             hit = true;
                             break;
@@ -2479,7 +2710,6 @@
             function updateCoins(sdt) {
                 const rk = sim.rocket;
                 let attractR = sim.magnetT > 0 ? sim.magnetRange : 36;
-                // Cleaner: always has magnet effect (slightly reduced)
                 if (shipIsCleaner()) {
                     attractR = Math.max(attractR, 60 + 20 * sim.up.magnet);
                 }
@@ -2530,6 +2760,11 @@
                 else sim.coinStreak = 0;
                 const flowMult = 1 + Math.min(0.5, sim.flow * 0.05);
                 sim.dist += sim.scroll * 0.08 * flowMult * sim.distMult * sdt;
+                // Update max distance ever
+                if (sim.dist > maxDistanceEver) {
+                    maxDistanceEver = Math.floor(sim.dist);
+                    checkAchievements();
+                }
                 moveRocket(sdt);
                 updateStars(sdt, sim.scroll);
                 updateNebulas(sdt, sim.scroll);
@@ -2651,12 +2886,14 @@
                 sim.coinT = 0.8;
                 const bonus = 8 + sim.zone * 2 + sim.diffCoinBonus * 2;
                 totalCoins += bonus;
+                totalCoinsCollected += bonus;
                 sim.runCoins += bonus;
                 missionEvent('reach', sim.zone, true);
                 saveProgress();
                 showToast('Arrived at ' + z.name + ' · +' + bonus + ' data points' + (z.hint ? ' — ' + z.hint : ''));
                 sim.state = 'playing';
                 updateHUD();
+                checkAchievements();
             }
 
             function chooseUpgrade(id) {
@@ -2682,6 +2919,7 @@
                 sim.bullets = [];
                 sim.missiles = [];
                 sim.missileCooldown = 0;
+                sim.autoMissileCooldown = 0;
                 sim.fireCooldown = 0;
                 sim.flow = 0;
                 sim.flowT = 0;
@@ -2719,6 +2957,7 @@
                 sim.diffCoinBonus = diff.coinBonus || 0;
                 recalcStats();
                 sim.lives = sim.maxLives;
+                // Reset achievements stats that are session-specific? We keep global.
                 updateHUD();
             }
 
@@ -2737,7 +2976,6 @@
                 hud.classList.add('active');
                 progressContainer.classList.add('active');
                 pauseBtn.style.display = 'flex';
-                // Set difficulty from selection
                 currentDifficulty = selectedDifficulty;
                 resetRun();
             }
@@ -2805,38 +3043,30 @@
                     ctx.globalAlpha = alpha;
                     const sx = a.x,
                         sy = a.y;
-
-                    // UFO body (saucer)
                     ctx.shadowColor = a.state === 'fire' ? 'rgba(255,80,80,0.4)' : 'rgba(100,200,255,0.2)';
                     ctx.shadowBlur = 20;
-                    // Main disc
                     ctx.fillStyle = a.state === 'fire' ? '#ff5555' : '#4a8fcf';
                     ctx.beginPath();
                     ctx.ellipse(sx, sy, 28, 10, 0, 0, Math.PI * 2);
                     ctx.fill();
-                    // Dome
                     ctx.fillStyle = a.state === 'fire' ? '#ff8888' : '#8fc4e8';
                     ctx.beginPath();
                     ctx.ellipse(sx, sy - 4, 14, 8, 0, 0, Math.PI * 2);
                     ctx.fill();
-                    // Dome window
                     ctx.fillStyle = a.state === 'fire' ? '#ffcccc' : '#cfe2ff';
                     ctx.beginPath();
                     ctx.ellipse(sx, sy - 6, 8, 5, 0, 0, Math.PI * 2);
                     ctx.fill();
-                    // Glow ring
                     ctx.strokeStyle = a.state === 'fire' ? 'rgba(255,100,100,0.5)' : 'rgba(111,203,255,0.4)';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
                     ctx.ellipse(sx, sy, 30, 12, 0, 0, Math.PI * 2);
                     ctx.stroke();
-                    // Bottom light
                     if (a.state === 'fire') {
                         ctx.fillStyle = 'rgba(255,50,50,0.7)';
                         ctx.beginPath();
                         ctx.arc(sx, sy + 7, 6, 0, Math.PI * 2);
                         ctx.fill();
-                        // Laser beam glow
                         const beamAlpha = 0.3 + 0.7 * (1 - a.laserT / a.laserDuration);
                         ctx.shadowBlur = 0;
                         ctx.globalCompositeOperation = 'lighter';
@@ -2857,14 +3087,11 @@
                         ctx.stroke();
                         ctx.globalCompositeOperation = 'source-over';
                     } else {
-                        // Idle light
                         ctx.fillStyle = 'rgba(111,203,255,0.6)';
                         ctx.beginPath();
                         ctx.arc(sx, sy + 7, 4, 0, Math.PI * 2);
                         ctx.fill();
                     }
-
-                    // Warning pulse
                     if (a.state === 'warn') {
                         ctx.shadowBlur = 0;
                         ctx.strokeStyle = 'rgba(255,200,50,' + (0.2 + 0.3 * pulse) + ')';
@@ -2874,7 +3101,6 @@
                         ctx.arc(sx, sy, 40 + 6 * pulse, 0, Math.PI * 2);
                         ctx.stroke();
                         ctx.setLineDash([]);
-                        // Warning icon
                         ctx.fillStyle = 'rgba(255,200,50,' + (0.3 + 0.4 * pulse) + ')';
                         ctx.beginPath();
                         ctx.moveTo(sx, sy - 16);
@@ -2886,8 +3112,6 @@
                     ctx.restore();
                 }
             }
-
-            // Remove old drawAliens function, replaced above
 
             // ─── DRAW FUNCTIONS ────────────────────────────────────────────────────
 
@@ -3330,7 +3554,6 @@
                 ctx.translate(rk.x, rk.y);
                 ctx.rotate(rk.tilt);
 
-                // Aura (Ora)
                 if (auraInt > 0.01) {
                     ctx.globalCompositeOperation = 'lighter';
                     const grad = ctx.createRadialGradient(0, -2, 4, 0, -2, 50 + 30 * auraInt);
@@ -3376,7 +3599,6 @@
                 const w = ship.w;
 
                 if (ship.vestal) {
-                    // Vestal hull with custom colors
                     ctx.fillStyle = hull;
                     ctx.beginPath();
                     ctx.moveTo(0, -24);
@@ -3425,7 +3647,6 @@
                     ctx.fill();
                     ctx.globalCompositeOperation = 'source-over';
                 } else {
-                    // Standard ship
                     ctx.fillStyle = hull;
                     ctx.beginPath();
                     ctx.moveTo(0, -22);
@@ -3546,7 +3767,7 @@
                 ctx.font = '500 14px Inter,sans-serif';
                 ctx.textAlign = 'center';
                 let ves = '';
-                if (shipIsVestal()) ves = ' · Missile: Space (blast)';
+                if (shipIsVestal()) ves = ' · Missile: Space (blast) · Auto-chain on destroy';
                 else if (shipIsCleaner()) ves = ' · Auto-magnet collects data';
                 ctx.fillText('Navigate with mouse, touch or arrows — graze hazards to build Sync' + ves, W / 2, H * 0.42);
                 ctx.restore();
@@ -3561,7 +3782,7 @@
                 drawStars();
                 drawApproachPlanet();
                 drawClouds();
-                drawAliens(); // uses UFO
+                drawAliens();
                 drawHazards();
                 drawCoins();
                 drawPups();
@@ -3767,7 +3988,6 @@
                 });
             });
             diffConfirm.addEventListener('click', () => {
-                // Start game with selected difficulty
                 startRun();
             });
 
@@ -3847,6 +4067,13 @@
                 store.set('fps_equipped_ship', '0');
                 store.set('fps_unlocked_ships', '[0]');
                 store.set('fps_daily_missions', '{}');
+                // Reset achievements
+                achProgress = {};
+                totalAsteroidsDestroyed = 0;
+                totalCoinsCollected = 0;
+                maxDistanceEver = 0;
+                maxComboEver = 0;
+                saveAchievements();
                 recalcStats();
                 initDailyMissions();
                 updateMenuStats();
@@ -3864,13 +4091,9 @@
                     advanceZone(); }
             });
             playBtn.addEventListener('click', () => {
-                // Show difficulty selection
                 difficultyOverlay.classList.add('active');
             });
-            goRetryBtn.addEventListener('click', () => {
-                // Restart with same difficulty
-                startRun();
-            });
+            goRetryBtn.addEventListener('click', startRun);
             goMenuBtn.addEventListener('click', quitToMenu);
             pauseBtn.addEventListener('click', pauseGame);
             pauseResumeBtn.addEventListener('click', resumeGame);
@@ -3930,9 +4153,10 @@
             updateSensitivityDisplay();
             updateMuteDisplay();
             loadCustomToUI();
-            // Set default difficulty selection
             document.querySelector('.difficulty-btn[data-diff="normal"]')?.classList.add('active');
             selectedDifficulty = 'normal';
+            // Initial achievement check for existing stats
+            checkAchievements();
             requestAnimationFrame(frame);
 
         })();
