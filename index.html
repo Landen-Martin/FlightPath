@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Solar System Explorer · Educational Tool</title>
+    <title>Solar System Explorer · Warship Vestal</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -1024,7 +1024,9 @@
                     check: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 7" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
                     arrow: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
                     rank: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M5 17l7-7 7 7M5 11l7-7 7 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-                    pause: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><rect x="6.5" y="4" width="4" height="16" rx="1.5" fill="currentColor"/><rect x="13.5" y="4" width="4" height="16" rx="1.5" fill="currentColor"/></svg>`
+                    pause: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><rect x="6.5" y="4" width="4" height="16" rx="1.5" fill="currentColor"/><rect x="13.5" y="4" width="4" height="16" rx="1.5" fill="currentColor"/></svg>`,
+                    alien: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="12" rx="8" ry="7" fill="#6fcbff"/><circle cx="9" cy="10" r="1.8" fill="#fff"/><circle cx="15" cy="10" r="1.8" fill="#fff"/><circle cx="9" cy="10" r="0.8" fill="#0a0e1a"/><circle cx="15" cy="10" r="0.8" fill="#0a0e1a"/><ellipse cx="12" cy="13" rx="2.4" ry="1.2" fill="#0a0e1a"/><path d="M4 16l3 3M20 16l-3 3" stroke="#6fcbff" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+                    missile: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M4 12l5-2 2-5 2 5 5 2-5 2-2 5-2-5-5-2Z" fill="#ff6b6b"/><circle cx="12" cy="12" r="2" fill="#ffd93d"/></svg>`
                 };
                 return M[name] || '';
             }
@@ -1095,7 +1097,7 @@
             let muted = store.get('fps_muted', '0') === '1';
             let totalCoins = parseInt(store.get('fps_coins', '0')) || 0;
             let totalFlown = parseInt(store.get('fps_total_dist', '0')) || 0;
-            let equippedShip = Math.min(parseInt(store.get('fps_equipped_ship', '0')) || 0, 4);
+            let equippedShip = Math.min(parseInt(store.get('fps_equipped_ship', '0')) || 0, 5);
             let unlockedShips = parseJSON(store.get('fps_unlocked_ships', '[0]'), [0]);
             if (!Array.isArray(unlockedShips) || !unlockedShips.length) unlockedShips = [0];
             let dailyMissions = parseJSON(store.get('fps_daily_missions', '{}'), {});
@@ -1125,6 +1127,7 @@
             ];
             const zoneOf = i => ZONES[Math.max(0, Math.min(i, ZONES.length - 1))];
 
+            // ─── SHIPS ───────────────────────────────────────────────────────────────
             const SHIPS = [
                 { id: 'scout', name: 'Scout', cost: 0, desc: 'Balanced platform', speedMult: 1.00, shieldBonus: 0,
                     hull: '#c9d4e2', accent: '#6fcbff', w: 12, hitR: 11, icon: 'rocket' },
@@ -1135,7 +1138,12 @@
                 { id: 'stealth', name: 'Stealth', cost: 150, desc: '+30% speed · slim profile', speedMult: 1.30,
                     shieldBonus: 0, hull: '#596073', accent: '#a78bfa', w: 9, hitR: 9, icon: 'rocket' },
                 { id: 'nexus', name: 'Nexus', cost: 250, desc: '+20% speed · +1 integrity', speedMult: 1.20,
-                    shieldBonus: 1, hull: '#d9d2f0', accent: '#c4a5ff', w: 13, hitR: 11, glow: true, icon: 'rocket' }
+                    shieldBonus: 1, hull: '#d9d2f0', accent: '#c4a5ff', w: 13, hitR: 11, glow: true, icon: 'rocket' },
+                // ─── W A R S H I P   V E S T A L ──────────────────────────────────
+                { id: 'vestal', name: 'Warship Vestal', cost: 350,
+                    desc: 'Missile launcher · destroys small asteroids', speedMult: 1.10,
+                    shieldBonus: 0, hull: '#2a3a4a', accent: '#ff6b4a', w: 14, hitR: 11,
+                    icon: 'rocket', vestal: true, missileCooldown: 0.6 }
             ];
 
             const UPGRADE_POOL = [
@@ -1270,7 +1278,13 @@
                         setTimeout(() => { try { h.o.stop(); } catch (e) {} }, 500); } catch (e) {}
                     this.hum = null; },
                 shoot() { this.tone(1500, 0.06, 'square', 0.08);
-                    this.tone(800, 0.08, 'sine', 0.10, 0, 0.02); }
+                    this.tone(800, 0.08, 'sine', 0.10, 0, 0.02); },
+                missileLaunch() { this.tone(400, 0.3, 'sawtooth', 0.12, 300);
+                    this.tone(200, 0.2, 'sine', 0.08, 0, 0.05);
+                    this.noise(0.2, 0.08, 400); },
+                missileHit() { this.noise(0.3, 0.4, 900);
+                    this.tone(80, 0.4, 'sawtooth', 0.25, -60);
+                    this.tone(300, 0.15, 'sine', 0.12, 0, 0.05); }
             };
 
             let W = 0,
@@ -1357,6 +1371,8 @@
                 parts: [],
                 texts: [],
                 bullets: [],
+                missiles: [], // Warship Vestal missiles
+                missileCooldown: 0,
                 fireCooldown: 0,
                 dist: 0,
                 segStart: 0,
@@ -1394,7 +1410,9 @@
                 magnetT: 0,
                 shake: 0,
                 flash: 0,
-                flashC: '255,255,255'
+                flashC: '255,255,255',
+                // Alien laser
+                aliens: []
             };
 
             function recalcStats() {
@@ -1406,6 +1424,8 @@
             }
 
             function shipHitR() { return (SHIPS[equippedShip] || SHIPS[0]).hitR || 11; }
+
+            function shipIsVestal() { return !!(SHIPS[equippedShip] || SHIPS[0]).vestal; }
 
             function saveProgress() {
                 store.set('fps_coins', totalCoins);
@@ -1441,7 +1461,8 @@
                     e.preventDefault(); }
                 if (k === ' ') {
                     e.preventDefault();
-                    fireBullet();
+                    if (shipIsVestal()) fireMissile();
+                    else fireBullet();
                 }
                 if (k === 'Escape') {
                     if (sim.state === 'playing') pauseGame();
@@ -1552,8 +1573,27 @@
                             });
                         }
                     } },
-                bolt: { iv: 6.4, spawn() { sim.bolts.push({ x: 60 + Math.random() * (W - 120), w: 76, state: 'warn',
-                            t: 0.95, tick: 0, pts: null }); } },
+                // ─── A L I E N   L A S E R  (replaces bolt) ──────────────────────
+                bolt: { iv: 6.4, spawn(b) {
+                        // Spawn an alien that shoots a laser
+                        const side = Math.random() < 0.5 ? -1 : 1;
+                        const x = side < 0 ? -60 : W + 60;
+                        const y = 40 + Math.random() * H * 0.3;
+                        sim.aliens.push({
+                            x: x,
+                            y: y,
+                            targetX: 60 + Math.random() * (W - 120),
+                            side: side,
+                            state: 'warn',
+                            warnT: 0.85 + Math.random() * 0.3,
+                            laserT: 0,
+                            laserDuration: 0.35 + Math.random() * 0.15,
+                            w: 70 + Math.random() * 40,
+                            tick: 0,
+                            phase: Math.random() * 6.28,
+                            fired: false
+                        });
+                    } },
                 comet: { iv: 7.5, spawn(b) {
                         const fromLeft = Math.random() < 0.5;
                         sim.hazards.push({
@@ -1877,41 +1917,314 @@
                 if (!inside) sim.rad = Math.max(0, sim.rad - sdt * 1.5);
             }
 
-            function makeBoltPts(x) {
-                const pts = [
-                    [x, 0]
-                ];
-                let y = 0,
-                    cx = x;
-                while (y < H) {
-                    y += 34 + Math.random() * 30;
-                    cx = x + (Math.random() - 0.5) * 46;
-                    pts.push([cx, Math.min(y, H)]);
-                }
-                return pts;
-            }
-
-            function updateBolts(sdt) {
-                for (let i = sim.bolts.length - 1; i >= 0; i--) {
-                    const b = sim.bolts[i];
-                    if (b.state === 'warn') {
-                        b.t -= sdt;
-                        b.tick -= sdt;
-                        if (b.tick <= 0) { Sfx.tick();
-                            b.tick = 0.22; }
-                        if (b.t <= 0) {
-                            b.state = 'strike';
-                            b.t = 0.22;
-                            b.pts = makeBoltPts(b.x);
+            // ─── A L I E N   L A S E R   U P D A T E ──────────────────────────────
+            function updateAliens(sdt) {
+                const rk = sim.rocket,
+                    hr = shipHitR();
+                for (let i = sim.aliens.length - 1; i >= 0; i--) {
+                    const a = sim.aliens[i];
+                    if (a.state === 'warn') {
+                        a.warnT -= sdt;
+                        a.tick -= sdt;
+                        if (a.tick <= 0) { Sfx.tick();
+                            a.tick = 0.2; }
+                        // Move alien into position
+                        const targetX = a.targetX;
+                        const dx = targetX - a.x;
+                        a.x += dx * Math.min(1, 3 * sdt);
+                        a.y += Math.sin(a.phase + sim.time * 0.5) * 16 * sdt;
+                        if (a.warnT <= 0) {
+                            a.state = 'fire';
+                            a.laserT = a.laserDuration;
+                            a.fired = true;
                             Sfx.bolt();
-                            sim.shake = Math.max(sim.shake, 12);
+                            sim.shake = Math.max(sim.shake, 8);
+                        }
+                    } else if (a.state === 'fire') {
+                        a.laserT -= sdt;
+                        // Laser beam is a hazard
+                        const beamWidth = a.w * 0.3;
+                        // Check if the rocket is in the beam
+                        const dx = rk.x - a.x;
+                        const dy = rk.y - a.y;
+                        // Beam goes downward from alien
+                        if (Math.abs(dx) < beamWidth + hr && dy > 0 && dy < H) {
+                            // Hit by laser!
+                            damage();
+                            a.state = 'done';
+                            a.laserT = 0;
+                            burst(a.x, rk.y, '255,100,100', 12, 300);
+                            pushText(a.x, rk.y - 30, 'LASER HIT', '#ff4444');
+                            sim.flash = 0.3;
+                            sim.flashC = '255,80,80';
+                        }
+                        if (a.laserT <= 0) {
+                            a.state = 'done';
                         }
                     } else {
-                        b.t -= sdt;
-                        if (Math.abs(sim.rocket.x - b.x) < b.w * 0.5) damage();
-                        if (b.t <= 0) sim.bolts.splice(i, 1);
+                        // done — fade out
+                        sim.aliens.splice(i, 1);
                     }
                 }
+                // Limit aliens
+                if (sim.aliens.length > 6) sim.aliens.splice(0, sim.aliens.length - 6);
+            }
+
+            // ─── M I S S I L E   S Y S T E M ──────────────────────────────────────
+            function fireMissile() {
+                if (sim.state !== 'playing' || sim.missileCooldown > 0) return;
+                if (!shipIsVestal()) return;
+
+                const rk = sim.rocket;
+                // Find nearest small asteroid (r <= 15)
+                let target = null,
+                    minD = Infinity;
+                for (const h of sim.hazards) {
+                    if (h.type === 'ast' && h.r <= 15) {
+                        const d = Math.hypot(h.x - rk.x, h.y - rk.y);
+                        if (d < minD) { minD = d;
+                            target = h; }
+                    }
+                }
+                // If no small asteroid, fire in direction of mouse/aim
+                const dx = rk.tx - rk.x,
+                    dy = rk.ty - rk.y;
+                const len = Math.hypot(dx, dy) || 1;
+                let aimX = rk.x + dx / len * 300,
+                    aimY = rk.y + dy / len * 300;
+                if (target) { aimX = target.x;
+                    aimY = target.y; }
+
+                const speed = 320;
+                const ang = Math.atan2(aimY - rk.y, aimX - rk.x);
+                const vx = Math.cos(ang) * speed;
+                const vy = Math.sin(ang) * speed;
+
+                sim.missiles.push({
+                    x: rk.x + Math.cos(ang) * 28,
+                    y: rk.y + Math.sin(ang) * 28,
+                    vx: vx,
+                    vy: vy,
+                    life: 3.5,
+                    target: target,
+                    r: 5,
+                    trail: [],
+                    homing: true,
+                    speed: speed
+                });
+                sim.missileCooldown = (SHIPS[equippedShip] || SHIPS[0]).missileCooldown || 0.6;
+                Sfx.missileLaunch();
+                burst(rk.x + Math.cos(ang) * 28, rk.y + Math.sin(ang) * 28, '255,200,100', 6, 150);
+            }
+
+            function updateMissiles(sdt) {
+                if (sim.missileCooldown > 0) sim.missileCooldown -= sdt;
+
+                for (let i = sim.missiles.length - 1; i >= 0; i--) {
+                    const m = sim.missiles[i];
+                    m.life -= sdt;
+                    if (m.life <= 0) { sim.missiles.splice(i, 1); continue; }
+
+                    // Homing: if target still exists and is small, home in
+                    if (m.homing && m.target) {
+                        // Check if target still exists and is small
+                        let stillThere = false;
+                        for (const h of sim.hazards) {
+                            if (h === m.target && h.type === 'ast' && h.r <= 15) { stillThere = true; break; }
+                        }
+                        if (stillThere) {
+                            const dx = m.target.x - m.x,
+                                dy = m.target.y - m.y;
+                            const d = Math.hypot(dx, dy) || 1;
+                            const turnStr = 4.0 * sdt;
+                            const ang = Math.atan2(dy, dx);
+                            const currentAng = Math.atan2(m.vy, m.vx);
+                            let diff = ang - currentAng;
+                            while (diff > Math.PI) diff -= Math.PI * 2;
+                            while (diff < -Math.PI) diff += Math.PI * 2;
+                            const newAng = currentAng + clampN(diff, -turnStr, turnStr);
+                            const sp = Math.hypot(m.vx, m.vy);
+                            m.vx = Math.cos(newAng) * sp;
+                            m.vy = Math.sin(newAng) * sp;
+                            if (d < 20) {
+                                // Hit target!
+                                hitAsteroid(m.target, m.x, m.y);
+                                sim.missiles.splice(i, 1);
+                                continue;
+                            }
+                        } else {
+                            m.target = null;
+                        }
+                    }
+
+                    m.x += m.vx * sdt;
+                    m.y += m.vy * sdt;
+
+                    // Trail
+                    if (sim.parts.length < 520) {
+                        sim.parts.push({
+                            type: 'trail',
+                            x: m.x + (Math.random() - 0.5) * 4,
+                            y: m.y + (Math.random() - 0.5) * 4,
+                            vx: (Math.random() - 0.5) * 20,
+                            vy: (Math.random() - 0.5) * 20,
+                            life: 0.3,
+                            max: 0.3,
+                            size: 3 + Math.random() * 2,
+                            color: '255,200,80'
+                        });
+                    }
+
+                    if (m.x < -60 || m.x > W + 60 || m.y < -60 || m.y > H + 60) {
+                        sim.missiles.splice(i, 1);
+                    }
+
+                    // Check collision with any asteroid (non-target)
+                    for (let j = sim.hazards.length - 1; j >= 0; j--) {
+                        const h = sim.hazards[j];
+                        if (h.type === 'ast' && h !== m.target) {
+                            const d = Math.hypot(m.x - h.x, m.y - h.y);
+                            if (d < h.r + m.r) {
+                                hitAsteroid(h, m.x, m.y);
+                                sim.missiles.splice(i, 1);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            function hitAsteroid(ast, mx, my) {
+                // Destroy the asteroid
+                const idx = sim.hazards.indexOf(ast);
+                if (idx >= 0) {
+                    const h = sim.hazards[idx];
+                    // Big explosion
+                    burst(h.x, h.y, '255,200,100', 20, 350);
+                    burst(h.x, h.y, '255,150,50', 14, 250);
+                    sim.shake = Math.max(sim.shake, 12);
+                    sim.flash = 0.2;
+                    sim.flashC = '255,240,200';
+                    Sfx.missileHit();
+                    // Give some coins as reward
+                    totalCoins += 2;
+                    sim.runCoins += 2;
+                    pushText(h.x, h.y - 30, '+2 data', '#ffd700');
+                    sim.hazards.splice(idx, 1);
+                    // Small debris
+                    for (let k = 0; k < 6; k++) {
+                        const a = Math.random() * Math.PI * 2,
+                            sp = 60 + Math.random() * 80;
+                        sim.parts.push({
+                            type: 'spark',
+                            x: h.x + (Math.random() - 0.5) * 10,
+                            y: h.y + (Math.random() - 0.5) * 10,
+                            vx: Math.cos(a) * sp,
+                            vy: Math.sin(a) * sp,
+                            life: 0.5 + Math.random() * 0.3,
+                            max: 0.8,
+                            size: 1.5 + Math.random() * 2,
+                            color: '200,180,160'
+                        });
+                    }
+                }
+            }
+
+            // ─── B U L L E T   S Y S T E M ──────────────────────────────────────
+            function fireBullet() {
+                if (sim.state !== 'playing' || sim.fireCooldown > 0) return;
+                const rk = sim.rocket;
+                const dx = rk.tx - rk.x,
+                    dy = rk.ty - rk.y;
+                const len = Math.hypot(dx, dy) || 1;
+                const speed = 600;
+                const vx = (dx / len) * speed;
+                const vy = (dy / len) * speed;
+                const tipX = rk.x + Math.cos(rk.tilt) * 20;
+                const tipY = rk.y + Math.sin(rk.tilt) * 20;
+                sim.bullets.push({
+                    x: tipX,
+                    y: tipY,
+                    vx: vx,
+                    vy: vy,
+                    life: 2.0,
+                    r: 3
+                });
+                sim.fireCooldown = 0.25;
+                Sfx.shoot();
+                burst(tipX, tipY, '255,255,200', 6, 120);
+            }
+
+            function updateBullets(sdt) {
+                if (sim.fireCooldown > 0) sim.fireCooldown -= sdt;
+                const rk = sim.rocket;
+                for (let i = sim.bullets.length - 1; i >= 0; i--) {
+                    const b = sim.bullets[i];
+                    b.x += b.vx * sdt;
+                    b.y += b.vy * sdt;
+                    b.life -= sdt;
+                    if (b.life <= 0) { sim.bullets.splice(i, 1); continue; }
+                    let hit = false;
+                    for (let j = sim.hazards.length - 1; j >= 0; j--) {
+                        const h = sim.hazards[j];
+                        if (h.type !== 'ast') continue;
+                        const d = Math.hypot(b.x - h.x, b.y - h.y);
+                        if (d < b.r + h.r) {
+                            if (h.r <= 15) {
+                                burst(h.x, h.y, '255,200,120', 14, 280);
+                                sim.hazards.splice(j, 1);
+                                totalCoins += 1;
+                                sim.runCoins += 1;
+                                pushText(h.x, h.y - 20, '+1 data', '#ffd700');
+                                sim.flash = 0.15;
+                                sim.flashC = '255,240,200';
+                                Sfx.shoot();
+                            } else {
+                                // large asteroid: just remove bullet
+                            }
+                            hit = true;
+                            break;
+                        }
+                    }
+                    if (hit) sim.bullets.splice(i, 1);
+                }
+            }
+
+            function updateGame(sdt, rdt) {
+                const zone = zoneOf(sim.zone);
+                const segProg = Math.min(1, (sim.dist - sim.segStart) / sim.goal);
+                const ramp = 1 + 0.22 * segProg;
+                const expM = getExpMult();
+                sim.scroll = 200 * zone.speed * sim.speedFactor;
+                const hzBase = 200 * zone.speed;
+                sim.time += sdt;
+                if (sim.invincible > 0) sim.invincible -= rdt;
+                if (sim.magnetT > 0) sim.magnetT -= rdt;
+                if (sim.pupSlowT > 0) sim.pupSlowT -= rdt;
+                if (sim.slowmoT > 0) sim.slowmoT -= rdt;
+                if (sim.hintT > 0) sim.hintT -= rdt;
+                if (sim.flowT > 0) sim.flowT -= rdt;
+                else if (sim.flow > 0) { sim.flow--;
+                    sim.flowT = 0.7; }
+                if (sim.coinStreakT > 0) sim.coinStreakT -= rdt;
+                else sim.coinStreak = 0;
+                const flowMult = 1 + Math.min(0.5, sim.flow * 0.05);
+                sim.dist += sim.scroll * 0.08 * flowMult * sim.distMult * sdt;
+                moveRocket(sdt);
+                updateStars(sdt, sim.scroll);
+                updateNebulas(sdt, sim.scroll);
+                spawnLogic(sdt, zone, ramp, expM, hzBase);
+                updateHazards(sdt);
+                updateClouds(sdt);
+                updateAliens(sdt);
+                updateCoins(sdt);
+                updatePups(sdt);
+                updateBullets(sdt);
+                updateMissiles(sdt);
+                updateParts(sdt);
+                updateTexts(rdt);
+                Sfx.humSet(sim.ts);
+                if (sim.dist - sim.segStart >= sim.goal) startWarp();
             }
 
             function updateCoins(sdt) {
@@ -1944,105 +2257,6 @@
                 }
             }
 
-            function updateBullets(sdt) {
-                if (sim.fireCooldown > 0) sim.fireCooldown -= sdt;
-                const rk = sim.rocket;
-                for (let i = sim.bullets.length - 1; i >= 0; i--) {
-                    const b = sim.bullets[i];
-                    b.x += b.vx * sdt;
-                    b.y += b.vy * sdt;
-                    b.life -= sdt;
-                    if (b.life <= 0) { sim.bullets.splice(i, 1); continue; }
-                    let hit = false;
-                    for (let j = sim.hazards.length - 1; j >= 0; j--) {
-                        const h = sim.hazards[j];
-                        if (h.type !== 'ast') continue;
-                        const d = Math.hypot(b.x - h.x, b.y - h.y);
-                        if (d < b.r + h.r) {
-                            // hit an asteroid
-                            if (h.r <= 15) {
-                                // break it
-                                burst(h.x, h.y, '255,200,120', 14, 280);
-                                sim.hazards.splice(j, 1);
-                                totalCoins += 1;
-                                sim.runCoins += 1;
-                                pushText(h.x, h.y - 20, '+1 data', '#ffd700');
-                                // add a small flash
-                                sim.flash = 0.15;
-                                sim.flashC = '255,240,200';
-                                Sfx.shoot(); // reuse shoot sound for break
-                            } else {
-                                // large asteroid: just remove bullet
-                            }
-                            hit = true;
-                            break;
-                        }
-                    }
-                    if (hit) sim.bullets.splice(i, 1);
-                }
-            }
-
-            function fireBullet() {
-                if (sim.state !== 'playing' || sim.fireCooldown > 0) return;
-                const rk = sim.rocket;
-                const dx = rk.tx - rk.x,
-                    dy = rk.ty - rk.y;
-                const len = Math.hypot(dx, dy) || 1;
-                const speed = 600;
-                const vx = (dx / len) * speed;
-                const vy = (dy / len) * speed;
-                const tipX = rk.x + Math.cos(rk.tilt) * 20;
-                const tipY = rk.y + Math.sin(rk.tilt) * 20;
-                sim.bullets.push({
-                    x: tipX,
-                    y: tipY,
-                    vx: vx,
-                    vy: vy,
-                    life: 2.0,
-                    r: 3
-                });
-                sim.fireCooldown = 0.25;
-                Sfx.shoot();
-                // small muzzle flash
-                burst(tipX, tipY, '255,255,200', 6, 120);
-            }
-
-            function updateGame(sdt, rdt) {
-                const zone = zoneOf(sim.zone);
-                const segProg = Math.min(1, (sim.dist - sim.segStart) / sim.goal);
-                const ramp = 1 + 0.22 * segProg;
-                const expM = getExpMult();
-                sim.scroll = 200 * zone.speed * sim.speedFactor;
-                const hzBase = 200 * zone.speed;
-                sim.time += sdt;
-                if (sim.invincible > 0) sim.invincible -= rdt;
-                if (sim.magnetT > 0) sim.magnetT -= rdt;
-                if (sim.pupSlowT > 0) sim.pupSlowT -= rdt;
-                if (sim.slowmoT > 0) sim.slowmoT -= rdt;
-                if (sim.hintT > 0) sim.hintT -= rdt;
-                if (sim.flowT > 0) sim.flowT -= rdt;
-                else if (sim.flow > 0) { sim.flow--;
-                    sim.flowT = 0.7; }
-                if (sim.coinStreakT > 0) sim.coinStreakT -= rdt;
-                else sim.coinStreak = 0;
-                const flowMult = 1 + Math.min(0.5, sim.flow * 0.05);
-                sim.dist += sim.scroll * 0.08 * flowMult * sim.distMult * sdt;
-                moveRocket(sdt);
-                updateStars(sdt, sim.scroll);
-                updateNebulas(sdt, sim.scroll);
-                spawnLogic(sdt, zone, ramp, expM, hzBase);
-                updateHazards(sdt);
-                updateClouds(sdt);
-                updateBolts(sdt);
-                updateCoins(sdt);
-                updatePups(sdt);
-                updateBullets(sdt);
-                updateParts(sdt);
-                updateTexts(rdt);
-                Sfx.humSet(sim.ts);
-                if (sim.dist - sim.segStart >= sim.goal) startWarp();
-            }
-
             function startWarp() {
                 if (sim.state !== 'playing') return;
                 sim.state = 'warp';
@@ -2054,10 +2268,11 @@
                 sim.hazards.forEach(h => burst(h.x, h.y, '159,214,255', 6, 220));
                 sim.hazards = [];
                 sim.clouds = [];
-                sim.bolts = [];
+                sim.aliens = [];
                 sim.pups = [];
                 sim.coins = [];
                 sim.bullets = [];
+                sim.missiles = [];
                 sim.meteorQ = null;
                 sim.rad = 0;
                 saveProgress();
@@ -2169,12 +2384,14 @@
                 sim.goal = ZONES[0].goal;
                 sim.hazards = [];
                 sim.clouds = [];
-                sim.bolts = [];
+                sim.aliens = [];
                 sim.coins = [];
                 sim.pups = [];
                 sim.parts = [];
                 sim.texts = [];
                 sim.bullets = [];
+                sim.missiles = [];
+                sim.missileCooldown = 0;
                 sim.fireCooldown = 0;
                 sim.flow = 0;
                 sim.flowT = 0;
@@ -2273,6 +2490,8 @@
                 pauseOverlay.classList.remove('active');
                 sim.state = 'playing';
             }
+
+            // ─── D R A W   F U N C T I O N S ──────────────────────────────────────
 
             function drawStars() {
                 const wk = sim.state === 'warp' ? Math.min(sim.warpK, 22) : 1;
@@ -2443,38 +2662,169 @@
                 }
             }
 
-            function drawBolts() {
-                for (const b of sim.bolts) {
-                    if (b.state === 'warn') {
-                        const pulse = 0.5 + 0.5 * Math.sin(sim.time * 18);
-                        rrect(b.x - b.w / 2, 0, b.w, H, 10);
-                        ctx.fillStyle = 'rgba(120,190,255,' + (0.05 + 0.05 * pulse) + ')';
-                        ctx.fill();
-                        ctx.strokeStyle = 'rgba(140,200,255,' + (0.22 + 0.3 * pulse) + ')';
-                        ctx.lineWidth = 1.5;
-                        ctx.stroke();
-                        ctx.fillStyle = 'rgba(160,220,255,' + (0.5 + 0.5 * pulse) + ')';
+            // ─── A L I E N   L A S E R   D R A W ──────────────────────────────────
+            function drawAliens() {
+                for (const a of sim.aliens) {
+                    const pulse = 0.5 + 0.5 * Math.sin(sim.time * 4 + a.phase);
+                    const alpha = a.state === 'done' ? 0 : 1;
+                    ctx.save();
+                    ctx.globalAlpha = alpha;
+
+                    // Alien body
+                    const sx = a.x,
+                        sy = a.y;
+                    // Glow
+                    if (a.state === 'fire') {
+                        const g = ctx.createRadialGradient(sx, sy, 2, sx, sy, 80);
+                        g.addColorStop(0, 'rgba(255,80,80,0.25)');
+                        g.addColorStop(1, 'rgba(255,80,80,0)');
+                        ctx.fillStyle = g;
                         ctx.beginPath();
-                        ctx.moveTo(b.x - 8, 6);
-                        ctx.lineTo(b.x + 8, 6);
-                        ctx.lineTo(b.x, 18);
-                        ctx.closePath();
+                        ctx.arc(sx, sy, 80, 0, 7);
                         ctx.fill();
-                    } else {
-                        const a = Math.max(0, b.t / 0.22);
+                    }
+                    // Alien head
+                    ctx.fillStyle = a.state === 'fire' ? '#ff5555' : '#4a8fcf';
+                    ctx.beginPath();
+                    ctx.ellipse(sx, sy, 22, 18, 0, 0, 7);
+                    ctx.fill();
+                    // Eyes
+                    ctx.fillStyle = '#fff';
+                    ctx.beginPath();
+                    ctx.ellipse(sx - 10, sy - 4, 6, 7, 0, 0, 7);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(sx + 10, sy - 4, 6, 7, 0, 0, 7);
+                    ctx.fill();
+                    ctx.fillStyle = '#0a0e1a';
+                    const eyeOff = a.state === 'fire' ? 3 : 0;
+                    ctx.beginPath();
+                    ctx.arc(sx - 10 + eyeOff, sy - 3, 3, 0, 7);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(sx + 10 + eyeOff, sy - 3, 3, 0, 7);
+                    ctx.fill();
+                    // Pupil glow
+                    if (a.state === 'fire') {
+                        ctx.fillStyle = 'rgba(255,50,50,0.6)';
+                        ctx.beginPath();
+                        ctx.arc(sx - 10 + eyeOff, sy - 3, 4.5, 0, 7);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.arc(sx + 10 + eyeOff, sy - 3, 4.5, 0, 7);
+                        ctx.fill();
+                    }
+                    // Mouth
+                    ctx.strokeStyle = '#0a0e1a';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.arc(sx, sy + 6, 8, 0.1 * Math.PI, 0.9 * Math.PI);
+                    ctx.stroke();
+
+                    // Antennae
+                    ctx.strokeStyle = a.state === 'fire' ? '#ff5555' : '#4a8fcf';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(sx - 12, sy - 14);
+                    ctx.quadraticCurveTo(sx - 22, sy - 30, sx - 16, sy - 36);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(sx + 12, sy - 14);
+                    ctx.quadraticCurveTo(sx + 22, sy - 30, sx + 16, sy - 36);
+                    ctx.stroke();
+                    // Antenna tips
+                    ctx.fillStyle = '#ffd700';
+                    ctx.beginPath();
+                    ctx.arc(sx - 16, sy - 36, 3, 0, 7);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(sx + 16, sy - 36, 3, 0, 7);
+                    ctx.fill();
+
+                    // ─── L A S E R   B E A M ──────────────────────────────────────
+                    if (a.state === 'fire') {
+                        const prog = 1 - a.laserT / a.laserDuration;
+                        const beamAlpha = 0.3 + 0.7 * (1 - prog);
+                        const beamWidth = a.w * 0.3;
+                        // Main beam
                         ctx.save();
                         ctx.globalCompositeOperation = 'lighter';
-                        ctx.lineJoin = 'round';
-                        ctx.strokeStyle = 'rgba(150,200,255,' + (a * 0.45) + ')';
-                        ctx.lineWidth = 9;
+                        // Outer glow
+                        const g = ctx.createLinearGradient(sx, sy, sx, H);
+                        g.addColorStop(0, 'rgba(255,80,80,0)');
+                        g.addColorStop(0.05, 'rgba(255,50,50,' + (0.3 * beamAlpha) + ')');
+                        g.addColorStop(0.5, 'rgba(255,30,30,' + (0.2 * beamAlpha) + ')');
+                        g.addColorStop(1, 'rgba(255,30,30,0)');
+                        ctx.fillStyle = g;
                         ctx.beginPath();
-                        b.pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+                        ctx.rect(sx - beamWidth * 2, sy + 4, beamWidth * 4, H - sy);
+                        ctx.fill();
+
+                        // Core beam
+                        const coreG = ctx.createLinearGradient(sx, sy, sx, H);
+                        coreG.addColorStop(0, 'rgba(255,255,255,0)');
+                        coreG.addColorStop(0.02, 'rgba(255,255,255,' + (0.7 * beamAlpha) + ')');
+                        coreG.addColorStop(0.1, 'rgba(255,200,200,' + (0.5 * beamAlpha) + ')');
+                        coreG.addColorStop(0.7, 'rgba(255,100,100,' + (0.3 * beamAlpha) + ')');
+                        coreG.addColorStop(1, 'rgba(255,50,50,0)');
+                        ctx.fillStyle = coreG;
+                        ctx.beginPath();
+                        ctx.rect(sx - beamWidth * 0.4, sy + 4, beamWidth * 0.8, H - sy);
+                        ctx.fill();
+
+                        // Bright core line
+                        ctx.strokeStyle = 'rgba(255,255,255,' + (0.6 * beamAlpha) + ')';
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.moveTo(sx, sy + 8);
+                        ctx.lineTo(sx, H);
                         ctx.stroke();
-                        ctx.strokeStyle = 'rgba(255,255,255,' + a + ')';
-                        ctx.lineWidth = 2.5;
+
+                        ctx.strokeStyle = 'rgba(255,200,150,' + (0.3 * beamAlpha) + ')';
+                        ctx.lineWidth = 8;
+                        ctx.beginPath();
+                        ctx.moveTo(sx, sy + 8);
+                        ctx.lineTo(sx, H);
                         ctx.stroke();
+
                         ctx.restore();
+
+                        // Warning pulse on the alien
+                        ctx.strokeStyle = 'rgba(255,50,50,' + (0.3 + 0.3 * pulse) + ')';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([4, 6]);
+                        ctx.beginPath();
+                        ctx.arc(sx, sy, 32 + 6 * pulse, 0, 7);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
                     }
+
+                    // Warning glow
+                    if (a.state === 'warn') {
+                        const warnAlpha = 0.3 + 0.3 * pulse;
+                        ctx.fillStyle = 'rgba(255,200,50,' + (0.05 * warnAlpha) + ')';
+                        ctx.beginPath();
+                        rrect(sx - a.w / 2, 0, a.w, H, 10);
+                        ctx.fill();
+                        ctx.strokeStyle = 'rgba(255,200,50,' + (0.15 * warnAlpha) + ')';
+                        ctx.lineWidth = 1.2;
+                        ctx.setLineDash([4, 8]);
+                        ctx.beginPath();
+                        rrect(sx - a.w / 2, 0, a.w, H, 10);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        // Warning triangle
+                        const triPulse = 0.5 + 0.5 * pulse;
+                        ctx.fillStyle = 'rgba(255,200,50,' + (0.3 + 0.4 * triPulse) + ')';
+                        ctx.beginPath();
+                        ctx.moveTo(sx, 18);
+                        ctx.lineTo(sx - 10, 30);
+                        ctx.lineTo(sx + 10, 30);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+
+                    ctx.restore();
                 }
             }
 
@@ -2676,6 +3026,64 @@
                 }
             }
 
+            // ─── D R A W   M I S S I L E S ────────────────────────────────────────
+            function drawMissiles() {
+                for (const m of sim.missiles) {
+                    const ang = Math.atan2(m.vy, m.vx);
+                    ctx.save();
+                    ctx.translate(m.x, m.y);
+                    ctx.rotate(ang);
+                    // Glow
+                    ctx.globalCompositeOperation = 'lighter';
+                    const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 16);
+                    g.addColorStop(0, 'rgba(255,200,80,0.4)');
+                    g.addColorStop(1, 'rgba(255,200,80,0)');
+                    ctx.fillStyle = g;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 16, 0, 7);
+                    ctx.fill();
+                    ctx.globalCompositeOperation = 'source-over';
+                    // Missile body
+                    ctx.fillStyle = '#ff6b4a';
+                    ctx.beginPath();
+                    ctx.moveTo(10, 0);
+                    ctx.lineTo(-6, -5);
+                    ctx.lineTo(-8, -3);
+                    ctx.lineTo(-8, 3);
+                    ctx.lineTo(-6, 5);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.strokeStyle = '#cc5533';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    // Nose
+                    ctx.fillStyle = '#ffd93d';
+                    ctx.beginPath();
+                    ctx.moveTo(12, 0);
+                    ctx.lineTo(8, -3);
+                    ctx.lineTo(8, 3);
+                    ctx.closePath();
+                    ctx.fill();
+                    // Fins
+                    ctx.fillStyle = '#ff6b4a';
+                    ctx.beginPath();
+                    ctx.moveTo(-6, -5);
+                    ctx.lineTo(-10, -8);
+                    ctx.lineTo(-6, -3);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(-6, 5);
+                    ctx.lineTo(-10, 8);
+                    ctx.lineTo(-6, 3);
+                    ctx.closePath();
+                    ctx.fill();
+                    // Trail glow
+                    ctx.restore();
+                    // Trail particles are handled in updateMissiles
+                }
+            }
+
             function flamePath(hw, y0, len) {
                 ctx.beginPath();
                 ctx.moveTo(-hw, y0);
@@ -2710,64 +3118,122 @@
                 ctx.fillStyle = 'rgba(255,230,120,0.9)';
                 flamePath(ship.w * 0.3, 13, 8 + L * 0.55);
                 ctx.globalCompositeOperation = 'source-over';
+
+                // Warship Vestal gets a different hull
                 const w = ship.w;
-                ctx.fillStyle = ship.hull;
-                ctx.beginPath();
-                ctx.moveTo(0, -22);
-                ctx.quadraticCurveTo(w * 0.9, -10, w * 0.95, 6);
-                ctx.lineTo(w * 0.6, 15);
-                ctx.lineTo(-w * 0.6, 15);
-                ctx.lineTo(-w * 0.95, 6);
-                ctx.quadraticCurveTo(-w * 0.9, -10, 0, -22);
-                ctx.fill();
-                ctx.fillStyle = 'rgba(0,0,0,0.22)';
-                ctx.beginPath();
-                ctx.moveTo(0, -22);
-                ctx.quadraticCurveTo(w * 0.9, -10, w * 0.95, 6);
-                ctx.lineTo(w * 0.6, 15);
-                ctx.lineTo(0, 15);
-                ctx.closePath();
-                ctx.fill();
-                ctx.fillStyle = ship.accent;
-                ctx.beginPath();
-                ctx.moveTo(0, -22);
-                ctx.quadraticCurveTo(w * 0.62, -13, w * 0.72, -7);
-                ctx.lineTo(-w * 0.72, -7);
-                ctx.quadraticCurveTo(-w * 0.62, -13, 0, -22);
-                ctx.fill();
-                ctx.fillStyle = ship.accent;
-                ctx.beginPath();
-                ctx.moveTo(w * 0.95, 4);
-                ctx.lineTo(w + 8, 17);
-                ctx.lineTo(w * 0.6, 15);
-                ctx.closePath();
-                ctx.fill();
-                ctx.beginPath();
-                ctx.moveTo(-w * 0.95, 4);
-                ctx.lineTo(-w - 8, 17);
-                ctx.lineTo(-w * 0.6, 15);
-                ctx.closePath();
-                ctx.fill();
-                ctx.fillStyle = '#0a1622';
-                ctx.beginPath();
-                ctx.arc(0, -2, 5.4, 0, 7);
-                ctx.fill();
-                ctx.fillStyle = '#9ee0ff';
-                ctx.beginPath();
-                ctx.arc(0, -2, 3.9, 0, 7);
-                ctx.fill();
-                ctx.fillStyle = 'rgba(255,255,255,0.75)';
-                ctx.beginPath();
-                ctx.arc(-1.4, -3.4, 1.3, 0, 7);
-                ctx.fill();
-                if (sim.lives > 1) {
-                    ctx.strokeStyle = 'rgba(111,203,255,0.5)';
-                    ctx.setLineDash([5, 6]);
-                    ctx.lineWidth = 1.5;
+                if (ship.vestal) {
+                    // Dark military hull with red accents
+                    ctx.fillStyle = '#2a3a4a';
                     ctx.beginPath();
-                    ctx.arc(0, -2, 24, 0, 7);
-                    ctx.stroke();
-                    ctx.setLineDash([]);
+                    ctx.moveTo(0, -24);
+                    ctx.quadraticCurveTo(w * 0.95, -12, w * 1.0, 6);
+                    ctx.lineTo(w * 0.7, 16);
+                    ctx.lineTo(w * 0.4, 18);
+                    ctx.lineTo(-w * 0.4, 18);
+                    ctx.lineTo(-w * 0.7, 16);
+                    ctx.lineTo(-w * 1.0, 6);
+                    ctx.quadraticCurveTo(-w * 0.95, -12, 0, -24);
+                    ctx.fill();
+                    // Cockpit
+                    ctx.fillStyle = '#4a8fcf';
+                    ctx.beginPath();
+                    ctx.ellipse(0, -4, 5, 7, 0, 0, 7);
+                    ctx.fill();
+                    ctx.fillStyle = '#6fcbff';
+                    ctx.beginPath();
+                    ctx.ellipse(0, -4, 3.5, 5, 0, 0, 7);
+                    ctx.fill();
+                    // Red stripe
+                    ctx.fillStyle = '#ff6b4a';
+                    ctx.beginPath();
+                    ctx.moveTo(-w * 0.6, 2);
+                    ctx.lineTo(w * 0.6, 2);
+                    ctx.lineTo(w * 0.4, 8);
+                    ctx.lineTo(-w * 0.4, 8);
+                    ctx.closePath();
+                    ctx.fill();
+                    // Missile pods
+                    ctx.fillStyle = '#4a5a6a';
+                    ctx.beginPath();
+                    ctx.arc(-w * 0.7, 10, 3, 0, 7);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(w * 0.7, 10, 3, 0, 7);
+                    ctx.fill();
+                    ctx.fillStyle = '#ff6b4a';
+                    ctx.beginPath();
+                    ctx.arc(-w * 0.7, 10, 1.5, 0, 7);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(w * 0.7, 10, 1.5, 0, 7);
+                    ctx.fill();
+                    // Engine glow (vestal has bigger engines)
+                    ctx.globalCompositeOperation = 'lighter';
+                    ctx.fillStyle = 'rgba(255,100,50,0.3)';
+                    ctx.beginPath();
+                    ctx.arc(0, 18, 10, 0, 7);
+                    ctx.fill();
+                    ctx.globalCompositeOperation = 'source-over';
+                } else {
+                    // Standard ship
+                    ctx.fillStyle = ship.hull;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -22);
+                    ctx.quadraticCurveTo(w * 0.9, -10, w * 0.95, 6);
+                    ctx.lineTo(w * 0.6, 15);
+                    ctx.lineTo(-w * 0.6, 15);
+                    ctx.lineTo(-w * 0.95, 6);
+                    ctx.quadraticCurveTo(-w * 0.9, -10, 0, -22);
+                    ctx.fill();
+                    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+                    ctx.beginPath();
+                    ctx.moveTo(0, -22);
+                    ctx.quadraticCurveTo(w * 0.9, -10, w * 0.95, 6);
+                    ctx.lineTo(w * 0.6, 15);
+                    ctx.lineTo(0, 15);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.fillStyle = ship.accent;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -22);
+                    ctx.quadraticCurveTo(w * 0.62, -13, w * 0.72, -7);
+                    ctx.lineTo(-w * 0.72, -7);
+                    ctx.quadraticCurveTo(-w * 0.62, -13, 0, -22);
+                    ctx.fill();
+                    ctx.fillStyle = ship.accent;
+                    ctx.beginPath();
+                    ctx.moveTo(w * 0.95, 4);
+                    ctx.lineTo(w + 8, 17);
+                    ctx.lineTo(w * 0.6, 15);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(-w * 0.95, 4);
+                    ctx.lineTo(-w - 8, 17);
+                    ctx.lineTo(-w * 0.6, 15);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.fillStyle = '#0a1622';
+                    ctx.beginPath();
+                    ctx.arc(0, -2, 5.4, 0, 7);
+                    ctx.fill();
+                    ctx.fillStyle = '#9ee0ff';
+                    ctx.beginPath();
+                    ctx.arc(0, -2, 3.9, 0, 7);
+                    ctx.fill();
+                    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+                    ctx.beginPath();
+                    ctx.arc(-1.4, -3.4, 1.3, 0, 7);
+                    ctx.fill();
+                    if (sim.lives > 1) {
+                        ctx.strokeStyle = 'rgba(111,203,255,0.5)';
+                        ctx.setLineDash([5, 6]);
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.arc(0, -2, 24, 0, 7);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
                 }
                 ctx.restore();
             }
@@ -2829,7 +3295,8 @@
                 ctx.fillStyle = '#cfe2ff';
                 ctx.font = '500 14px Inter,sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText('Navigate with mouse, touch or arrows — graze hazards to build Sync', W / 2, H * 0.42);
+                const ves = shipIsVestal() ? ' · Missile: Space' : '';
+                ctx.fillText('Navigate with mouse, touch or arrows — graze hazards to build Sync' + ves, W / 2, H * 0.42);
                 ctx.restore();
             }
 
@@ -2842,11 +3309,12 @@
                 drawStars();
                 drawApproachPlanet();
                 drawClouds();
-                drawBolts();
+                drawAliens();
                 drawHazards();
                 drawCoins();
                 drawPups();
                 drawBullets();
+                drawMissiles();
                 if (['playing', 'warp', 'choose', 'paused'].includes(sim.state)) drawRocket();
                 drawParticles();
                 drawTexts();
@@ -2994,10 +3462,11 @@
                         cls = 'locked';
                         btn = '<button class="shop-btn primary" data-act="buy" data-idx="' + i + '"' + (totalCoins <
                             ship.cost ? ' disabled' : '') + '>Buy</button>'; }
-                    html += '<div class="shop-item" style="border-color:' + (eq ? '#6fcbff' :
+                    const isVestal = ship.vestal ? ' ✦' : '';
+                    html += '<div class="shop-item" style="border-color:' + (eq ? '#ff6b4a' :
                             'rgba(255,255,255,0.04)') + '">' +
                         '<div class="ship-icon">' + svgIcon(ship.icon, 26) + '</div>' +
-                        '<div class="ship-name">' + ship.name + '</div>' +
+                        '<div class="ship-name">' + ship.name + isVestal + '</div>' +
                         '<div class="ship-stats">' + ship.desc + '</div>' +
                         '<div class="ship-status ' + cls + '">' + status + '</div>' +
                         '<div>' + btn + '</div>' +
