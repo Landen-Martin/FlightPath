@@ -951,12 +951,6 @@
             position: relative;
             overflow: hidden
         }
-        .custom-preview .mini-rocket {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            transition: all .3s ease
-        }
 
         @media (max-width:500px) {
             .menu-card {
@@ -1383,6 +1377,7 @@
             ];
             const zoneOf = i => ZONES[Math.max(0, Math.min(i, ZONES.length - 1))];
 
+            // ─── SHIPS (Vestal updated) ──────────────────────────────────────────
             const SHIPS = [
                 { id: 'scout', name: 'Scout', cost: 0, desc: 'Balanced platform', speedMult: 1.00, shieldBonus: 0,
                     hull: '#c9d4e2', accent: '#6fcbff', w: 12, hitR: 11, icon: 'rocket' },
@@ -1394,10 +1389,11 @@
                     shieldBonus: 0, hull: '#596073', accent: '#a78bfa', w: 9, hitR: 9, icon: 'rocket' },
                 { id: 'nexus', name: 'Nexus', cost: 250, desc: '+20% speed · +1 integrity', speedMult: 1.20,
                     shieldBonus: 1, hull: '#d9d2f0', accent: '#c4a5ff', w: 13, hitR: 11, glow: true, icon: 'rocket' },
+                // ─── W A R S H I P   V E S T A L (no missiles, bash small asteroids) ──
                 { id: 'vestal', name: 'Warship Vestal', cost: 350,
-                    desc: 'Missile launcher · destroys small asteroids', speedMult: 1.10,
+                    desc: 'Bash through small asteroids without damage', speedMult: 1.10,
                     shieldBonus: 0, hull: '#2a3a4a', accent: '#ff6b4a', w: 14, hitR: 11,
-                    icon: 'rocket', vestal: true, missileCooldown: 0.6 }
+                    icon: 'rocket', vestal: true }
             ];
 
             const UPGRADE_POOL = [
@@ -1533,12 +1529,9 @@
                     this.hum = null; },
                 shoot() { this.tone(1500, 0.06, 'square', 0.08);
                     this.tone(800, 0.08, 'sine', 0.10, 0, 0.02); },
-                missileLaunch() { this.tone(400, 0.3, 'sawtooth', 0.12, 300);
-                    this.tone(200, 0.2, 'sine', 0.08, 0, 0.05);
-                    this.noise(0.2, 0.08, 400); },
-                missileHit() { this.noise(0.3, 0.4, 900);
-                    this.tone(80, 0.4, 'sawtooth', 0.25, -60);
-                    this.tone(300, 0.15, 'sine', 0.12, 0, 0.05); }
+                // missile sounds removed
+                bash() { this.tone(300, 0.15, 'sine', 0.12, 0);
+                    this.noise(0.1, 0.08, 800); }
             };
 
             let W = 0,
@@ -1625,8 +1618,7 @@
                 parts: [],
                 texts: [],
                 bullets: [],
-                missiles: [],
-                missileCooldown: 0,
+                // missiles removed
                 fireCooldown: 0,
                 dist: 0,
                 segStart: 0,
@@ -1715,8 +1707,8 @@
                     e.preventDefault(); }
                 if (k === ' ') {
                     e.preventDefault();
-                    if (shipIsVestal()) fireMissile();
-                    else fireBullet();
+                    // All ships fire bullets now (no missiles)
+                    fireBullet();
                 }
                 if (k === 'Escape') {
                     if (sim.state === 'playing') pauseGame();
@@ -2109,6 +2101,7 @@
                 }
             }
 
+            // ─── UPDATED HAZARD COLLISION (Vestal bash) ──────────────────────────
             function updateHazards(sdt) {
                 const rk = sim.rocket,
                     hr = shipHitR();
@@ -2132,8 +2125,21 @@
                         });
                     }
                     const d = Math.hypot(h.x - rk.x, h.y - rk.y);
+                    // Vestal can bash small asteroids (r <= 15)
                     if (d < h.r + hr) {
-                        if (sim.invincible <= 0) {
+                        if (shipIsVestal() && h.type === 'ast' && h.r <= 15) {
+                            // Bash: destroy asteroid, no damage, give coins
+                            Sfx.bash();
+                            burst(h.x, h.y, '200,255,200', 12, 260);
+                            totalCoins += 1;
+                            sim.runCoins += 1;
+                            pushText(h.x, h.y - 20, '+1 data', '#7ddf9a');
+                            sim.flash = 0.15;
+                            sim.flashC = '200,255,200';
+                            sim.shake = Math.max(sim.shake, 4);
+                            sim.hazards.splice(i, 1);
+                            continue;
+                        } else if (sim.invincible <= 0) {
                             burst(h.x, h.y, '200,190,170', 8, 240);
                             burst(h.x, h.y, '255,160,80', 6, 200);
                             sim.hazards.splice(i, 1);
@@ -2221,145 +2227,7 @@
                 if (sim.aliens.length > 6) sim.aliens.splice(0, sim.aliens.length - 6);
             }
 
-            function fireMissile() {
-                if (sim.state !== 'playing' || sim.missileCooldown > 0) return;
-                if (!shipIsVestal()) return;
-                const rk = sim.rocket;
-                let target = null,
-                    minD = Infinity;
-                for (const h of sim.hazards) {
-                    if (h.type === 'ast' && h.r <= 15) {
-                        const d = Math.hypot(h.x - rk.x, h.y - rk.y);
-                        if (d < minD) { minD = d;
-                            target = h; }
-                    }
-                }
-                const dx = rk.tx - rk.x,
-                    dy = rk.ty - rk.y;
-                const len = Math.hypot(dx, dy) || 1;
-                let aimX = rk.x + dx / len * 300,
-                    aimY = rk.y + dy / len * 300;
-                if (target) { aimX = target.x;
-                    aimY = target.y; }
-                const speed = 320;
-                const ang = Math.atan2(aimY - rk.y, aimX - rk.x);
-                const vx = Math.cos(ang) * speed;
-                const vy = Math.sin(ang) * speed;
-                sim.missiles.push({
-                    x: rk.x + Math.cos(ang) * 28,
-                    y: rk.y + Math.sin(ang) * 28,
-                    vx: vx,
-                    vy: vy,
-                    life: 3.5,
-                    target: target,
-                    r: 5,
-                    trail: [],
-                    homing: true,
-                    speed: speed
-                });
-                sim.missileCooldown = (SHIPS[equippedShip] || SHIPS[0]).missileCooldown || 0.6;
-                Sfx.missileLaunch();
-                burst(rk.x + Math.cos(ang) * 28, rk.y + Math.sin(ang) * 28, '255,200,100', 6, 150);
-            }
-
-            function updateMissiles(sdt) {
-                if (sim.missileCooldown > 0) sim.missileCooldown -= sdt;
-                for (let i = sim.missiles.length - 1; i >= 0; i--) {
-                    const m = sim.missiles[i];
-                    m.life -= sdt;
-                    if (m.life <= 0) { sim.missiles.splice(i, 1); continue; }
-                    if (m.homing && m.target) {
-                        let stillThere = false;
-                        for (const h of sim.hazards) {
-                            if (h === m.target && h.type === 'ast' && h.r <= 15) { stillThere = true; break; }
-                        }
-                        if (stillThere) {
-                            const dx = m.target.x - m.x,
-                                dy = m.target.y - m.y;
-                            const d = Math.hypot(dx, dy) || 1;
-                            const turnStr = 4.0 * sdt;
-                            const ang = Math.atan2(dy, dx);
-                            const currentAng = Math.atan2(m.vy, m.vx);
-                            let diff = ang - currentAng;
-                            while (diff > Math.PI) diff -= Math.PI * 2;
-                            while (diff < -Math.PI) diff += Math.PI * 2;
-                            const newAng = currentAng + clampN(diff, -turnStr, turnStr);
-                            const sp = Math.hypot(m.vx, m.vy);
-                            m.vx = Math.cos(newAng) * sp;
-                            m.vy = Math.sin(newAng) * sp;
-                            if (d < 20) {
-                                hitAsteroid(m.target, m.x, m.y);
-                                sim.missiles.splice(i, 1);
-                                continue;
-                            }
-                        } else {
-                            m.target = null;
-                        }
-                    }
-                    m.x += m.vx * sdt;
-                    m.y += m.vy * sdt;
-                    if (sim.parts.length < 520) {
-                        sim.parts.push({
-                            type: 'trail',
-                            x: m.x + (Math.random() - 0.5) * 4,
-                            y: m.y + (Math.random() - 0.5) * 4,
-                            vx: (Math.random() - 0.5) * 20,
-                            vy: (Math.random() - 0.5) * 20,
-                            life: 0.3,
-                            max: 0.3,
-                            size: 3 + Math.random() * 2,
-                            color: '255,200,80'
-                        });
-                    }
-                    if (m.x < -60 || m.x > W + 60 || m.y < -60 || m.y > H + 60) {
-                        sim.missiles.splice(i, 1);
-                    }
-                    for (let j = sim.hazards.length - 1; j >= 0; j--) {
-                        const h = sim.hazards[j];
-                        if (h.type === 'ast' && h !== m.target) {
-                            const d = Math.hypot(m.x - h.x, m.y - h.y);
-                            if (d < h.r + m.r) {
-                                hitAsteroid(h, m.x, m.y);
-                                sim.missiles.splice(i, 1);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            function hitAsteroid(ast, mx, my) {
-                const idx = sim.hazards.indexOf(ast);
-                if (idx >= 0) {
-                    const h = sim.hazards[idx];
-                    burst(h.x, h.y, '255,200,100', 20, 350);
-                    burst(h.x, h.y, '255,150,50', 14, 250);
-                    sim.shake = Math.max(sim.shake, 12);
-                    sim.flash = 0.2;
-                    sim.flashC = '255,240,200';
-                    Sfx.missileHit();
-                    totalCoins += 2;
-                    sim.runCoins += 2;
-                    pushText(h.x, h.y - 30, '+2 data', '#ffd700');
-                    sim.hazards.splice(idx, 1);
-                    for (let k = 0; k < 6; k++) {
-                        const a = Math.random() * Math.PI * 2,
-                            sp = 60 + Math.random() * 80;
-                        sim.parts.push({
-                            type: 'spark',
-                            x: h.x + (Math.random() - 0.5) * 10,
-                            y: h.y + (Math.random() - 0.5) * 10,
-                            vx: Math.cos(a) * sp,
-                            vy: Math.sin(a) * sp,
-                            life: 0.5 + Math.random() * 0.3,
-                            max: 0.8,
-                            size: 1.5 + Math.random() * 2,
-                            color: '200,180,160'
-                        });
-                    }
-                }
-            }
-
+            // ─── BULLET SYSTEM (no missiles) ──────────────────────────────────────
             function fireBullet() {
                 if (sim.state !== 'playing' || sim.fireCooldown > 0) return;
                 const rk = sim.rocket;
@@ -2476,7 +2344,7 @@
                 updateCoins(sdt);
                 updatePups(sdt);
                 updateBullets(sdt);
-                updateMissiles(sdt);
+                // missile update removed
                 updateParts(sdt);
                 updateTexts(rdt);
                 Sfx.humSet(sim.ts);
@@ -2498,7 +2366,6 @@
                 sim.pups = [];
                 sim.coins = [];
                 sim.bullets = [];
-                sim.missiles = [];
                 sim.meteorQ = null;
                 sim.rad = 0;
                 saveProgress();
@@ -2616,8 +2483,6 @@
                 sim.parts = [];
                 sim.texts = [];
                 sim.bullets = [];
-                sim.missiles = [];
-                sim.missileCooldown = 0;
                 sim.fireCooldown = 0;
                 sim.flow = 0;
                 sim.flowT = 0;
@@ -3227,56 +3092,7 @@
                 }
             }
 
-            function drawMissiles() {
-                for (const m of sim.missiles) {
-                    const ang = Math.atan2(m.vy, m.vx);
-                    ctx.save();
-                    ctx.translate(m.x, m.y);
-                    ctx.rotate(ang);
-                    ctx.globalCompositeOperation = 'lighter';
-                    const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 16);
-                    g.addColorStop(0, 'rgba(255,200,80,0.4)');
-                    g.addColorStop(1, 'rgba(255,200,80,0)');
-                    ctx.fillStyle = g;
-                    ctx.beginPath();
-                    ctx.arc(0, 0, 16, 0, 7);
-                    ctx.fill();
-                    ctx.globalCompositeOperation = 'source-over';
-                    ctx.fillStyle = '#ff6b4a';
-                    ctx.beginPath();
-                    ctx.moveTo(10, 0);
-                    ctx.lineTo(-6, -5);
-                    ctx.lineTo(-8, -3);
-                    ctx.lineTo(-8, 3);
-                    ctx.lineTo(-6, 5);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.strokeStyle = '#cc5533';
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-                    ctx.fillStyle = '#ffd93d';
-                    ctx.beginPath();
-                    ctx.moveTo(12, 0);
-                    ctx.lineTo(8, -3);
-                    ctx.lineTo(8, 3);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.fillStyle = '#ff6b4a';
-                    ctx.beginPath();
-                    ctx.moveTo(-6, -5);
-                    ctx.lineTo(-10, -8);
-                    ctx.lineTo(-6, -3);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.moveTo(-6, 5);
-                    ctx.lineTo(-10, 8);
-                    ctx.lineTo(-6, 3);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.restore();
-                }
-            }
+            // missile draw removed
 
             function flamePath(hw, y0, len) {
                 ctx.beginPath();
@@ -3286,7 +3102,6 @@
                 ctx.fill();
             }
 
-            // ─── D R A W   R O C K E T   W I T H   C U S T O M   C O L O R S ────
             function drawRocket() {
                 const rk = sim.rocket,
                     ship = SHIPS[equippedShip] || SHIPS[0];
@@ -3300,7 +3115,7 @@
                 ctx.translate(rk.x, rk.y);
                 ctx.rotate(rk.tilt);
 
-                // ─── AURA (Ora) ──────────────────────────────────────────────────
+                // Aura (Ora)
                 if (auraInt > 0.01) {
                     ctx.globalCompositeOperation = 'lighter';
                     const grad = ctx.createRadialGradient(0, -2, 4, 0, -2, 50 + 30 * auraInt);
@@ -3312,7 +3127,6 @@
                     ctx.arc(0, -2, 50 + 30 * auraInt, 0, 7);
                     ctx.fill();
                     ctx.globalCompositeOperation = 'source-over';
-                    // inner glow ring
                     ctx.strokeStyle = 'rgba(' + hexToRgb(auraCol) + ',' + (0.15 * auraInt) + ')';
                     ctx.lineWidth = 1.5;
                     ctx.setLineDash([4, 8]);
@@ -3396,8 +3210,7 @@
                     ctx.fill();
                     ctx.globalCompositeOperation = 'source-over';
                 } else {
-                    // Standard ship with custom hull & accent
-                    // Use custom hull
+                    // Standard ship
                     ctx.fillStyle = hull;
                     ctx.beginPath();
                     ctx.moveTo(0, -22);
@@ -3407,8 +3220,6 @@
                     ctx.lineTo(-w * 0.95, 6);
                     ctx.quadraticCurveTo(-w * 0.9, -10, 0, -22);
                     ctx.fill();
-
-                    // Shadow
                     ctx.fillStyle = 'rgba(0,0,0,0.22)';
                     ctx.beginPath();
                     ctx.moveTo(0, -22);
@@ -3417,8 +3228,6 @@
                     ctx.lineTo(0, 15);
                     ctx.closePath();
                     ctx.fill();
-
-                    // Accent
                     ctx.fillStyle = accent;
                     ctx.beginPath();
                     ctx.moveTo(0, -22);
@@ -3426,8 +3235,6 @@
                     ctx.lineTo(-w * 0.72, -7);
                     ctx.quadraticCurveTo(-w * 0.62, -13, 0, -22);
                     ctx.fill();
-
-                    // Wings
                     ctx.fillStyle = accent;
                     ctx.beginPath();
                     ctx.moveTo(w * 0.95, 4);
@@ -3441,8 +3248,6 @@
                     ctx.lineTo(-w * 0.6, 15);
                     ctx.closePath();
                     ctx.fill();
-
-                    // Cockpit
                     ctx.fillStyle = '#0a1622';
                     ctx.beginPath();
                     ctx.arc(0, -2, 5.4, 0, 7);
@@ -3455,7 +3260,6 @@
                     ctx.beginPath();
                     ctx.arc(-1.4, -3.4, 1.3, 0, 7);
                     ctx.fill();
-
                     if (sim.lives > 1) {
                         ctx.strokeStyle = 'rgba(111,203,255,0.5)';
                         ctx.setLineDash([5, 6]);
@@ -3526,7 +3330,7 @@
                 ctx.fillStyle = '#cfe2ff';
                 ctx.font = '500 14px Inter,sans-serif';
                 ctx.textAlign = 'center';
-                const ves = shipIsVestal() ? ' · Missile: Space' : '';
+                const ves = shipIsVestal() ? ' · Bash small asteroids' : '';
                 ctx.fillText('Navigate with mouse, touch or arrows — graze hazards to build Sync' + ves, W / 2, H * 0.42);
                 ctx.restore();
             }
@@ -3545,7 +3349,6 @@
                 drawCoins();
                 drawPups();
                 drawBullets();
-                drawMissiles();
                 if (['playing', 'warp', 'choose', 'paused'].includes(sim.state)) drawRocket();
                 drawParticles();
                 drawTexts();
@@ -3739,7 +3542,6 @@
             customBtn.addEventListener('click', () => { loadCustomToUI();
                 customOverlay.classList.add('active'); });
             customCloseBtn.addEventListener('click', () => {
-                // Read values
                 custom.hull = hullColor.value;
                 custom.accent = accentColor.value;
                 custom.trail = trailColor.value;
@@ -3752,7 +3554,6 @@
                 showToast('Customization applied!');
             });
 
-            // Color pickers update preview
             [hullColor, accentColor, trailColor, auraColor].forEach(el => {
                 el.addEventListener('input', () => {
                     custom.hull = hullColor.value;
@@ -3804,7 +3605,6 @@
                 equippedShip = 0;
                 unlockedShips = [0];
                 dailyMissions = {};
-                // Reset customizations to defaults
                 custom = { ...CUSTOM_DEFAULTS };
                 saveCustom();
                 store.set('fps_best', '0');
