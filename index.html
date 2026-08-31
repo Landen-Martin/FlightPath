@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Solar System Explorer · Warship Vestal</title>
+    <title>Solar System Explorer · Customize</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -161,6 +161,7 @@
         }
         .shop-row {
             display: flex;
+            gap: 8px;
             margin-bottom: 20px
         }
         .shop-row .side-btn {
@@ -853,6 +854,110 @@
             opacity: 1;
             transform: translateY(0)
         }
+
+        /* ── CUSTOMIZATION UI ── */
+        .custom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 18px;
+            margin: 12px 0 14px;
+            text-align: left
+        }
+        .custom-grid .custom-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px
+        }
+        .custom-grid .custom-item label {
+            font-size: 11px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            display: flex;
+            align-items: center;
+            gap: 6px
+        }
+        .custom-grid .custom-item input[type="color"] {
+            width: 100%;
+            height: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: transparent;
+            padding: 2px;
+            cursor: pointer
+        }
+        .custom-grid .custom-item input[type="range"] {
+            width: 100%;
+            accent-color: #6fcbff;
+            background: rgba(255, 255, 255, 0.06);
+            height: 4px;
+            border-radius: 2px;
+            -webkit-appearance: none;
+            appearance: none
+        }
+        .custom-grid .custom-item input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #6fcbff;
+            cursor: pointer;
+            border: 2px solid #0a0e1a
+        }
+        .custom-grid .custom-item .range-val {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+            text-align: right;
+            font-variant-numeric: tabular-nums
+        }
+        .style-selector {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 2px
+        }
+        .style-btn {
+            padding: 4px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all .2s ease;
+            font-family: inherit
+        }
+        .style-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff
+        }
+        .style-btn.active {
+            background: rgba(111, 203, 255, 0.12);
+            border-color: #6fcbff;
+            color: #6fcbff
+        }
+        .custom-preview {
+            width: 100%;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            margin: 6px 0 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden
+        }
+        .custom-preview .mini-rocket {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            transition: all .3s ease
+        }
+
         @media (max-width:500px) {
             .menu-card {
                 padding: 26px 18px 22px
@@ -897,6 +1002,13 @@
                 padding: 9px 14px;
                 font-size: 12px
             }
+            .custom-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px
+            }
+            .custom-grid .custom-item input[type="color"] {
+                height: 28px
+            }
         }
     </style>
 </head>
@@ -936,6 +1048,7 @@
             </div>
             <div class="shop-row">
                 <button class="side-btn" id="shopBtn"><span data-icon="cart" data-size="15"></span><span>Vessels</span></button>
+                <button class="side-btn" id="customBtn"><span data-icon="palette" data-size="15"></span><span>Customize</span></button>
             </div>
             <div class="stats-row">
                 <div class="stat-item"><div class="stat-val" id="menuBest">0</div><div class="stat-lbl">Max Range</div></div>
@@ -981,6 +1094,51 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="customOverlay">
+        <div class="modal-card">
+            <h2><span class="h-icon" data-icon="palette" data-size="20" style="color:#a78bfa"></span>Customize</h2>
+            <div class="modal-sub">Personalize your ship — colors, style, aura &amp; trail</div>
+            <div class="custom-preview" id="customPreview">
+                <span style="font-size:11px;color:rgba(255,255,255,0.15);">preview</span>
+            </div>
+            <div class="custom-grid">
+                <div class="custom-item">
+                    <label><span data-icon="fill" data-size="12"></span> Hull</label>
+                    <input type="color" id="hullColor" value="#c9d4e2" />
+                </div>
+                <div class="custom-item">
+                    <label><span data-icon="accent" data-size="12"></span> Accent</label>
+                    <input type="color" id="accentColor" value="#6fcbff" />
+                </div>
+                <div class="custom-item">
+                    <label><span data-icon="trail" data-size="12"></span> Trail</label>
+                    <input type="color" id="trailColor" value="#ff9640" />
+                </div>
+                <div class="custom-item">
+                    <label><span data-icon="aura" data-size="12"></span> Aura (Ora)</label>
+                    <input type="color" id="auraColor" value="#6fcbff" />
+                </div>
+                <div class="custom-item" style="grid-column:1/3;">
+                    <label>Aura Intensity</label>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <input type="range" id="auraIntensity" min="0" max="100" value="50" style="flex:1;" />
+                        <span class="range-val" id="auraIntensityVal">50%</span>
+                    </div>
+                </div>
+                <div class="custom-item" style="grid-column:1/3;">
+                    <label>Body Style</label>
+                    <div class="style-selector">
+                        <button class="style-btn active" data-style="0">Classic</button>
+                        <button class="style-btn" data-style="1">Angular</button>
+                        <button class="style-btn" data-style="2">Round</button>
+                        <button class="style-btn" data-style="3">Sleek</button>
+                    </div>
+                </div>
+            </div>
+            <button class="modal-close" id="customCloseBtn">Apply &amp; Close</button>
+        </div>
+    </div>
+
     <div id="configOverlay">
         <div class="config-card">
             <h3><span data-icon="settings" data-size="18" style="color:#6fcbff"></span>Settings</h3>
@@ -1008,6 +1166,7 @@
         (function() {
             'use strict';
 
+            // ─── CUSTOM ICONS ──────────────────────────────────────────────────────
             function svgIcon(name, size) {
                 size = size || 24;
                 const M = {
@@ -1026,7 +1185,12 @@
                     rank: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M5 17l7-7 7 7M5 11l7-7 7 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
                     pause: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><rect x="6.5" y="4" width="4" height="16" rx="1.5" fill="currentColor"/><rect x="13.5" y="4" width="4" height="16" rx="1.5" fill="currentColor"/></svg>`,
                     alien: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="12" rx="8" ry="7" fill="#6fcbff"/><circle cx="9" cy="10" r="1.8" fill="#fff"/><circle cx="15" cy="10" r="1.8" fill="#fff"/><circle cx="9" cy="10" r="0.8" fill="#0a0e1a"/><circle cx="15" cy="10" r="0.8" fill="#0a0e1a"/><ellipse cx="12" cy="13" rx="2.4" ry="1.2" fill="#0a0e1a"/><path d="M4 16l3 3M20 16l-3 3" stroke="#6fcbff" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-                    missile: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M4 12l5-2 2-5 2 5 5 2-5 2-2 5-2-5-5-2Z" fill="#ff6b6b"/><circle cx="12" cy="12" r="2" fill="#ffd93d"/></svg>`
+                    missile: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M4 12l5-2 2-5 2 5 5 2-5 2-2 5-2-5-5-2Z" fill="#ff6b6b"/><circle cx="12" cy="12" r="2" fill="#ffd93d"/></svg>`,
+                    palette: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><circle cx="8" cy="8" r="1.8" fill="currentColor"/><circle cx="16" cy="8" r="1.8" fill="currentColor"/><circle cx="8" cy="16" r="1.8" fill="currentColor"/><circle cx="16" cy="16" r="1.8" fill="currentColor"/><circle cx="12" cy="10" r="1.8" fill="currentColor"/><circle cx="12" cy="15" r="1.8" fill="currentColor"/></svg>`,
+                    fill: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></svg>`,
+                    accent: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></svg>`,
+                    trail: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M4 12L8 8M20 12L16 8M4 12L8 16M20 12L16 16M12 4v4M12 20v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+                    aura: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="6" fill="currentColor" opacity="0.3"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.2" opacity="0.4"/><circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.6"/></svg>`
                 };
                 return M[name] || '';
             }
@@ -1051,6 +1215,17 @@
                 upgradeOverlay = $('upgradeOverlay'),
                 upgradeGrid = $('upgradeGrid'),
                 upgradeCloseBtn = $('upgradeCloseBtn'),
+                customBtn = $('customBtn'),
+                customOverlay = $('customOverlay'),
+                customCloseBtn = $('customCloseBtn'),
+                hullColor = $('hullColor'),
+                accentColor = $('accentColor'),
+                trailColor = $('trailColor'),
+                auraColor = $('auraColor'),
+                auraIntensity = $('auraIntensity'),
+                auraIntensityVal = $('auraIntensityVal'),
+                styleBtns = document.querySelectorAll('.style-btn'),
+                customPreview = $('customPreview'),
                 hud = $('hud'),
                 hudScore = $('hudScore'),
                 hudCoins = $('hudCoins'),
@@ -1091,6 +1266,87 @@
             function parseJSON(str, fb) { try { const v = JSON.parse(str); return v === null || v === undefined ? fb : v; } catch (
                     e) { return fb; } }
 
+            // ─── CUSTOMIZATION STATE ──────────────────────────────────────────────
+            const CUSTOM_DEFAULTS = {
+                hull: '#c9d4e2',
+                accent: '#6fcbff',
+                trail: '#ff9640',
+                aura: '#6fcbff',
+                auraIntensity: 0.5,
+                bodyStyle: 0
+            };
+
+            let custom = {
+                hull: store.get('custom_hull', CUSTOM_DEFAULTS.hull),
+                accent: store.get('custom_accent', CUSTOM_DEFAULTS.accent),
+                trail: store.get('custom_trail', CUSTOM_DEFAULTS.trail),
+                aura: store.get('custom_aura', CUSTOM_DEFAULTS.aura),
+                auraIntensity: parseFloat(store.get('custom_auraIntensity', String(CUSTOM_DEFAULTS.auraIntensity))) || 0.5,
+                bodyStyle: parseInt(store.get('custom_bodyStyle', String(CUSTOM_DEFAULTS.bodyStyle))) || 0
+            };
+
+            function saveCustom() {
+                store.set('custom_hull', custom.hull);
+                store.set('custom_accent', custom.accent);
+                store.set('custom_trail', custom.trail);
+                store.set('custom_aura', custom.aura);
+                store.set('custom_auraIntensity', String(custom.auraIntensity));
+                store.set('custom_bodyStyle', String(custom.bodyStyle));
+            }
+
+            function loadCustomToUI() {
+                hullColor.value = custom.hull;
+                accentColor.value = custom.accent;
+                trailColor.value = custom.trail;
+                auraColor.value = custom.aura;
+                auraIntensity.value = Math.round(custom.auraIntensity * 100);
+                auraIntensityVal.textContent = Math.round(custom.auraIntensity * 100) + '%';
+                styleBtns.forEach(b => {
+                    b.classList.toggle('active', parseInt(b.dataset.style) === custom.bodyStyle);
+                });
+                updatePreview();
+            }
+
+            function updatePreview() {
+                const h = custom.hull,
+                    a = custom.accent,
+                    t = custom.trail,
+                    au = custom.aura;
+                const style = custom.bodyStyle;
+                let shape = '';
+                switch (style) {
+                    case 0:
+                        shape = 'polygon(50% 0%, 85% 35%, 90% 65%, 70% 85%, 30% 85%, 10% 65%, 15% 35%)';
+                        break;
+                    case 1:
+                        shape = 'polygon(50% 0%, 75% 30%, 95% 50%, 80% 80%, 50% 95%, 20% 80%, 5% 50%, 25% 30%)';
+                        break;
+                    case 2:
+                        shape = 'polygon(50% 0%, 80% 15%, 95% 45%, 85% 75%, 55% 90%, 45% 90%, 15% 75%, 5% 45%, 20% 15%)';
+                        break;
+                    case 3:
+                        shape = 'polygon(50% 0%, 75% 30%, 80% 60%, 70% 85%, 30% 85%, 20% 60%, 25% 30%)';
+                        break;
+                    default:
+                        shape = 'polygon(50% 0%, 85% 35%, 90% 65%, 70% 85%, 30% 85%, 10% 65%, 15% 35%)';
+                }
+                customPreview.innerHTML =
+                    `<svg width="60" height="60" viewBox="0 0 60 60">
+                        <defs>
+                            <radialGradient id="previewAura" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="${au}" stop-opacity="${0.3 + 0.5 * custom.auraIntensity}"/>
+                                <stop offset="100%" stop-color="${au}" stop-opacity="0"/>
+                            </radialGradient>
+                        </defs>
+                        <circle cx="30" cy="30" r="28" fill="url(#previewAura)"/>
+                        <polygon points="${shape}" fill="${h}" stroke="${a}" stroke-width="1.5"/>
+                        <circle cx="30" cy="26" r="4" fill="${a}" opacity="0.6"/>
+                        <rect x="24" y="38" width="12" height="4" rx="1" fill="${t}" opacity="0.7"/>
+                        <rect x="26" y="42" width="8" height="3" rx="1" fill="${t}" opacity="0.4"/>
+                    </svg>`;
+            }
+
+            // ─── STORE ─────────────────────────────────────────────────────────────
             let sessionCount = parseInt(store.get('fps_sessions', '0')) || 0;
             let bestScore = parseInt(store.get('fps_best', '0')) || 0;
             let sensitivity = parseFloat(store.get('fps_sensitivity', '1.0')) || 1.0;
@@ -1127,7 +1383,6 @@
             ];
             const zoneOf = i => ZONES[Math.max(0, Math.min(i, ZONES.length - 1))];
 
-            // ─── SHIPS ───────────────────────────────────────────────────────────────
             const SHIPS = [
                 { id: 'scout', name: 'Scout', cost: 0, desc: 'Balanced platform', speedMult: 1.00, shieldBonus: 0,
                     hull: '#c9d4e2', accent: '#6fcbff', w: 12, hitR: 11, icon: 'rocket' },
@@ -1139,7 +1394,6 @@
                     shieldBonus: 0, hull: '#596073', accent: '#a78bfa', w: 9, hitR: 9, icon: 'rocket' },
                 { id: 'nexus', name: 'Nexus', cost: 250, desc: '+20% speed · +1 integrity', speedMult: 1.20,
                     shieldBonus: 1, hull: '#d9d2f0', accent: '#c4a5ff', w: 13, hitR: 11, glow: true, icon: 'rocket' },
-                // ─── W A R S H I P   V E S T A L ──────────────────────────────────
                 { id: 'vestal', name: 'Warship Vestal', cost: 350,
                     desc: 'Missile launcher · destroys small asteroids', speedMult: 1.10,
                     shieldBonus: 0, hull: '#2a3a4a', accent: '#ff6b4a', w: 14, hitR: 11,
@@ -1371,7 +1625,7 @@
                 parts: [],
                 texts: [],
                 bullets: [],
-                missiles: [], // Warship Vestal missiles
+                missiles: [],
                 missileCooldown: 0,
                 fireCooldown: 0,
                 dist: 0,
@@ -1411,7 +1665,6 @@
                 shake: 0,
                 flash: 0,
                 flashC: '255,255,255',
-                // Alien laser
                 aliens: []
             };
 
@@ -1435,6 +1688,7 @@
                 store.set('fps_equipped_ship', equippedShip);
                 store.set('fps_unlocked_ships', JSON.stringify(unlockedShips));
                 store.set('fps_daily_missions', JSON.stringify(dailyMissions));
+                saveCustom();
             }
 
             function slowmo(f, d) { sim.slowmoF = f;
@@ -1573,9 +1827,7 @@
                             });
                         }
                     } },
-                // ─── A L I E N   L A S E R  (replaces bolt) ──────────────────────
                 bolt: { iv: 6.4, spawn(b) {
-                        // Spawn an alien that shoots a laser
                         const side = Math.random() < 0.5 ? -1 : 1;
                         const x = side < 0 ? -60 : W + 60;
                         const y = 40 + Math.random() * H * 0.3;
@@ -1820,6 +2072,7 @@
                 if (sim.state === 'playing' && Math.random() < 0.9 && sim.parts.length < 520) {
                     const tx = rk.x - Math.sin(rk.tilt) * 16,
                         ty = rk.y + Math.cos(rk.tilt) * 16;
+                    const trailCol = custom.trail || '#ff9640';
                     sim.parts.push({
                         type: 'trail',
                         x: tx + (Math.random() - 0.5) * 4,
@@ -1829,9 +2082,15 @@
                         life: 0.42,
                         max: 0.42,
                         size: 3.4,
-                        color: '255,150,60'
+                        color: hexToRgb(trailCol)
                     });
                 }
+            }
+
+            function hexToRgb(hex) {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? `${parseInt(result[1],16)},${parseInt(result[2],16)},${parseInt(result[3],16)}` :
+                    '255,150,60';
             }
 
             function updateStars(dt, scroll) {
@@ -1917,7 +2176,6 @@
                 if (!inside) sim.rad = Math.max(0, sim.rad - sdt * 1.5);
             }
 
-            // ─── A L I E N   L A S E R   U P D A T E ──────────────────────────────
             function updateAliens(sdt) {
                 const rk = sim.rocket,
                     hr = shipHitR();
@@ -1928,7 +2186,6 @@
                         a.tick -= sdt;
                         if (a.tick <= 0) { Sfx.tick();
                             a.tick = 0.2; }
-                        // Move alien into position
                         const targetX = a.targetX;
                         const dx = targetX - a.x;
                         a.x += dx * Math.min(1, 3 * sdt);
@@ -1942,14 +2199,10 @@
                         }
                     } else if (a.state === 'fire') {
                         a.laserT -= sdt;
-                        // Laser beam is a hazard
                         const beamWidth = a.w * 0.3;
-                        // Check if the rocket is in the beam
                         const dx = rk.x - a.x;
                         const dy = rk.y - a.y;
-                        // Beam goes downward from alien
                         if (Math.abs(dx) < beamWidth + hr && dy > 0 && dy < H) {
-                            // Hit by laser!
                             damage();
                             a.state = 'done';
                             a.laserT = 0;
@@ -1962,21 +2215,16 @@
                             a.state = 'done';
                         }
                     } else {
-                        // done — fade out
                         sim.aliens.splice(i, 1);
                     }
                 }
-                // Limit aliens
                 if (sim.aliens.length > 6) sim.aliens.splice(0, sim.aliens.length - 6);
             }
 
-            // ─── M I S S I L E   S Y S T E M ──────────────────────────────────────
             function fireMissile() {
                 if (sim.state !== 'playing' || sim.missileCooldown > 0) return;
                 if (!shipIsVestal()) return;
-
                 const rk = sim.rocket;
-                // Find nearest small asteroid (r <= 15)
                 let target = null,
                     minD = Infinity;
                 for (const h of sim.hazards) {
@@ -1986,7 +2234,6 @@
                             target = h; }
                     }
                 }
-                // If no small asteroid, fire in direction of mouse/aim
                 const dx = rk.tx - rk.x,
                     dy = rk.ty - rk.y;
                 const len = Math.hypot(dx, dy) || 1;
@@ -1994,12 +2241,10 @@
                     aimY = rk.y + dy / len * 300;
                 if (target) { aimX = target.x;
                     aimY = target.y; }
-
                 const speed = 320;
                 const ang = Math.atan2(aimY - rk.y, aimX - rk.x);
                 const vx = Math.cos(ang) * speed;
                 const vy = Math.sin(ang) * speed;
-
                 sim.missiles.push({
                     x: rk.x + Math.cos(ang) * 28,
                     y: rk.y + Math.sin(ang) * 28,
@@ -2019,15 +2264,11 @@
 
             function updateMissiles(sdt) {
                 if (sim.missileCooldown > 0) sim.missileCooldown -= sdt;
-
                 for (let i = sim.missiles.length - 1; i >= 0; i--) {
                     const m = sim.missiles[i];
                     m.life -= sdt;
                     if (m.life <= 0) { sim.missiles.splice(i, 1); continue; }
-
-                    // Homing: if target still exists and is small, home in
                     if (m.homing && m.target) {
-                        // Check if target still exists and is small
                         let stillThere = false;
                         for (const h of sim.hazards) {
                             if (h === m.target && h.type === 'ast' && h.r <= 15) { stillThere = true; break; }
@@ -2047,7 +2288,6 @@
                             m.vx = Math.cos(newAng) * sp;
                             m.vy = Math.sin(newAng) * sp;
                             if (d < 20) {
-                                // Hit target!
                                 hitAsteroid(m.target, m.x, m.y);
                                 sim.missiles.splice(i, 1);
                                 continue;
@@ -2056,11 +2296,8 @@
                             m.target = null;
                         }
                     }
-
                     m.x += m.vx * sdt;
                     m.y += m.vy * sdt;
-
-                    // Trail
                     if (sim.parts.length < 520) {
                         sim.parts.push({
                             type: 'trail',
@@ -2074,12 +2311,9 @@
                             color: '255,200,80'
                         });
                     }
-
                     if (m.x < -60 || m.x > W + 60 || m.y < -60 || m.y > H + 60) {
                         sim.missiles.splice(i, 1);
                     }
-
-                    // Check collision with any asteroid (non-target)
                     for (let j = sim.hazards.length - 1; j >= 0; j--) {
                         const h = sim.hazards[j];
                         if (h.type === 'ast' && h !== m.target) {
@@ -2095,23 +2329,19 @@
             }
 
             function hitAsteroid(ast, mx, my) {
-                // Destroy the asteroid
                 const idx = sim.hazards.indexOf(ast);
                 if (idx >= 0) {
                     const h = sim.hazards[idx];
-                    // Big explosion
                     burst(h.x, h.y, '255,200,100', 20, 350);
                     burst(h.x, h.y, '255,150,50', 14, 250);
                     sim.shake = Math.max(sim.shake, 12);
                     sim.flash = 0.2;
                     sim.flashC = '255,240,200';
                     Sfx.missileHit();
-                    // Give some coins as reward
                     totalCoins += 2;
                     sim.runCoins += 2;
                     pushText(h.x, h.y - 30, '+2 data', '#ffd700');
                     sim.hazards.splice(idx, 1);
-                    // Small debris
                     for (let k = 0; k < 6; k++) {
                         const a = Math.random() * Math.PI * 2,
                             sp = 60 + Math.random() * 80;
@@ -2130,7 +2360,6 @@
                 }
             }
 
-            // ─── B U L L E T   S Y S T E M ──────────────────────────────────────
             function fireBullet() {
                 if (sim.state !== 'playing' || sim.fireCooldown > 0) return;
                 const rk = sim.rocket;
@@ -2157,7 +2386,6 @@
 
             function updateBullets(sdt) {
                 if (sim.fireCooldown > 0) sim.fireCooldown -= sdt;
-                const rk = sim.rocket;
                 for (let i = sim.bullets.length - 1; i >= 0; i--) {
                     const b = sim.bullets[i];
                     b.x += b.vx * sdt;
@@ -2179,14 +2407,42 @@
                                 sim.flash = 0.15;
                                 sim.flashC = '255,240,200';
                                 Sfx.shoot();
-                            } else {
-                                // large asteroid: just remove bullet
                             }
                             hit = true;
                             break;
                         }
                     }
                     if (hit) sim.bullets.splice(i, 1);
+                }
+            }
+
+            function updateCoins(sdt) {
+                const rk = sim.rocket;
+                const attractR = sim.magnetT > 0 ? sim.magnetRange : 36;
+                for (let i = sim.coins.length - 1; i >= 0; i--) {
+                    const c = sim.coins[i];
+                    c.y += c.vy * sdt;
+                    c.x += Math.sin((c.phase += sdt * 3)) * 14 * sdt;
+                    const dx = rk.x - c.x,
+                        dy = rk.y - c.y,
+                        d = Math.hypot(dx, dy) || 1;
+                    if (d < attractR) {
+                        c.x += dx / d * 760 * sdt;
+                        c.y += dy / d * 760 * sdt;
+                    }
+                    if (d < 24 + shipHitR()) { collectCoin(c);
+                        sim.coins.splice(i, 1); } else if (c.y > H + 60) sim.coins.splice(i, 1);
+                }
+            }
+
+            function updatePups(sdt) {
+                const rk = sim.rocket;
+                for (let i = sim.pups.length - 1; i >= 0; i--) {
+                    const p = sim.pups[i];
+                    p.y += p.vy * sdt;
+                    p.t += sdt;
+                    if (Math.hypot(p.x - rk.x, p.y - rk.y) < 32) { applyPup(p);
+                        sim.pups.splice(i, 1); } else if (p.y > H + 60) sim.pups.splice(i, 1);
                 }
             }
 
@@ -2225,36 +2481,6 @@
                 updateTexts(rdt);
                 Sfx.humSet(sim.ts);
                 if (sim.dist - sim.segStart >= sim.goal) startWarp();
-            }
-
-            function updateCoins(sdt) {
-                const rk = sim.rocket;
-                const attractR = sim.magnetT > 0 ? sim.magnetRange : 36;
-                for (let i = sim.coins.length - 1; i >= 0; i--) {
-                    const c = sim.coins[i];
-                    c.y += c.vy * sdt;
-                    c.x += Math.sin((c.phase += sdt * 3)) * 14 * sdt;
-                    const dx = rk.x - c.x,
-                        dy = rk.y - c.y,
-                        d = Math.hypot(dx, dy) || 1;
-                    if (d < attractR) {
-                        c.x += dx / d * 760 * sdt;
-                        c.y += dy / d * 760 * sdt;
-                    }
-                    if (d < 24 + shipHitR()) { collectCoin(c);
-                        sim.coins.splice(i, 1); } else if (c.y > H + 60) sim.coins.splice(i, 1);
-                }
-            }
-
-            function updatePups(sdt) {
-                const rk = sim.rocket;
-                for (let i = sim.pups.length - 1; i >= 0; i--) {
-                    const p = sim.pups[i];
-                    p.y += p.vy * sdt;
-                    p.t += sdt;
-                    if (Math.hypot(p.x - rk.x, p.y - rk.y) < 32) { applyPup(p);
-                        sim.pups.splice(i, 1); } else if (p.y > H + 60) sim.pups.splice(i, 1);
-                }
             }
 
             function startWarp() {
@@ -2433,6 +2659,7 @@
                 gameOverOverlay.classList.remove('active');
                 pauseOverlay.classList.remove('active');
                 upgradeOverlay.classList.remove('active');
+                customOverlay.classList.remove('active');
                 hud.classList.add('active');
                 progressContainer.classList.add('active');
                 pauseBtn.style.display = 'flex';
@@ -2451,6 +2678,7 @@
                 gameOverOverlay.classList.remove('active');
                 pauseOverlay.classList.remove('active');
                 upgradeOverlay.classList.remove('active');
+                customOverlay.classList.remove('active');
                 hud.classList.remove('active');
                 progressContainer.classList.remove('active');
                 pauseBtn.style.display = 'none';
@@ -2491,7 +2719,7 @@
                 sim.state = 'playing';
             }
 
-            // ─── D R A W   F U N C T I O N S ──────────────────────────────────────
+            // ─── DRAW FUNCTIONS ────────────────────────────────────────────────────
 
             function drawStars() {
                 const wk = sim.state === 'warp' ? Math.min(sim.warpK, 22) : 1;
@@ -2662,18 +2890,14 @@
                 }
             }
 
-            // ─── A L I E N   L A S E R   D R A W ──────────────────────────────────
             function drawAliens() {
                 for (const a of sim.aliens) {
                     const pulse = 0.5 + 0.5 * Math.sin(sim.time * 4 + a.phase);
                     const alpha = a.state === 'done' ? 0 : 1;
                     ctx.save();
                     ctx.globalAlpha = alpha;
-
-                    // Alien body
                     const sx = a.x,
                         sy = a.y;
-                    // Glow
                     if (a.state === 'fire') {
                         const g = ctx.createRadialGradient(sx, sy, 2, sx, sy, 80);
                         g.addColorStop(0, 'rgba(255,80,80,0.25)');
@@ -2683,12 +2907,10 @@
                         ctx.arc(sx, sy, 80, 0, 7);
                         ctx.fill();
                     }
-                    // Alien head
                     ctx.fillStyle = a.state === 'fire' ? '#ff5555' : '#4a8fcf';
                     ctx.beginPath();
                     ctx.ellipse(sx, sy, 22, 18, 0, 0, 7);
                     ctx.fill();
-                    // Eyes
                     ctx.fillStyle = '#fff';
                     ctx.beginPath();
                     ctx.ellipse(sx - 10, sy - 4, 6, 7, 0, 0, 7);
@@ -2704,7 +2926,6 @@
                     ctx.beginPath();
                     ctx.arc(sx + 10 + eyeOff, sy - 3, 3, 0, 7);
                     ctx.fill();
-                    // Pupil glow
                     if (a.state === 'fire') {
                         ctx.fillStyle = 'rgba(255,50,50,0.6)';
                         ctx.beginPath();
@@ -2714,14 +2935,11 @@
                         ctx.arc(sx + 10 + eyeOff, sy - 3, 4.5, 0, 7);
                         ctx.fill();
                     }
-                    // Mouth
                     ctx.strokeStyle = '#0a0e1a';
                     ctx.lineWidth = 1.5;
                     ctx.beginPath();
                     ctx.arc(sx, sy + 6, 8, 0.1 * Math.PI, 0.9 * Math.PI);
                     ctx.stroke();
-
-                    // Antennae
                     ctx.strokeStyle = a.state === 'fire' ? '#ff5555' : '#4a8fcf';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
@@ -2732,7 +2950,6 @@
                     ctx.moveTo(sx + 12, sy - 14);
                     ctx.quadraticCurveTo(sx + 22, sy - 30, sx + 16, sy - 36);
                     ctx.stroke();
-                    // Antenna tips
                     ctx.fillStyle = '#ffd700';
                     ctx.beginPath();
                     ctx.arc(sx - 16, sy - 36, 3, 0, 7);
@@ -2740,16 +2957,12 @@
                     ctx.beginPath();
                     ctx.arc(sx + 16, sy - 36, 3, 0, 7);
                     ctx.fill();
-
-                    // ─── L A S E R   B E A M ──────────────────────────────────────
                     if (a.state === 'fire') {
                         const prog = 1 - a.laserT / a.laserDuration;
                         const beamAlpha = 0.3 + 0.7 * (1 - prog);
                         const beamWidth = a.w * 0.3;
-                        // Main beam
                         ctx.save();
                         ctx.globalCompositeOperation = 'lighter';
-                        // Outer glow
                         const g = ctx.createLinearGradient(sx, sy, sx, H);
                         g.addColorStop(0, 'rgba(255,80,80,0)');
                         g.addColorStop(0.05, 'rgba(255,50,50,' + (0.3 * beamAlpha) + ')');
@@ -2759,8 +2972,6 @@
                         ctx.beginPath();
                         ctx.rect(sx - beamWidth * 2, sy + 4, beamWidth * 4, H - sy);
                         ctx.fill();
-
-                        // Core beam
                         const coreG = ctx.createLinearGradient(sx, sy, sx, H);
                         coreG.addColorStop(0, 'rgba(255,255,255,0)');
                         coreG.addColorStop(0.02, 'rgba(255,255,255,' + (0.7 * beamAlpha) + ')');
@@ -2771,25 +2982,19 @@
                         ctx.beginPath();
                         ctx.rect(sx - beamWidth * 0.4, sy + 4, beamWidth * 0.8, H - sy);
                         ctx.fill();
-
-                        // Bright core line
                         ctx.strokeStyle = 'rgba(255,255,255,' + (0.6 * beamAlpha) + ')';
                         ctx.lineWidth = 3;
                         ctx.beginPath();
                         ctx.moveTo(sx, sy + 8);
                         ctx.lineTo(sx, H);
                         ctx.stroke();
-
                         ctx.strokeStyle = 'rgba(255,200,150,' + (0.3 * beamAlpha) + ')';
                         ctx.lineWidth = 8;
                         ctx.beginPath();
                         ctx.moveTo(sx, sy + 8);
                         ctx.lineTo(sx, H);
                         ctx.stroke();
-
                         ctx.restore();
-
-                        // Warning pulse on the alien
                         ctx.strokeStyle = 'rgba(255,50,50,' + (0.3 + 0.3 * pulse) + ')';
                         ctx.lineWidth = 2;
                         ctx.setLineDash([4, 6]);
@@ -2798,8 +3003,6 @@
                         ctx.stroke();
                         ctx.setLineDash([]);
                     }
-
-                    // Warning glow
                     if (a.state === 'warn') {
                         const warnAlpha = 0.3 + 0.3 * pulse;
                         ctx.fillStyle = 'rgba(255,200,50,' + (0.05 * warnAlpha) + ')';
@@ -2813,7 +3016,6 @@
                         rrect(sx - a.w / 2, 0, a.w, H, 10);
                         ctx.stroke();
                         ctx.setLineDash([]);
-                        // Warning triangle
                         const triPulse = 0.5 + 0.5 * pulse;
                         ctx.fillStyle = 'rgba(255,200,50,' + (0.3 + 0.4 * triPulse) + ')';
                         ctx.beginPath();
@@ -2823,7 +3025,6 @@
                         ctx.closePath();
                         ctx.fill();
                     }
-
                     ctx.restore();
                 }
             }
@@ -3026,14 +3227,12 @@
                 }
             }
 
-            // ─── D R A W   M I S S I L E S ────────────────────────────────────────
             function drawMissiles() {
                 for (const m of sim.missiles) {
                     const ang = Math.atan2(m.vy, m.vx);
                     ctx.save();
                     ctx.translate(m.x, m.y);
                     ctx.rotate(ang);
-                    // Glow
                     ctx.globalCompositeOperation = 'lighter';
                     const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 16);
                     g.addColorStop(0, 'rgba(255,200,80,0.4)');
@@ -3043,7 +3242,6 @@
                     ctx.arc(0, 0, 16, 0, 7);
                     ctx.fill();
                     ctx.globalCompositeOperation = 'source-over';
-                    // Missile body
                     ctx.fillStyle = '#ff6b4a';
                     ctx.beginPath();
                     ctx.moveTo(10, 0);
@@ -3056,7 +3254,6 @@
                     ctx.strokeStyle = '#cc5533';
                     ctx.lineWidth = 1;
                     ctx.stroke();
-                    // Nose
                     ctx.fillStyle = '#ffd93d';
                     ctx.beginPath();
                     ctx.moveTo(12, 0);
@@ -3064,7 +3261,6 @@
                     ctx.lineTo(8, 3);
                     ctx.closePath();
                     ctx.fill();
-                    // Fins
                     ctx.fillStyle = '#ff6b4a';
                     ctx.beginPath();
                     ctx.moveTo(-6, -5);
@@ -3078,9 +3274,7 @@
                     ctx.lineTo(-6, 3);
                     ctx.closePath();
                     ctx.fill();
-                    // Trail glow
                     ctx.restore();
-                    // Trail particles are handled in updateMissiles
                 }
             }
 
@@ -3092,13 +3286,42 @@
                 ctx.fill();
             }
 
+            // ─── D R A W   R O C K E T   W I T H   C U S T O M   C O L O R S ────
             function drawRocket() {
                 const rk = sim.rocket,
                     ship = SHIPS[equippedShip] || SHIPS[0];
+                const hull = custom.hull || ship.hull || '#c9d4e2';
+                const accent = custom.accent || ship.accent || '#6fcbff';
+                const auraCol = custom.aura || '#6fcbff';
+                const auraInt = custom.auraIntensity || 0.5;
+                const style = custom.bodyStyle || 0;
+
                 ctx.save();
                 ctx.translate(rk.x, rk.y);
                 ctx.rotate(rk.tilt);
-                if (sim.invincible > 0 && Math.floor(sim.time * 12) % 2 === 0) ctx.globalAlpha = 0.35;
+
+                // ─── AURA (Ora) ──────────────────────────────────────────────────
+                if (auraInt > 0.01) {
+                    ctx.globalCompositeOperation = 'lighter';
+                    const grad = ctx.createRadialGradient(0, -2, 4, 0, -2, 50 + 30 * auraInt);
+                    grad.addColorStop(0, 'rgba(' + hexToRgb(auraCol) + ',' + (0.25 * auraInt) + ')');
+                    grad.addColorStop(0.4, 'rgba(' + hexToRgb(auraCol) + ',' + (0.12 * auraInt) + ')');
+                    grad.addColorStop(1, 'rgba(' + hexToRgb(auraCol) + ',0)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(0, -2, 50 + 30 * auraInt, 0, 7);
+                    ctx.fill();
+                    ctx.globalCompositeOperation = 'source-over';
+                    // inner glow ring
+                    ctx.strokeStyle = 'rgba(' + hexToRgb(auraCol) + ',' + (0.15 * auraInt) + ')';
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([4, 8]);
+                    ctx.beginPath();
+                    ctx.arc(0, -2, 28 + 18 * auraInt, 0, 7);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
                 if (ship.glow) {
                     ctx.globalCompositeOperation = 'lighter';
                     const g = ctx.createRadialGradient(0, -2, 4, 0, -2, 34);
@@ -3110,20 +3333,22 @@
                     ctx.fill();
                     ctx.globalCompositeOperation = 'source-over';
                 }
+
                 const th = sim.state === 'playing' ? 1 : 0.4;
                 const L = (20 + Math.sin(sim.time * 30) * 4 + Math.random() * 4) * th;
                 ctx.globalCompositeOperation = 'lighter';
-                ctx.fillStyle = 'rgba(255,150,60,0.55)';
+                const trailCol = custom.trail || '#ff9640';
+                ctx.fillStyle = 'rgba(' + hexToRgb(trailCol) + ',0.55)';
                 flamePath(ship.w * 0.55, 13, 14 + L);
                 ctx.fillStyle = 'rgba(255,230,120,0.9)';
                 flamePath(ship.w * 0.3, 13, 8 + L * 0.55);
                 ctx.globalCompositeOperation = 'source-over';
 
-                // Warship Vestal gets a different hull
                 const w = ship.w;
+
                 if (ship.vestal) {
-                    // Dark military hull with red accents
-                    ctx.fillStyle = '#2a3a4a';
+                    // Vestal hull with custom colors
+                    ctx.fillStyle = hull;
                     ctx.beginPath();
                     ctx.moveTo(0, -24);
                     ctx.quadraticCurveTo(w * 0.95, -12, w * 1.0, 6);
@@ -3134,8 +3359,7 @@
                     ctx.lineTo(-w * 1.0, 6);
                     ctx.quadraticCurveTo(-w * 0.95, -12, 0, -24);
                     ctx.fill();
-                    // Cockpit
-                    ctx.fillStyle = '#4a8fcf';
+                    ctx.fillStyle = accent;
                     ctx.beginPath();
                     ctx.ellipse(0, -4, 5, 7, 0, 0, 7);
                     ctx.fill();
@@ -3143,8 +3367,7 @@
                     ctx.beginPath();
                     ctx.ellipse(0, -4, 3.5, 5, 0, 0, 7);
                     ctx.fill();
-                    // Red stripe
-                    ctx.fillStyle = '#ff6b4a';
+                    ctx.fillStyle = accent;
                     ctx.beginPath();
                     ctx.moveTo(-w * 0.6, 2);
                     ctx.lineTo(w * 0.6, 2);
@@ -3152,7 +3375,6 @@
                     ctx.lineTo(-w * 0.4, 8);
                     ctx.closePath();
                     ctx.fill();
-                    // Missile pods
                     ctx.fillStyle = '#4a5a6a';
                     ctx.beginPath();
                     ctx.arc(-w * 0.7, 10, 3, 0, 7);
@@ -3160,14 +3382,13 @@
                     ctx.beginPath();
                     ctx.arc(w * 0.7, 10, 3, 0, 7);
                     ctx.fill();
-                    ctx.fillStyle = '#ff6b4a';
+                    ctx.fillStyle = accent;
                     ctx.beginPath();
                     ctx.arc(-w * 0.7, 10, 1.5, 0, 7);
                     ctx.fill();
                     ctx.beginPath();
                     ctx.arc(w * 0.7, 10, 1.5, 0, 7);
                     ctx.fill();
-                    // Engine glow (vestal has bigger engines)
                     ctx.globalCompositeOperation = 'lighter';
                     ctx.fillStyle = 'rgba(255,100,50,0.3)';
                     ctx.beginPath();
@@ -3175,8 +3396,9 @@
                     ctx.fill();
                     ctx.globalCompositeOperation = 'source-over';
                 } else {
-                    // Standard ship
-                    ctx.fillStyle = ship.hull;
+                    // Standard ship with custom hull & accent
+                    // Use custom hull
+                    ctx.fillStyle = hull;
                     ctx.beginPath();
                     ctx.moveTo(0, -22);
                     ctx.quadraticCurveTo(w * 0.9, -10, w * 0.95, 6);
@@ -3185,6 +3407,8 @@
                     ctx.lineTo(-w * 0.95, 6);
                     ctx.quadraticCurveTo(-w * 0.9, -10, 0, -22);
                     ctx.fill();
+
+                    // Shadow
                     ctx.fillStyle = 'rgba(0,0,0,0.22)';
                     ctx.beginPath();
                     ctx.moveTo(0, -22);
@@ -3193,14 +3417,18 @@
                     ctx.lineTo(0, 15);
                     ctx.closePath();
                     ctx.fill();
-                    ctx.fillStyle = ship.accent;
+
+                    // Accent
+                    ctx.fillStyle = accent;
                     ctx.beginPath();
                     ctx.moveTo(0, -22);
                     ctx.quadraticCurveTo(w * 0.62, -13, w * 0.72, -7);
                     ctx.lineTo(-w * 0.72, -7);
                     ctx.quadraticCurveTo(-w * 0.62, -13, 0, -22);
                     ctx.fill();
-                    ctx.fillStyle = ship.accent;
+
+                    // Wings
+                    ctx.fillStyle = accent;
                     ctx.beginPath();
                     ctx.moveTo(w * 0.95, 4);
                     ctx.lineTo(w + 8, 17);
@@ -3213,6 +3441,8 @@
                     ctx.lineTo(-w * 0.6, 15);
                     ctx.closePath();
                     ctx.fill();
+
+                    // Cockpit
                     ctx.fillStyle = '#0a1622';
                     ctx.beginPath();
                     ctx.arc(0, -2, 5.4, 0, 7);
@@ -3225,6 +3455,7 @@
                     ctx.beginPath();
                     ctx.arc(-1.4, -3.4, 1.3, 0, 7);
                     ctx.fill();
+
                     if (sim.lives > 1) {
                         ctx.strokeStyle = 'rgba(111,203,255,0.5)';
                         ctx.setLineDash([5, 6]);
@@ -3504,6 +3735,47 @@
                 if (card) chooseUpgrade(card.dataset.id);
             });
 
+            // ─── CUSTOMIZATION UI EVENTS ──────────────────────────────────────────
+            customBtn.addEventListener('click', () => { loadCustomToUI();
+                customOverlay.classList.add('active'); });
+            customCloseBtn.addEventListener('click', () => {
+                // Read values
+                custom.hull = hullColor.value;
+                custom.accent = accentColor.value;
+                custom.trail = trailColor.value;
+                custom.aura = auraColor.value;
+                custom.auraIntensity = parseInt(auraIntensity.value) / 100;
+                const activeStyle = document.querySelector('.style-btn.active');
+                custom.bodyStyle = activeStyle ? parseInt(activeStyle.dataset.style) : 0;
+                saveCustom();
+                customOverlay.classList.remove('active');
+                showToast('Customization applied!');
+            });
+
+            // Color pickers update preview
+            [hullColor, accentColor, trailColor, auraColor].forEach(el => {
+                el.addEventListener('input', () => {
+                    custom.hull = hullColor.value;
+                    custom.accent = accentColor.value;
+                    custom.trail = trailColor.value;
+                    custom.aura = auraColor.value;
+                    updatePreview();
+                });
+            });
+            auraIntensity.addEventListener('input', () => {
+                custom.auraIntensity = parseInt(auraIntensity.value) / 100;
+                auraIntensityVal.textContent = Math.round(custom.auraIntensity * 100) + '%';
+                updatePreview();
+            });
+            styleBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    styleBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    custom.bodyStyle = parseInt(btn.dataset.style);
+                    updatePreview();
+                });
+            });
+
             const SENS_STEPS = [0.6, 0.8, 1.0, 1.3, 1.6];
 
             function updateSensitivityDisplay() { sensToggle.textContent = sensitivity.toFixed(1) + '×'; }
@@ -3532,6 +3804,9 @@
                 equippedShip = 0;
                 unlockedShips = [0];
                 dailyMissions = {};
+                // Reset customizations to defaults
+                custom = { ...CUSTOM_DEFAULTS };
+                saveCustom();
                 store.set('fps_best', '0');
                 store.set('fps_coins', '0');
                 store.set('fps_total_dist', '0');
@@ -3543,7 +3818,8 @@
                 initDailyMissions();
                 updateMenuStats();
                 renderShop();
-                showToast('All data reset');
+                loadCustomToUI();
+                showToast('All data & customizations reset');
             });
             configBtn.addEventListener('click', () => configOverlay.classList.add('active'));
             configCloseBtn.addEventListener('click', () => configOverlay.classList.remove('active'));
@@ -3601,6 +3877,7 @@
                 if (sim.state === 'playing' || sim.state === 'warp') updateHUD();
             }
 
+            // ─── INIT ──────────────────────────────────────────────────────────────
             document.querySelectorAll('[data-icon]').forEach(el => {
                 el.innerHTML = svgIcon(el.dataset.icon, parseInt(el.dataset.size, 10) || 24);
             });
@@ -3613,6 +3890,7 @@
             updateMenuStats();
             updateSensitivityDisplay();
             updateMuteDisplay();
+            loadCustomToUI();
             requestAnimationFrame(frame);
 
         })();
