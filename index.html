@@ -1377,7 +1377,7 @@
             ];
             const zoneOf = i => ZONES[Math.max(0, Math.min(i, ZONES.length - 1))];
 
-            // ─── SHIPS (Vestal updated) ──────────────────────────────────────────
+            // ─── SHIPS (Vestal with missiles) ────────────────────────────────────
             const SHIPS = [
                 { id: 'scout', name: 'Scout', cost: 0, desc: 'Balanced platform', speedMult: 1.00, shieldBonus: 0,
                     hull: '#c9d4e2', accent: '#6fcbff', w: 12, hitR: 11, icon: 'rocket' },
@@ -1389,11 +1389,11 @@
                     shieldBonus: 0, hull: '#596073', accent: '#a78bfa', w: 9, hitR: 9, icon: 'rocket' },
                 { id: 'nexus', name: 'Nexus', cost: 250, desc: '+20% speed · +1 integrity', speedMult: 1.20,
                     shieldBonus: 1, hull: '#d9d2f0', accent: '#c4a5ff', w: 13, hitR: 11, glow: true, icon: 'rocket' },
-                // ─── W A R S H I P   V E S T A L (no missiles, bash small asteroids) ──
+                // ─── W A R S H I P   V E S T A L (missile area effect) ──────────
                 { id: 'vestal', name: 'Warship Vestal', cost: 350,
-                    desc: 'Bash through small asteroids without damage', speedMult: 1.10,
+                    desc: 'Launches missiles that destroy all asteroids in a blast radius · cooldown 3s', speedMult: 1.10,
                     shieldBonus: 0, hull: '#2a3a4a', accent: '#ff6b4a', w: 14, hitR: 11,
-                    icon: 'rocket', vestal: true }
+                    icon: 'rocket', vestal: true, missileCooldown: 3.0 }
             ];
 
             const UPGRADE_POOL = [
@@ -1529,9 +1529,12 @@
                     this.hum = null; },
                 shoot() { this.tone(1500, 0.06, 'square', 0.08);
                     this.tone(800, 0.08, 'sine', 0.10, 0, 0.02); },
-                // missile sounds removed
-                bash() { this.tone(300, 0.15, 'sine', 0.12, 0);
-                    this.noise(0.1, 0.08, 800); }
+                missileLaunch() { this.tone(400, 0.3, 'sawtooth', 0.12, 300);
+                    this.tone(200, 0.2, 'sine', 0.08, 0, 0.05);
+                    this.noise(0.2, 0.08, 400); },
+                missileExplode() { this.noise(0.6, 0.5, 700);
+                    this.tone(80, 0.5, 'sawtooth', 0.3, -60);
+                    this.tone(300, 0.2, 'sine', 0.15, 0, 0.05); }
             };
 
             let W = 0,
@@ -1618,7 +1621,8 @@
                 parts: [],
                 texts: [],
                 bullets: [],
-                // missiles removed
+                missiles: [], // missile objects
+                missileCooldown: 0,
                 fireCooldown: 0,
                 dist: 0,
                 segStart: 0,
@@ -1672,6 +1676,8 @@
 
             function shipIsVestal() { return !!(SHIPS[equippedShip] || SHIPS[0]).vestal; }
 
+            function shipMissileCooldown() { return (SHIPS[equippedShip] || SHIPS[0]).missileCooldown || 3.0; }
+
             function saveProgress() {
                 store.set('fps_coins', totalCoins);
                 store.set('fps_best', bestScore);
@@ -1707,8 +1713,8 @@
                     e.preventDefault(); }
                 if (k === ' ') {
                     e.preventDefault();
-                    // All ships fire bullets now (no missiles)
-                    fireBullet();
+                    if (shipIsVestal()) fireMissile();
+                    else fireBullet();
                 }
                 if (k === 'Escape') {
                     if (sim.state === 'playing') pauseGame();
@@ -2101,7 +2107,7 @@
                 }
             }
 
-            // ─── UPDATED HAZARD COLLISION (Vestal bash) ──────────────────────────
+            // ─── UPDATED HAZARD COLLISION (no bash, normal damage) ──────────────
             function updateHazards(sdt) {
                 const rk = sim.rocket,
                     hr = shipHitR();
@@ -2125,21 +2131,8 @@
                         });
                     }
                     const d = Math.hypot(h.x - rk.x, h.y - rk.y);
-                    // Vestal can bash small asteroids (r <= 15)
                     if (d < h.r + hr) {
-                        if (shipIsVestal() && h.type === 'ast' && h.r <= 15) {
-                            // Bash: destroy asteroid, no damage, give coins
-                            Sfx.bash();
-                            burst(h.x, h.y, '200,255,200', 12, 260);
-                            totalCoins += 1;
-                            sim.runCoins += 1;
-                            pushText(h.x, h.y - 20, '+1 data', '#7ddf9a');
-                            sim.flash = 0.15;
-                            sim.flashC = '200,255,200';
-                            sim.shake = Math.max(sim.shake, 4);
-                            sim.hazards.splice(i, 1);
-                            continue;
-                        } else if (sim.invincible <= 0) {
+                        if (sim.invincible <= 0) {
                             burst(h.x, h.y, '200,190,170', 8, 240);
                             burst(h.x, h.y, '255,160,80', 6, 200);
                             sim.hazards.splice(i, 1);
@@ -2227,7 +2220,128 @@
                 if (sim.aliens.length > 6) sim.aliens.splice(0, sim.aliens.length - 6);
             }
 
-            // ─── BULLET SYSTEM (no missiles) ──────────────────────────────────────
+            // ─── MISSILE SYSTEM (area effect) ─────────────────────────────────────
+            function fireMissile() {
+                if (sim.state !== 'playing' || sim.missileCooldown > 0) return;
+                if (!shipIsVestal()) return;
+
+                const rk = sim.rocket;
+                const dx = rk.tx - rk.x,
+                    dy = rk.ty - rk.y;
+                const len = Math.hypot(dx, dy) || 1;
+                const speed = 400;
+                const vx = (dx / len) * speed;
+                const vy = (dy / len) * speed;
+                const tipX = rk.x + Math.cos(rk.tilt) * 28;
+                const tipY = rk.y + Math.sin(rk.tilt) * 28;
+
+                sim.missiles.push({
+                    x: tipX,
+                    y: tipY,
+                    vx: vx,
+                    vy: vy,
+                    life: 2.0,
+                    targetX: rk.tx,
+                    targetY: rk.ty,
+                    exploded: false,
+                    radius: 130, // blast radius
+                    trail: []
+                });
+                sim.missileCooldown = shipMissileCooldown();
+                Sfx.missileLaunch();
+                burst(tipX, tipY, '255,200,100', 8, 180);
+            }
+
+            function updateMissiles(sdt) {
+                if (sim.missileCooldown > 0) sim.missileCooldown -= sdt;
+
+                for (let i = sim.missiles.length - 1; i >= 0; i--) {
+                    const m = sim.missiles[i];
+                    m.life -= sdt;
+                    // Move
+                    m.x += m.vx * sdt;
+                    m.y += m.vy * sdt;
+
+                    // Trail
+                    if (Math.random() < 0.6 && sim.parts.length < 520) {
+                        sim.parts.push({
+                            type: 'trail',
+                            x: m.x + (Math.random() - 0.5) * 6,
+                            y: m.y + (Math.random() - 0.5) * 6,
+                            vx: (Math.random() - 0.5) * 20,
+                            vy: (Math.random() - 0.5) * 20,
+                            life: 0.35,
+                            max: 0.35,
+                            size: 4 + Math.random() * 3,
+                            color: '255,200,80'
+                        });
+                    }
+
+                    // Check if missile should explode: life <= 0 or out of bounds or close to target
+                    let explode = false;
+                    if (m.life <= 0) explode = true;
+                    if (m.x < -50 || m.x > W + 50 || m.y < -50 || m.y > H + 50) explode = true;
+                    // Also explode if it gets close to target or any asteroid (but we want area effect, so we explode at target)
+                    const distToTarget = Math.hypot(m.x - m.targetX, m.y - m.targetY);
+                    if (distToTarget < 40) explode = true;
+
+                    if (explode && !m.exploded) {
+                        m.exploded = true;
+                        // Blast effect: destroy all asteroids within radius
+                        const blastRadius = m.radius;
+                        let destroyed = 0;
+                        for (let j = sim.hazards.length - 1; j >= 0; j--) {
+                            const h = sim.hazards[j];
+                            if (h.type === 'ast') {
+                                const d = Math.hypot(m.x - h.x, m.y - h.y);
+                                if (d < blastRadius) {
+                                    // Destroy asteroid
+                                    burst(h.x, h.y, '255,200,120', 16, 300);
+                                    totalCoins += 1;
+                                    sim.runCoins += 1;
+                                    destroyed++;
+                                    sim.hazards.splice(j, 1);
+                                }
+                            }
+                        }
+                        if (destroyed > 0) {
+                            pushText(m.x, m.y - 40, '+' + destroyed + ' data', '#ffd700');
+                            Sfx.missileExplode();
+                            sim.shake = Math.max(sim.shake, 12);
+                            sim.flash = 0.3;
+                            sim.flashC = '255,200,100';
+                            // Big explosion burst
+                            burst(m.x, m.y, '255,200,100', 30, 400);
+                            burst(m.x, m.y, '255,150,50', 20, 300);
+                            // Extra shockwave particles
+                            for (let k = 0; k < 20; k++) {
+                                const ang = Math.random() * Math.PI * 2;
+                                const sp = 100 + Math.random() * 200;
+                                sim.parts.push({
+                                    type: 'spark',
+                                    x: m.x + (Math.random() - 0.5) * 20,
+                                    y: m.y + (Math.random() - 0.5) * 20,
+                                    vx: Math.cos(ang) * sp,
+                                    vy: Math.sin(ang) * sp,
+                                    life: 0.6 + Math.random() * 0.3,
+                                    max: 0.9,
+                                    size: 2 + Math.random() * 3,
+                                    color: '255,180,80'
+                                });
+                            }
+                        } else {
+                            // Missile hit nothing, small poof
+                            burst(m.x, m.y, '180,180,200', 8, 120);
+                        }
+                        sim.missiles.splice(i, 1);
+                        continue;
+                    }
+
+                    // Remove if exploded or life expired (already handled)
+                }
+            }
+
+            // ─── BULLET SYSTEM ────────────────────────────────────────────────────
             function fireBullet() {
                 if (sim.state !== 'playing' || sim.fireCooldown > 0) return;
                 const rk = sim.rocket;
@@ -2344,7 +2458,7 @@
                 updateCoins(sdt);
                 updatePups(sdt);
                 updateBullets(sdt);
-                // missile update removed
+                updateMissiles(sdt);
                 updateParts(sdt);
                 updateTexts(rdt);
                 Sfx.humSet(sim.ts);
@@ -2366,6 +2480,7 @@
                 sim.pups = [];
                 sim.coins = [];
                 sim.bullets = [];
+                sim.missiles = [];
                 sim.meteorQ = null;
                 sim.rad = 0;
                 saveProgress();
@@ -2483,6 +2598,8 @@
                 sim.parts = [];
                 sim.texts = [];
                 sim.bullets = [];
+                sim.missiles = [];
+                sim.missileCooldown = 0;
                 sim.fireCooldown = 0;
                 sim.flow = 0;
                 sim.flowT = 0;
@@ -3092,7 +3209,61 @@
                 }
             }
 
-            // missile draw removed
+            // ─── DRAW MISSILES ────────────────────────────────────────────────────
+            function drawMissiles() {
+                for (const m of sim.missiles) {
+                    const ang = Math.atan2(m.vy, m.vx);
+                    ctx.save();
+                    ctx.translate(m.x, m.y);
+                    ctx.rotate(ang);
+                    // Glow
+                    ctx.globalCompositeOperation = 'lighter';
+                    const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 18);
+                    g.addColorStop(0, 'rgba(255,200,80,0.5)');
+                    g.addColorStop(1, 'rgba(255,200,80,0)');
+                    ctx.fillStyle = g;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 18, 0, 7);
+                    ctx.fill();
+                    ctx.globalCompositeOperation = 'source-over';
+                    // Missile body
+                    ctx.fillStyle = '#ff6b4a';
+                    ctx.beginPath();
+                    ctx.moveTo(12, 0);
+                    ctx.lineTo(-6, -4);
+                    ctx.lineTo(-8, -2);
+                    ctx.lineTo(-8, 2);
+                    ctx.lineTo(-6, 4);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.strokeStyle = '#cc5533';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    // Nose
+                    ctx.fillStyle = '#ffd93d';
+                    ctx.beginPath();
+                    ctx.moveTo(14, 0);
+                    ctx.lineTo(10, -3);
+                    ctx.lineTo(10, 3);
+                    ctx.closePath();
+                    ctx.fill();
+                    // Fins
+                    ctx.fillStyle = '#ff6b4a';
+                    ctx.beginPath();
+                    ctx.moveTo(-6, -4);
+                    ctx.lineTo(-10, -7);
+                    ctx.lineTo(-6, -2);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(-6, 4);
+                    ctx.lineTo(-10, 7);
+                    ctx.lineTo(-6, 2);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
 
             function flamePath(hw, y0, len) {
                 ctx.beginPath();
@@ -3330,7 +3501,7 @@
                 ctx.fillStyle = '#cfe2ff';
                 ctx.font = '500 14px Inter,sans-serif';
                 ctx.textAlign = 'center';
-                const ves = shipIsVestal() ? ' · Bash small asteroids' : '';
+                const ves = shipIsVestal() ? ' · Missile: Space (blast radius)' : '';
                 ctx.fillText('Navigate with mouse, touch or arrows — graze hazards to build Sync' + ves, W / 2, H * 0.42);
                 ctx.restore();
             }
@@ -3349,6 +3520,7 @@
                 drawCoins();
                 drawPups();
                 drawBullets();
+                drawMissiles();
                 if (['playing', 'warp', 'choose', 'paused'].includes(sim.state)) drawRocket();
                 drawParticles();
                 drawTexts();
