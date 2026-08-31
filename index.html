@@ -1,2554 +1,1765 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Flight Path · Planetary Trek</title>
-    <style>
-        /* ── RESET & BASE ── */
-        *,
-        *::before,
-        *::after {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Flight Path · Planetary Trek</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+    /* ── RESET & BASE ── */
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#05070a;color:#e8edf5;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none}
 
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: #05070a;
-            color: #e8edf5;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
+    /* ── CANVAS ── */
+    #simCanvas{position:fixed;top:0;left:0;width:100vw;height:100vh;display:block;background:#05070a;z-index:0;cursor:none;touch-action:none}
 
-        /* ── CANVAS ── */
-        #simCanvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            display: block;
-            background: #05070a;
-            z-index: 0;
-            cursor: none;
-        }
+    /* ── MENU ── */
+    #menuOverlay{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:rgba(5,7,10,0.85);backdrop-filter:blur(12px);transition:opacity .8s ease,visibility .8s ease;overflow-y:auto}
+    #menuOverlay.hidden{opacity:0;visibility:hidden;pointer-events:none}
+    .menu-card{background:rgba(18,22,36,.9);border:1px solid rgba(255,255,255,.04);border-radius:32px;padding:44px 50px 40px;max-width:520px;width:92%;box-shadow:0 40px 100px rgba(0,0,0,.8);text-align:center;margin:auto}
+    .menu-card .logo{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:6px}
+    .menu-card .logo h1{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:30px;letter-spacing:-.02em;color:#f0f5ff}
+    .menu-card .subtitle{font-size:14px;color:rgba(255,255,255,.35);margin-bottom:14px}
+    .rank-chip{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.5);background:rgba(111,203,255,.07);border:1px solid rgba(111,203,255,.14);padding:5px 14px;border-radius:20px;margin-bottom:26px}
+    .rank-chip svg{display:block;color:#6fcbff}
+    .action-row{display:flex;gap:12px;margin-bottom:12px;justify-content:center}
+    .action-row .play-btn{flex:1;padding:16px 20px;background:linear-gradient(135deg,#2a6df4,#1a4fc3);border:none;border-radius:18px;font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:600;color:#fff;cursor:pointer;transition:all .25s ease;letter-spacing:.02em;box-shadow:0 4px 32px rgba(42,109,244,.3);display:flex;align-items:center;justify-content:center;gap:10px}
+    .action-row .play-btn:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 8px 48px rgba(42,109,244,.4)}
+    .action-row .play-btn:active{transform:translateY(0) scale(.98)}
+    .action-row .play-btn .icon-slot{display:inline-flex;color:#fff}
+    .action-row .config-btn{flex:0 0 60px;padding:0;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:18px;color:rgba(255,255,255,.4);cursor:pointer;transition:all .2s ease;display:flex;align-items:center;justify-content:center}
+    .action-row .config-btn:hover{background:rgba(255,255,255,.08);color:#fff}
+    .shop-row{display:flex;margin-bottom:24px}
+    .shop-row .side-btn{flex:1;padding:11px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:18px;color:rgba(255,255,255,.55);font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s ease;display:flex;align-items:center;justify-content:center;gap:9px}
+    .shop-row .side-btn:hover{background:rgba(255,255,255,.08);color:#fff}
+    .stats-row{display:flex;justify-content:space-between;padding-top:18px;border-top:1px solid rgba(255,255,255,.04);margin-bottom:6px}
+    .stats-row .stat-item .stat-val{font-size:20px;font-weight:600;color:#e8edf5;font-variant-numeric:tabular-nums}
+    .stats-row .stat-item .stat-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.2);margin-top:4px}
+    .footer-note{text-align:center;margin-top:18px;font-size:12px;color:rgba(255,255,255,.1)}
+    .missions-list{margin-top:14px;border-top:1px solid rgba(255,255,255,.04);padding-top:4px}
+    .m-head{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.25);margin:8px 0 2px;text-align:left}
+    .mission-row{display:flex;align-items:center;gap:12px;padding:9px 0}
+    .mission-row + .mission-row{border-top:1px solid rgba(255,255,255,.03)}
+    .m-icon{width:28px;height:28px;flex:none;border-radius:8px;background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.5)}
+    .mission-row.done .m-icon{color:#ffd700;background:rgba(255,215,0,.08)}
+    .m-body{flex:1;min-width:0}
+    .m-name{font-size:12.5px;color:rgba(255,255,255,.7);text-align:left}
+    .mission-row.done .m-name{color:rgba(255,215,0,.75)}
+    .m-bar{height:3px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:5px;overflow:hidden}
+    .m-fill{height:100%;background:#6fcbff;border-radius:2px}
+    .mission-row.done .m-fill{background:#ffd700}
+    .m-prog{font-size:11px;color:rgba(255,255,255,.3);flex:none;width:50px;text-align:right;font-variant-numeric:tabular-nums}
 
-        /* ── MENU OVERLAY ── */
-        #menuOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(5, 7, 10, 0.85);
-            backdrop-filter: blur(12px);
-            transition: opacity 0.8s ease, visibility 0.8s ease;
-        }
-        #menuOverlay.hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-        }
+    /* ── HUD ── */
+    #hud{position:fixed;top:0;left:0;width:100%;padding:16px 24px;display:none;justify-content:space-between;align-items:flex-start;z-index:5;pointer-events:none}
+    #hud.active{display:flex}
+    .hud-left,.hud-right{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+    .hud-right{align-items:flex-end}
+    .hud-item{font-size:13px;font-weight:500;color:rgba(255,255,255,.8);text-shadow:0 2px 20px rgba(0,0,0,.8);background:rgba(0,0,0,.25);padding:3px 14px;border-radius:40px;backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.03);font-variant-numeric:tabular-nums;display:flex;align-items:center}
+    .hud-item .hud-val{font-weight:600;color:#fff}
+    .hud-item .hud-label{font-weight:400;color:rgba(255,255,255,.3);font-size:10px;margin-right:5px;display:inline-flex}
+    .hud-item.lives .hud-val{color:#ff6b6b}
+    .hud-item.score .hud-val{color:#ffd93d;font-size:16px}
+    .hud-item.best .hud-val{color:rgba(255,255,255,.4)}
+    .hud-item.combo .hud-val{color:#6fcbff}
+    .hud-item.coins .hud-val{color:#ffd700}
+    .hud-item.powerup-indicator{color:#a78bfa;border-color:rgba(167,139,250,.15);background:rgba(167,139,250,.06)}
 
-        .menu-card {
-            background: rgba(18, 22, 36, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            border-radius: 32px;
-            padding: 48px 52px 44px;
-            max-width: 520px;
-            width: 92%;
-            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.02);
-            text-align: center;
-        }
+    /* ── PROGRESS ── */
+    #progressContainer{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:6;pointer-events:none;display:none;width:340px;max-width:60vw;text-align:center}
+    #progressContainer.active{display:block}
+    #progressPlanet{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;color:rgba(255,255,255,.6);letter-spacing:.06em;text-shadow:0 2px 10px rgba(0,0,0,.8);margin-bottom:5px}
+    #progressPlanet span{color:#ffd93d}
+    #progressBarBg{width:100%;height:5px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;box-shadow:0 0 20px rgba(0,0,0,.5)}
+    #progressBarFill{height:100%;width:0%;background:linear-gradient(90deg,#6fcbff,#a78bfa);border-radius:4px}
+    #progressLabel{text-align:center;font-size:10px;color:rgba(255,255,255,.28);margin-top:4px;font-weight:500;letter-spacing:.04em;text-shadow:0 2px 10px rgba(0,0,0,.8);font-variant-numeric:tabular-nums}
 
-        .menu-card .logo {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 14px;
-            margin-bottom: 6px;
-        }
-        .menu-card .logo .icon {
-            font-size: 40px;
-            line-height: 1;
-        }
-        .menu-card .logo h1 {
-            font-weight: 500;
-            font-size: 30px;
-            letter-spacing: -0.02em;
-            color: #f0f5ff;
-            margin: 0;
-        }
-        .menu-card .subtitle {
-            font-weight: 400;
-            font-size: 15px;
-            color: rgba(255, 255, 255, 0.35);
-            margin-bottom: 32px;
-            letter-spacing: 0.01em;
-            border-left: none;
-            padding-left: 0;
-        }
+    /* ── MODALS ── */
+    .modal-overlay{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:rgba(5,7,10,.75);backdrop-filter:blur(10px);pointer-events:none;opacity:0;transition:opacity .4s ease;overflow-y:auto}
+    .modal-overlay.active{display:flex;opacity:1;pointer-events:auto}
+    .modal-card{background:rgba(18,22,36,.95);border:1px solid rgba(255,255,255,.04);border-radius:32px;padding:32px 36px 34px;max-width:560px;width:92%;max-height:90vh;overflow-y:auto;box-shadow:0 40px 100px rgba(0,0,0,.8);text-align:center;margin:auto}
+    .modal-card h2{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:24px;margin-bottom:4px;display:flex;align-items:center;justify-content:center;gap:10px}
+    .modal-card .modal-sub{color:rgba(255,255,255,.35);font-size:14px;margin-bottom:20px}
+    .h-icon{display:inline-flex;color:#ffd700}
+    .upgrade-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin:16px 0 20px}
+    .upgrade-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:18px;padding:16px 12px;cursor:pointer;transition:all .2s ease;text-align:center}
+    .upgrade-card:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14);transform:translateY(-2px)}
+    .upgrade-card .icon{display:flex;justify-content:center;margin-bottom:6px}
+    .upgrade-card .name{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:#fff;display:block}
+    .upgrade-card .desc{font-size:12px;color:rgba(255,255,255,.4);margin-top:2px;display:block}
+    .upgrade-card .lvl{font-size:10px;color:rgba(255,255,255,.3);margin-top:5px;display:block}
+    .shop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0 16px}
+    .shop-item{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:16px;padding:14px 12px;text-align:center;transition:all .2s ease}
+    .shop-item .ship-icon{display:flex;justify-content:center}
+    .shop-item .ship-name{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;color:#fff;margin-top:4px}
+    .shop-item .ship-stats{font-size:11px;color:rgba(255,255,255,.3);margin:4px 0 8px}
+    .shop-item .ship-status{font-size:12px;font-weight:500;padding:4px 12px;border-radius:20px;background:rgba(255,255,255,.05);display:inline-block}
+    .shop-item .ship-status.equipped{background:rgba(111,203,255,.15);color:#6fcbff}
+    .shop-item .ship-status.owned{background:rgba(167,139,250,.1);color:#a78bfa}
+    .shop-item .ship-status.locked{color:#ff6b6b}
+    .shop-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:5px 16px;color:#e8edf5;font-size:12px;font-weight:500;cursor:pointer;transition:all .2s ease;font-family:inherit;margin-top:6px}
+    .shop-btn:hover{background:rgba(255,255,255,.1)}
+    .shop-btn.primary{background:linear-gradient(135deg,#2a6df4,#1a4fc3);border:none;color:#fff}
+    .shop-btn.primary:hover{transform:scale(1.05)}
+    .shop-btn:disabled{opacity:.3;cursor:not-allowed}
+    .modal-close{margin-top:16px;width:100%;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04);border-radius:16px;color:rgba(255,255,255,.4);font-size:15px;font-weight:500;cursor:pointer;transition:all .2s ease;font-family:inherit}
+    .modal-close:hover{background:rgba(255,255,255,.06);color:#fff}
+    .modal-coin-balance{display:flex;align-items:center;justify-content:center;gap:8px;font-size:16px;color:#ffd700;margin-bottom:12px;padding:8px;background:rgba(255,215,0,.03);border-radius:12px;border:1px solid rgba(255,215,0,.05);font-variant-numeric:tabular-nums}
 
-        .action-row {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 28px;
-            justify-content: center;
-        }
-        .action-row .play-btn {
-            flex: 1;
-            padding: 16px 20px;
-            background: linear-gradient(135deg, #2a6df4, #1a4fc3);
-            border: none;
-            border-radius: 18px;
-            font-size: 18px;
-            font-weight: 600;
-            color: #fff;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            font-family: inherit;
-            letter-spacing: 0.02em;
-            box-shadow: 0 4px 32px rgba(42, 109, 244, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        .action-row .play-btn:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 8px 48px rgba(42, 109, 244, 0.4);
-            background: linear-gradient(135deg, #3a7df4, #2a5fc3);
-        }
-        .action-row .play-btn:active {
-            transform: translateY(0px) scale(0.98);
-        }
-        .action-row .config-btn {
-            flex: 0 0 60px;
-            padding: 0;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 18px;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 24px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: inherit;
-        }
-        .action-row .config-btn:hover {
-            background: rgba(255, 255, 255, 0.08);
-            color: #fff;
-            border-color: rgba(255, 255, 255, 0.15);
-        }
+    /* ── GAME OVER ── */
+    #gameOverOverlay{position:fixed;inset:0;z-index:8;display:none;align-items:center;justify-content:center;background:rgba(5,7,10,.7);backdrop-filter:blur(8px);pointer-events:none;opacity:0;transition:opacity .5s ease}
+    #gameOverOverlay.active{display:flex;opacity:1;pointer-events:auto}
+    .go-card{background:rgba(18,22,36,.95);border:1px solid rgba(255,255,255,.04);border-radius:32px;padding:38px 46px 36px;max-width:400px;width:90%;text-align:center;box-shadow:0 40px 100px rgba(0,0,0,.8)}
+    .go-card .go-icon{display:flex;justify-content:center;margin-bottom:6px}
+    .go-card h2{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:26px;color:#f0f5ff;margin-bottom:2px}
+    .go-card .go-sub{color:rgba(255,255,255,.3);font-size:15px;margin-bottom:16px}
+    .go-card .go-sub span{color:rgba(255,255,255,.6)}
+    .go-card .go-score{font-family:'Space Grotesk',sans-serif;font-size:44px;font-weight:700;color:#ffd93d;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+    .go-card .go-coins{font-size:13px;color:#ffd700;margin-top:2px}
+    .go-card .go-best{font-size:15px;color:rgba(255,255,255,.3);margin-top:4px;margin-bottom:24px}
+    .go-card .go-best span{color:rgba(255,255,255,.5)}
+    .go-btn-row{display:flex;gap:12px;justify-content:center}
+    .go-btn{padding:12px 24px;border-radius:16px;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;border:none;cursor:pointer;transition:all .2s ease}
+    .go-btn.primary{background:linear-gradient(135deg,#2a6df4,#1a4fc3);color:#fff;box-shadow:0 4px 24px rgba(42,109,244,.2)}
+    .go-btn.primary:hover{transform:translateY(-2px)}
+    .go-btn.secondary{background:rgba(255,255,255,.04);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.06)}
+    .go-btn.secondary:hover{background:rgba(255,255,255,.08);color:#fff}
 
-        .stats-row {
-            display: flex;
-            justify-content: space-between;
-            padding-top: 18px;
-            border-top: 1px solid rgba(255, 255, 255, 0.04);
-            margin-bottom: 18px;
-        }
-        .stats-row .stat-item {
-            text-align: center;
-        }
-        .stats-row .stat-item .stat-val {
-            font-size: 20px;
-            font-weight: 600;
-            color: #e8edf5;
-        }
-        .stats-row .stat-item .stat-lbl {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: rgba(255, 255, 255, 0.2);
-            margin-top: 4px;
-        }
+    /* ── CONFIG / PAUSE ── */
+    .config-card{background:rgba(18,22,36,.95);border:1px solid rgba(255,255,255,.04);border-radius:32px;padding:30px 38px 32px;max-width:420px;width:90%;box-shadow:0 40px 100px rgba(0,0,0,.8);margin:auto}
+    .config-card h3{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:22px;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+    .config-card .config-sub{color:rgba(255,255,255,.3);font-size:14px;margin-bottom:20px}
+    .config-card .config-item{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+    .config-card .config-item:last-of-type{border-bottom:none}
+    .config-card .config-item .label{color:rgba(255,255,255,.6);font-size:15px}
+    .config-btn-sm{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:6px 18px;color:#e8edf5;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s ease;font-family:inherit;min-width:74px}
+    .config-btn-sm:hover{background:rgba(255,255,255,.1)}
+    .config-btn-sm.danger:hover{background:rgba(255,80,80,.12);border-color:rgba(255,80,80,.15);color:#ff6b6b}
+    .config-close{margin-top:18px;width:100%;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04);border-radius:16px;color:rgba(255,255,255,.4);font-size:15px;font-weight:500;cursor:pointer;transition:all .2s ease;font-family:inherit}
+    .config-close:hover{background:rgba(255,255,255,.06);color:#fff}
+    #configOverlay,#pauseOverlay{position:fixed;inset:0;z-index:25;display:none;align-items:center;justify-content:center;background:rgba(5,7,10,.7);backdrop-filter:blur(8px);pointer-events:none;opacity:0;transition:opacity .3s ease}
+    #configOverlay.active,#pauseOverlay.active{display:flex;opacity:1;pointer-events:auto}
 
-        .footer-note {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.08);
-            letter-spacing: 0.02em;
-        }
+    /* ── PAUSE BUTTON / TOAST ── */
+    #pauseBtn{position:fixed;bottom:18px;right:18px;width:46px;height:46px;border-radius:50%;background:rgba(10,14,24,.55);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.55);display:none;align-items:center;justify-content:center;cursor:pointer;z-index:7;pointer-events:auto;backdrop-filter:blur(6px)}
+    #pauseBtn:hover{background:rgba(255,255,255,.12);color:#fff}
+    .mission-toast{position:fixed;top:80px;right:20px;background:rgba(18,22,36,.95);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 20px;color:#fff;z-index:30;font-size:13.5px;box-shadow:0 10px 30px rgba(0,0,0,.5);pointer-events:none;opacity:0;transform:translateY(-10px);transition:all .3s ease;max-width:320px}
+    .mission-toast.show{opacity:1;transform:translateY(0)}
 
-        /* ── HUD ── */
-        #hud {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            padding: 16px 24px;
-            display: none;
-            justify-content: space-between;
-            align-items: flex-start;
-            z-index: 5;
-            pointer-events: none;
-            font-family: 'Inter', sans-serif;
-        }
-        #hud.active {
-            display: flex;
-        }
-
-        .hud-left,
-        .hud-right {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        .hud-left {
-            align-items: flex-start;
-        }
-        .hud-right {
-            align-items: flex-end;
-        }
-
-        .hud-item {
-            font-size: 13px;
-            font-weight: 500;
-            color: rgba(255, 255, 255, 0.8);
-            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.8);
-            letter-spacing: 0.01em;
-            background: rgba(0, 0, 0, 0.25);
-            padding: 3px 14px;
-            border-radius: 40px;
-            backdrop-filter: blur(6px);
-            border: 1px solid rgba(255, 255, 255, 0.03);
-        }
-        .hud-item .hud-val {
-            font-weight: 600;
-            color: #fff;
-        }
-        .hud-item .hud-label {
-            font-weight: 400;
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 10px;
-            margin-right: 4px;
-        }
-        .hud-item.lives .hud-val {
-            color: #ff6b6b;
-        }
-        .hud-item.score .hud-val {
-            color: #ffd93d;
-            font-size: 16px;
-        }
-        .hud-item.best .hud-val {
-            color: rgba(255, 255, 255, 0.4);
-        }
-        .hud-item.combo .hud-val {
-            color: #6fcbff;
-        }
-        .hud-item.coins .hud-val {
-            color: #ffd700;
-        }
-        .hud-item.powerup-indicator {
-            color: #a78bfa;
-            border-color: rgba(167, 139, 250, 0.15);
-            background: rgba(167, 139, 250, 0.05);
-        }
-
-        /* Progress Bar */
-        #progressContainer {
-            position: fixed;
-            top: 12px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 6;
-            pointer-events: none;
-            display: none;
-            width: 340px;
-            max-width: 70vw;
-            text-align: center;
-        }
-        #progressContainer.active {
-            display: block;
-        }
-        #progressPlanet {
-            font-size: 12px;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.6);
-            letter-spacing: 0.06em;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
-            margin-bottom: 4px;
-        }
-        #progressPlanet span {
-            color: #ffd93d;
-        }
-        #progressBarBg {
-            width: 100%;
-            height: 5px;
-            background: rgba(255, 255, 255, 0.06);
-            border-radius: 4px;
-            overflow: hidden;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-        }
-        #progressBarFill {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, #6fcbff, #a78bfa);
-            border-radius: 4px;
-            transition: width 0.15s ease;
-        }
-        #progressLabel {
-            text-align: center;
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.25);
-            margin-top: 3px;
-            font-weight: 500;
-            letter-spacing: 0.04em;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
-        }
-
-        /* ── MODALS ── */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 20;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            background: rgba(5, 7, 10, 0.75);
-            backdrop-filter: blur(10px);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.4s ease;
-        }
-        .modal-overlay.active {
-            display: flex;
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .modal-card {
-            background: rgba(18, 22, 36, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            border-radius: 32px;
-            padding: 32px 36px 36px;
-            max-width: 560px;
-            width: 92%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
-            text-align: center;
-        }
-        .modal-card h2 {
-            font-weight: 500;
-            font-size: 24px;
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        .modal-card .modal-sub {
-            color: rgba(255, 255, 255, 0.35);
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
-
-        .upgrade-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 12px;
-            margin: 16px 0 20px;
-        }
-        .upgrade-card {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            border-radius: 18px;
-            padding: 16px 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-align: center;
-        }
-        .upgrade-card:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(255, 255, 255, 0.12);
-            transform: translateY(-2px);
-        }
-        .upgrade-card .icon {
-            font-size: 32px;
-            display: block;
-            margin-bottom: 6px;
-        }
-        .upgrade-card .name {
-            font-weight: 600;
-            font-size: 15px;
-            color: #fff;
-        }
-        .upgrade-card .desc {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.4);
-            margin-top: 2px;
-        }
-
-        .shop-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin: 12px 0 16px;
-        }
-        .shop-item {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            border-radius: 16px;
-            padding: 14px 12px;
-            text-align: center;
-            transition: all 0.2s ease;
-        }
-        .shop-item .ship-icon {
-            font-size: 28px;
-        }
-        .shop-item .ship-name {
-            font-weight: 500;
-            font-size: 14px;
-            color: #fff;
-            margin-top: 2px;
-        }
-        .shop-item .ship-stats {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.3);
-            margin: 4px 0 8px;
-        }
-        .shop-item .ship-cost {
-            font-size: 13px;
-            font-weight: 600;
-            color: #ffd700;
-        }
-        .shop-item .ship-status {
-            font-size: 12px;
-            font-weight: 500;
-            padding: 4px 12px;
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            display: inline-block;
-            margin-top: 4px;
-        }
-        .shop-item .ship-status.equipped {
-            background: rgba(111, 203, 255, 0.15);
-            color: #6fcbff;
-        }
-        .shop-item .ship-status.owned {
-            background: rgba(167, 139, 250, 0.1);
-            color: #a78bfa;
-        }
-        .shop-item .ship-status.locked {
-            background: rgba(255, 107, 107, 0.05);
-            color: #ff6b6b;
-        }
-        .shop-btn {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 12px;
-            padding: 4px 14px;
-            color: #e8edf5;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-family: inherit;
-            margin-top: 4px;
-        }
-        .shop-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        .shop-btn.primary {
-            background: linear-gradient(135deg, #2a6df4, #1a4fc3);
-            border: none;
-            color: #fff;
-        }
-        .shop-btn.primary:hover {
-            transform: scale(1.05);
-        }
-        .shop-btn:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
-
-        .modal-close {
-            margin-top: 16px;
-            width: 100%;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            border-radius: 16px;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-family: inherit;
-        }
-        .modal-close:hover {
-            background: rgba(255, 255, 255, 0.06);
-            color: #fff;
-        }
-
-        .modal-coin-balance {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-size: 16px;
-            color: #ffd700;
-            margin-bottom: 12px;
-            padding: 8px;
-            background: rgba(255, 215, 0, 0.03);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 215, 0, 0.05);
-        }
-
-        /* ── GAME OVER ── */
-        #gameOverOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 8;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            background: rgba(5, 7, 10, 0.7);
-            backdrop-filter: blur(8px);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-        #gameOverOverlay.active {
-            display: flex;
-            opacity: 1;
-            pointer-events: auto;
-        }
-        .go-card {
-            background: rgba(18, 22, 36, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            border-radius: 32px;
-            padding: 40px 48px 38px;
-            max-width: 400px;
-            width: 90%;
-            text-align: center;
-            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
-        }
-        .go-card .go-icon {
-            font-size: 48px;
-            margin-bottom: 6px;
-        }
-        .go-card h2 {
-            font-weight: 500;
-            font-size: 26px;
-            color: #f0f5ff;
-            margin-bottom: 2px;
-        }
-        .go-card .go-sub {
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 15px;
-            margin-bottom: 18px;
-        }
-        .go-card .go-score {
-            font-size: 44px;
-            font-weight: 600;
-            color: #ffd93d;
-            letter-spacing: -0.02em;
-        }
-        .go-card .go-best {
-            font-size: 16px;
-            color: rgba(255, 255, 255, 0.3);
-            margin-top: 2px;
-            margin-bottom: 24px;
-        }
-        .go-card .go-best span {
-            color: rgba(255, 255, 255, 0.5);
-        }
-        .go-btn-row {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-        }
-        .go-btn {
-            padding: 12px 28px;
-            border-radius: 16px;
-            font-size: 15px;
-            font-weight: 500;
-            font-family: inherit;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .go-btn.primary {
-            background: linear-gradient(135deg, #2a6df4, #1a4fc3);
-            color: #fff;
-            box-shadow: 0 4px 24px rgba(42, 109, 244, 0.2);
-        }
-        .go-btn.primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 32px rgba(42, 109, 244, 0.3);
-        }
-        .go-btn.secondary {
-            background: rgba(255, 255, 255, 0.04);
-            color: rgba(255, 255, 255, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-        .go-btn.secondary:hover {
-            background: rgba(255, 255, 255, 0.08);
-            color: #fff;
-        }
-
-        /* ── CONFIG ── */
-        #configOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 15;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            background: rgba(5, 7, 10, 0.7);
-            backdrop-filter: blur(8px);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        #configOverlay.active {
-            display: flex;
-            opacity: 1;
-            pointer-events: auto;
-        }
-        .config-card {
-            background: rgba(18, 22, 36, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            border-radius: 32px;
-            padding: 32px 40px 36px;
-            max-width: 420px;
-            width: 90%;
-            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
-        }
-        .config-card h3 {
-            font-weight: 500;
-            font-size: 22px;
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .config-card .config-sub {
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 14px;
-            margin-bottom: 24px;
-        }
-        .config-card .config-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-        }
-        .config-card .config-item:last-child {
-            border-bottom: none;
-        }
-        .config-card .config-item .label {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 15px;
-        }
-        .config-btn-sm {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 12px;
-            padding: 6px 18px;
-            color: #e8edf5;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-family: inherit;
-        }
-        .config-btn-sm:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        .config-btn-sm.danger:hover {
-            background: rgba(255, 80, 80, 0.12);
-            border-color: rgba(255, 80, 80, 0.15);
-            color: #ff6b6b;
-        }
-        .config-close {
-            margin-top: 20px;
-            width: 100%;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            border-radius: 16px;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-family: inherit;
-        }
-        .config-close:hover {
-            background: rgba(255, 255, 255, 0.06);
-            color: #fff;
-        }
-
-        /* Daily missions and toasts */
-        .mission-toast {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            background: rgba(18, 22, 36, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 12px 20px;
-            color: #fff;
-            z-index: 30;
-            font-size: 14px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            pointer-events: none;
-            opacity: 0;
-            transform: translateY(-10px);
-            transition: all 0.3s ease;
-        }
-        .mission-toast.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        @media (max-width: 500px) {
-            .menu-card {
-                padding: 32px 24px 28px;
-            }
-            .menu-card .logo h1 {
-                font-size: 24px;
-            }
-            .action-row .play-btn {
-                font-size: 16px;
-                padding: 14px 16px;
-            }
-            .action-row .config-btn {
-                flex: 0 0 54px;
-                font-size: 20px;
-            }
-            .hud-item {
-                font-size: 11px;
-                padding: 2px 10px;
-            }
-            #hud {
-                padding: 12px 12px;
-            }
-            .modal-card {
-                padding: 24px 20px 28px;
-                max-width: 95vw;
-            }
-            .upgrade-grid {
-                grid-template-columns: 1fr;
-                gap: 8px;
-            }
-            .shop-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 6px;
-            }
-            #progressContainer {
-                width: 60vw;
-                top: 8px;
-            }
-            .stats-row .stat-item .stat-val {
-                font-size: 16px;
-            }
-        }
-        @media (max-width: 400px) {
-            .menu-card .logo .icon {
-                font-size: 32px;
-            }
-            .menu-card .logo h1 {
-                font-size: 20px;
-            }
-            .menu-card .subtitle {
-                font-size: 13px;
-            }
-            .shop-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-    </style>
+    @media (max-width:500px){
+        .menu-card{padding:30px 22px 26px}
+        .menu-card .logo h1{font-size:24px}
+        .action-row .play-btn{font-size:16px;padding:14px 14px}
+        .action-row .config-btn{flex:0 0 54px}
+        .hud-item{font-size:11px;padding:2px 10px}
+        #hud{padding:12px 12px}
+        .modal-card{padding:24px 18px 26px;max-width:95vw}
+        .upgrade-grid{grid-template-columns:1fr 1fr;gap:8px}
+        .shop-grid{grid-template-columns:1fr 1fr;gap:6px}
+        #progressContainer{width:56vw;top:8px}
+        .go-card{padding:28px 22px 26px}
+        .go-btn{padding:11px 16px;font-size:13px}
+    }
+</style>
 </head>
 <body>
 
-    <!-- CANVAS -->
-    <canvas id="simCanvas"></canvas>
+<canvas id="simCanvas"></canvas>
 
-    <!-- PROGRESS BAR -->
-    <div id="progressContainer">
-        <div id="progressPlanet">Earth → <span>Mars</span></div>
-        <div id="progressBarBg">
-            <div id="progressBarFill" style="width:0%"></div>
-        </div>
-        <div id="progressLabel">0 / 60</div>
+<!-- PROGRESS -->
+<div id="progressContainer">
+    <div id="progressPlanet">Earth → <span>Mars</span></div>
+    <div id="progressBarBg"><div id="progressBarFill" style="width:0%"></div></div>
+    <div id="progressLabel">0 / 500</div>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+    <div class="hud-left">
+        <div class="hud-item coins"><span class="hud-label">Coins</span><span class="hud-val" id="hudCoins">0</span></div>
+        <div class="hud-item score"><span class="hud-label">Dist</span><span class="hud-val" id="hudScore">0</span></div>
+        <div class="hud-item combo" id="hudComboWrap" style="display:none"><span class="hud-label">Flow</span><span class="hud-val" id="hudCombo">×2</span></div>
+        <div class="hud-item powerup-indicator" id="hudPowerup" style="display:none"><span class="hud-label" data-icon="bolt" data-size="11"></span><span class="hud-val" id="hudPowerupText">—</span></div>
     </div>
-
-    <!-- HUD -->
-    <div id="hud">
-        <div class="hud-left">
-            <div class="hud-item coins"><span class="hud-label">Coins</span><span class="hud-val" id="hudCoins">0</span></div>
-            <div class="hud-item score"><span class="hud-label">Dist</span><span class="hud-val" id="hudScore">0</span></div>
-            <div class="hud-item combo" id="hudComboWrap" style="display:none;"><span class="hud-label">Flow</span><span class="hud-val" id="hudCombo">0</span><span style="font-weight:400;color:rgba(255,255,255,0.15);font-size:12px;margin-left:2px;">×</span></div>
-            <div class="hud-item powerup-indicator" id="hudPowerup" style="display:none;"><span class="hud-label">⚡</span><span class="hud-val" id="hudPowerupText">—</span></div>
-        </div>
-        <div class="hud-right">
-            <div class="hud-item lives"><span class="hud-label">Shield</span><span class="hud-val" id="hudLives">1</span></div>
-            <div class="hud-item best"><span class="hud-label">Best</span><span class="hud-val" id="hudBest">0</span></div>
-        </div>
+    <div class="hud-right">
+        <div class="hud-item lives"><span class="hud-label">Shield</span><span class="hud-val" id="hudLives">1</span></div>
+        <div class="hud-item best"><span class="hud-label">Best</span><span class="hud-val" id="hudBest">0</span></div>
     </div>
+</div>
 
-    <!-- MAIN MENU -->
-    <div id="menuOverlay">
-        <div class="menu-card">
-            <div class="logo">
-                <span class="icon" id="logoIcon"></span>
-                <h1>Flight Path</h1>
-            </div>
-            <div class="subtitle">Trek through the solar system · 1 hit</div>
+<button id="pauseBtn" data-icon="pause" data-size="20" title="Pause"></button>
 
-            <div class="action-row">
-                <button class="play-btn" id="playBtn">
-                    <span>Start Mission</span>
-                    <span class="arrow">→</span>
-                </button>
-                <button class="config-btn" id="configBtn" title="Settings">⚙</button>
-            </div>
-            <div style="display:flex; gap:12px; margin-bottom:18px; justify-content:center;">
-                <button class="config-btn" id="shopBtn" style="flex:1; padding:10px; font-size:14px; border-radius:18px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); color:rgba(255,255,255,0.5); cursor:pointer; font-family:inherit; transition:all 0.2s;">🛒 Ship Bay</button>
-            </div>
+<!-- MENU -->
+<div id="menuOverlay">
+    <div class="menu-card">
+        <div class="logo"><span id="logoIcon" data-icon="rocket" data-size="38"></span><h1>Flight Path</h1></div>
+        <div class="subtitle">Trek through the solar system · one shield, no mercy</div>
+        <div class="rank-chip" id="rankChip"></div>
+        <div class="action-row">
+            <button class="play-btn" id="playBtn"><span>Start Mission</span><span class="icon-slot" data-icon="arrow" data-size="18"></span></button>
+            <button class="config-btn" id="configBtn" data-icon="settings" data-size="22" title="Settings"></button>
+        </div>
+        <div class="shop-row">
+            <button class="side-btn" id="shopBtn"><span data-icon="cart" data-size="17"></span><span>Ship Bay</span></button>
+        </div>
+        <div class="stats-row">
+            <div class="stat-item"><div class="stat-val" id="menuBest">0</div><div class="stat-lbl">Best distance</div></div>
+            <div class="stat-item"><div class="stat-val" id="menuCoins">0</div><div class="stat-lbl">Ship Coins</div></div>
+            <div class="stat-item"><div class="stat-val" id="menuSessions">1</div><div class="stat-lbl">Pilot Rank</div></div>
+        </div>
+        <div class="missions-list" id="missionsList"></div>
+        <div class="footer-note">Mouse / touch / arrows to steer · R restart · Esc pause</div>
+    </div>
+</div>
 
-            <div class="stats-row">
-                <div class="stat-item">
-                    <div class="stat-val" id="menuBest">0</div>
-                    <div class="stat-lbl">Best distance</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-val" id="menuCoins">0</div>
-                    <div class="stat-lbl">Ship Coins</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-val" id="menuSessions">0</div>
-                    <div class="stat-lbl">Sessions</div>
-                </div>
-            </div>
-
-            <div class="footer-note">R to reset · Esc to menu</div>
+<!-- GAME OVER -->
+<div id="gameOverOverlay">
+    <div class="go-card">
+        <div class="go-icon" id="goIcon"></div>
+        <h2>Shield lost</h2>
+        <div class="go-sub">You crashed at <span id="goPlanet">Earth</span></div>
+        <div class="go-score" id="goScore">0</div>
+        <div class="go-coins" id="goCoins">+0 coins this run</div>
+        <div class="go-best">best: <span id="goBest">0</span></div>
+        <div class="go-btn-row">
+            <button class="go-btn secondary" id="goMenuBtn">Menu</button>
+            <button class="go-btn primary" id="goRetryBtn">Retry from Earth</button>
         </div>
     </div>
+</div>
 
-    <!-- GAME OVER -->
-    <div id="gameOverOverlay">
-        <div class="go-card">
-            <div class="go-icon" id="goIcon"></div>
-            <h2>Shield lost</h2>
-            <div class="go-sub">You crashed at <span id="goPlanet">Earth</span></div>
-            <div class="go-score" id="goScore">0</div>
-            <div class="go-best">best: <span id="goBest">0</span></div>
-            <div class="go-btn-row">
-                <button class="go-btn secondary" id="goMenuBtn">↩ Menu</button>
-                <button class="go-btn primary" id="goRetryBtn">⟳ Retry from Earth</button>
-            </div>
-        </div>
+<!-- UPGRADES -->
+<div class="modal-overlay" id="upgradeOverlay">
+    <div class="modal-card">
+        <h2><span class="h-icon" data-icon="star" data-size="22"></span>Arrival Bonus</h2>
+        <div class="modal-sub">You've reached a new world — choose one enhancement</div>
+        <div class="upgrade-grid" id="upgradeGrid"></div>
+        <button class="modal-close" id="upgradeCloseBtn">Skip</button>
     </div>
+</div>
 
-    <!-- UPGRADE MODAL -->
-    <div class="modal-overlay" id="upgradeOverlay">
-        <div class="modal-card">
-            <h2>⬆ Arrival Bonus</h2>
-            <div class="modal-sub">Choose your enhancement</div>
-            <div class="upgrade-grid" id="upgradeGrid"></div>
-            <button class="modal-close" id="upgradeCloseBtn">Skip</button>
-        </div>
+<!-- SHOP -->
+<div class="modal-overlay" id="shopOverlay">
+    <div class="modal-card">
+        <h2><span class="h-icon" data-icon="cart" data-size="22" style="color:#6fcbff"></span>Ship Bay</h2>
+        <div class="modal-sub">Purchase and equip new hulls</div>
+        <div class="modal-coin-balance"><span data-icon="coin" data-size="18"></span><span id="shopCoins">0</span> Ship Coins</div>
+        <div class="shop-grid" id="shopGrid"></div>
+        <button class="modal-close" id="shopCloseBtn">Close</button>
     </div>
+</div>
 
-    <!-- SHOP MODAL -->
-    <div class="modal-overlay" id="shopOverlay">
-        <div class="modal-card">
-            <h2>🛒 Ship Bay</h2>
-            <div class="modal-sub">Purchase and equip new ships</div>
-            <div class="modal-coin-balance">💰 <span id="shopCoins">0</span> Ship Coins</div>
-            <div class="shop-grid" id="shopGrid"></div>
-            <button class="modal-close" id="shopCloseBtn">Close</button>
-        </div>
+<!-- CONFIG -->
+<div id="configOverlay">
+    <div class="config-card">
+        <h3><span data-icon="settings" data-size="20" style="color:#6fcbff"></span>Settings</h3>
+        <div class="config-sub">Adjust to your liking</div>
+        <div class="config-item"><span class="label">Control sensitivity</span><button class="config-btn-sm" id="sensToggle">1.0×</button></div>
+        <div class="config-item"><span class="label">Sound</span><button class="config-btn-sm" id="muteToggle">On</button></div>
+        <div class="config-item"><span class="label">Reset best score</span><button class="config-btn-sm danger" id="resetBestBtn">Reset</button></div>
+        <div class="config-item"><span class="label">Reset all progress</span><button class="config-btn-sm danger" id="resetAllBtn">Reset</button></div>
+        <button class="config-close" id="configCloseBtn">Close</button>
     </div>
+</div>
 
-    <!-- CONFIG -->
-    <div id="configOverlay">
-        <div class="config-card">
-            <h3>⚙ Settings</h3>
-            <div class="config-sub">Adjust simulation parameters</div>
-            <div class="config-item">
-                <span class="label">Mouse sensitivity</span>
-                <button class="config-btn-sm" id="sensToggle">1.0×</button>
-            </div>
-            <div class="config-item">
-                <span class="label">Reset best score</span>
-                <button class="config-btn-sm danger" id="resetBestBtn">Reset</button>
-            </div>
-            <div class="config-item">
-                <span class="label">Reset all stats</span>
-                <button class="config-btn-sm danger" id="resetAllBtn">Reset</button>
-            </div>
-            <button class="config-close" id="configCloseBtn">Close</button>
-        </div>
+<!-- PAUSE -->
+<div id="pauseOverlay">
+    <div class="config-card" style="max-width:360px;text-align:center">
+        <h3 style="justify-content:center"><span data-icon="pause" data-size="18" style="color:#6fcbff"></span>Paused</h3>
+        <div class="config-sub">Hazard field frozen</div>
+        <button class="config-close" id="pauseResumeBtn" style="background:linear-gradient(135deg,#2a6df4,#1a4fc3);color:#fff;border:none;font-weight:600">Resume</button>
+        <button class="config-close" id="pauseQuitBtn">Quit to menu</button>
     </div>
+</div>
 
-    <!-- Daily Mission Toast -->
-    <div class="mission-toast" id="missionToast"></div>
+<div class="mission-toast" id="missionToast"></div>
 
-    <script>
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  FLIGHT PATH SIMULATOR  –  Planetary Trek
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<script>
+(function(){
+'use strict';
 
-        (function() {
-            'use strict';
+/* ━━━━━━━━━ SVG ICONS ━━━━━━━━━ */
+function svgIcon(name,size){
+    size=size||24;
+    const M={
+        rocket:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M12 2C12 2 5 7 5 14C5 18 7.5 21 12 21C16.5 21 19 18 19 14C19 7 12 2 12 2Z" fill="#e6edf6"/><path d="M12 5.5C10.2 5.5 8.2 9 8.2 12.8C8.2 15.6 10 16.8 12 16.8C14 16.8 15.8 15.6 15.8 12.8C15.8 9 13.8 5.5 12 5.5Z" fill="#6fcbff"/><path d="M7.5 12L4.5 16L7.2 15.5L8.4 13.5Z" fill="#ff6b6b"/><path d="M16.5 12L19.5 16L16.8 15.5L15.6 13.5Z" fill="#ff6b6b"/></svg>`,
+        shield:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5V11C4 16 7 20 12 22C17 20 20 16 20 11V5L12 2Z" fill="#6fcbff"/><path d="M12 2L4 5V11C4 16 7 20 12 22V2Z" fill="#5ab6e8"/></svg>`,
+        coin:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="#ffd700"/><circle cx="12" cy="12" r="6.5" fill="#ffe97a"/><circle cx="12" cy="12" r="3.2" fill="#e6b800"/></svg>`,
+        settings:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" fill="currentColor"/><path fill-rule="evenodd" clip-rule="evenodd" d="M19.4 13C19.5 12.7 19.5 12.3 19.5 12C19.5 11.7 19.5 11.3 19.4 11L21.2 9.6C21.4 9.4 21.4 9.1 21.3 8.9L19.6 6C19.5 5.8 19.2 5.7 19 5.8L16.8 6.7C16.3 6.4 15.7 6.1 15.1 6L14.8 3.7C14.8 3.5 14.6 3.3 14.3 3.3H11.7C11.4 3.3 11.2 3.5 11.2 3.7L10.9 6C10.3 6.1 9.7 6.4 9.2 6.7L7 5.8C6.8 5.7 6.5 5.8 6.4 6L4.7 8.9C4.6 9.1 4.6 9.4 4.8 9.6L6.6 11C6.5 11.3 6.5 11.7 6.5 12C6.5 12.3 6.5 12.7 6.6 13L4.8 14.4C4.6 14.6 4.6 14.9 4.7 15.1L6.4 17.9C6.5 18.1 6.8 18.2 7 18.1L9.2 17.2C9.7 17.5 10.3 17.8 10.9 17.9L11.2 20.2C11.2 20.4 11.4 20.6 11.7 20.6H14.3C14.6 20.6 14.8 20.4 14.8 20.2L15.1 17.9C15.7 17.8 16.3 17.5 16.8 17.2L19 18.1C19.2 18.2 19.5 18.1 19.6 17.9L21.3 15.1C21.4 14.9 21.4 14.6 21.2 14.4L19.4 13Z" fill="currentColor"/></svg>`,
+        cart:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M3 4h2l2.6 12h11.8l2-8H7.2" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="20" r="1.8" fill="currentColor"/><circle cx="17.5" cy="20" r="1.8" fill="currentColor"/></svg>`,
+        bolt:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M13 2L5 13.5h5L8 22l9-12.5h-6L13 2Z" fill="currentColor"/></svg>`,
+        boom:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.2 6.2L20 6l-4 4.8L22 12l-6 1.2L20 18l-5.8-2.2L12 22l-2.2-6.2L4 18l4-4.8L2 12l6-1.2L4 6l5.8 2.2L12 2Z" fill="#ff6b6b"/></svg>`,
+        star:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7-6.2-3.7-6.2 3.7 1.6-7L2 9.2l7.1-.6L12 2Z" fill="currentColor"/></svg>`,
+        planet:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7" fill="#4a8fcf"/><path d="M5.5 12H18.5M12 5.5C8 8 8 16 12 18.5C16 16 16 8 12 5.5Z" fill="#2a5f8f" fill-opacity="0.5"/><ellipse cx="12" cy="12" rx="11" ry="3.4" stroke="#8fc4e8" stroke-width="1.4" transform="rotate(-18 12 12)"/></svg>`,
+        comet:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><circle cx="7" cy="17" r="3.6" fill="#fff"/><path d="M10 14L20 4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity="0.8"/><path d="M12.5 12.5L21 4" stroke="#fff" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/></svg>`,
+        check:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 7" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+        arrow:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+        rank:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M5 17l7-7 7 7M5 11l7-7 7 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+        pause:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><rect x="6.5" y="4" width="4" height="16" rx="1.5" fill="currentColor"/><rect x="13.5" y="4" width="4" height="16" rx="1.5" fill="currentColor"/></svg>`
+    };
+    return M[name]||'';
+}
 
-            // ── SVG Icon Helpers ──
-            function svgIcon(iconName, size = 24) {
-                const svgMap = {
-                    rocket: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C12 2 4 8 4 16C4 19 6 22 12 22C18 22 20 19 20 16C20 8 12 2 12 2Z" fill="#fff" fill-opacity="0.8"/><path d="M12 6C10 6 8 10 8 14C8 17 10 18 12 18C14 18 16 17 16 14C16 10 14 6 12 6Z" fill="#6fcbff"/></svg>`,
-                    shield: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L4 5V11C4 16 7 20 12 22C17 20 20 16 20 11V5L12 2Z" fill="#ff6b6b"/></svg>`,
-                    coin: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" fill="#ffd700"/><circle cx="12" cy="12" r="6" fill="#e6b800"/><text x="12" y="16" font-size="8" text-anchor="middle" fill="#b8860b" font-weight="bold">$</text></svg>`,
-                    settings: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" fill="currentColor"/><path fill-rule="evenodd" clip-rule="evenodd" d="M19.4 13C19.5 12.7 19.5 12.3 19.5 12C19.5 11.7 19.5 11.3 19.4 11L21.2 9.6C21.4 9.4 21.4 9.1 21.3 8.9L19.6 6C19.5 5.8 19.2 5.7 19 5.8L16.8 6.7C16.3 6.4 15.7 6.1 15.1 6L14.8 3.7C14.8 3.5 14.6 3.3 14.3 3.3H11.7C11.4 3.3 11.2 3.5 11.2 3.7L10.9 6C10.3 6.1 9.7 6.4 9.2 6.7L7 5.8C6.8 5.7 6.5 5.8 6.4 6L4.7 8.9C4.6 9.1 4.6 9.4 4.8 9.6L6.6 11C6.5 11.3 6.5 11.7 6.5 12C6.5 12.3 6.5 12.7 6.6 13L4.8 14.4C4.6 14.6 4.6 14.9 4.7 15.1L6.4 17.9C6.5 18.1 6.8 18.2 7 18.1L9.2 17.2C9.7 17.5 10.3 17.8 10.9 17.9L11.2 20.2C11.2 20.4 11.4 20.6 11.7 20.6H14.3C14.6 20.6 14.8 20.4 14.8 20.2L15.1 17.9C15.7 17.8 16.3 17.5 16.8 17.2L19 18.1C19.2 18.2 19.5 18.1 19.6 17.9L21.3 15.1C21.4 14.9 21.4 14.6 21.2 14.4L19.4 13ZM12 16C10.3 16 9 14.7 9 13C9 11.3 10.3 10 12 10C13.7 10 15 11.3 15 13C15 14.7 13.7 16 12 16Z" fill="currentColor"/></svg>`,
-                    ship: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C12 2 5 7 5 14C5 18 7 22 12 22C17 22 19 18 19 14C19 7 12 2 12 2Z" fill="currentColor"/></svg>`,
-                    upgrade: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L15 9H21L16 14L18 22L12 17L6 22L8 14L3 9H9L12 2Z" fill="#ffd700"/></svg>`,
-                    planet: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" fill="#4a8fcf"/><path d="M4 12H20M12 3C7 6 7 18 12 21C17 18 17 6 12 3Z" fill="#2a5f8f" fill-opacity="0.5"/></svg>`,
-                    comet: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="6" cy="12" r="4" fill="#fff"/><path d="M10 12L20 5" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M12 10L22 3" stroke="#fff" stroke-width="1" stroke-linecap="round"/></svg>`,
-                    wormhole: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="#a78bfa" stroke-width="2"/><circle cx="12" cy="12" r="6" stroke="#a78bfa" stroke-width="1" fill="none"/><circle cx="12" cy="12" r="2" fill="#a78bfa"/></svg>`,
-                };
-                return svgMap[iconName] || '';
+/* ━━━━━━━━━ DOM ━━━━━━━━━ */
+const canvas=document.getElementById('simCanvas');
+const ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id);
+const menuOverlay=$('menuOverlay'), playBtn=$('playBtn'), configBtn=$('configBtn'),
+    configOverlay=$('configOverlay'), configCloseBtn=$('configCloseBtn'),
+    resetBestBtn=$('resetBestBtn'), resetAllBtn=$('resetAllBtn'),
+    sensToggle=$('sensToggle'), muteToggle=$('muteToggle'),
+    shopBtn=$('shopBtn'), shopOverlay=$('shopOverlay'), shopCloseBtn=$('shopCloseBtn'),
+    shopGrid=$('shopGrid'), shopCoinsSpan=$('shopCoins'),
+    upgradeOverlay=$('upgradeOverlay'), upgradeGrid=$('upgradeGrid'), upgradeCloseBtn=$('upgradeCloseBtn'),
+    hud=$('hud'), hudScore=$('hudScore'), hudCoins=$('hudCoins'),
+    hudCombo=$('hudCombo'), hudComboWrap=$('hudComboWrap'),
+    hudLives=$('hudLives'), hudBest=$('hudBest'),
+    hudPowerup=$('hudPowerup'), hudPowerupText=$('hudPowerupText'),
+    progressContainer=$('progressContainer'), progressBarFill=$('progressBarFill'),
+    progressLabel=$('progressLabel'), progressPlanet=$('progressPlanet'),
+    menuBest=$('menuBest'), menuCoins=$('menuCoins'), menuSessions=$('menuSessions'),
+    rankChip=$('rankChip'), missionsList=$('missionsList'),
+    gameOverOverlay=$('gameOverOverlay'), goIcon=$('goIcon'), goScore=$('goScore'),
+    goBest=$('goBest'), goPlanet=$('goPlanet'), goCoins=$('goCoins'),
+    goRetryBtn=$('goRetryBtn'), goMenuBtn=$('goMenuBtn'),
+    pauseBtn=$('pauseBtn'), pauseOverlay=$('pauseOverlay'),
+    pauseResumeBtn=$('pauseResumeBtn'), pauseQuitBtn=$('pauseQuitBtn'),
+    missionToast=$('missionToast');
+
+/* ━━━━━━━━━ STORAGE (safe) ━━━━━━━━━ */
+const store={
+    get(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:v; }catch(e){ return d; } },
+    set(k,v){ try{ localStorage.setItem(k,String(v)); }catch(e){} }
+};
+function parseJSON(str,fb){ try{ const v=JSON.parse(str); return v===null||v===undefined?fb:v; }catch(e){ return fb; } }
+
+let sessionCount=parseInt(store.get('fps_sessions','0'))||0;
+let bestScore=parseInt(store.get('fps_best','0'))||0;
+let sensitivity=parseFloat(store.get('fps_sensitivity','1.0'))||1.0;
+let muted=store.get('fps_muted','0')==='1';
+let totalCoins=parseInt(store.get('fps_coins','0'))||0;
+let totalFlown=parseInt(store.get('fps_total_dist','0'))||0;
+let equippedShip=Math.min(parseInt(store.get('fps_equipped_ship','0'))||0, 4);
+let unlockedShips=parseJSON(store.get('fps_unlocked_ships','[0]'),[0]);
+if(!Array.isArray(unlockedShips)||!unlockedShips.length) unlockedShips=[0];
+let dailyMissions=parseJSON(store.get('fps_daily_missions','{}'),{});
+
+/* Experience: asteroids speed up with total lifetime distance flown */
+function getExpMult(){ return 1+Math.min(0.6,totalFlown/9000); }
+
+/* ━━━━━━━━━ ZONES (planet progression + hazards) ━━━━━━━━━ */
+const ZONES=[
+    {name:'Earth',           goal:500,  speed:1.00, astInt:1.35, hue:205, kind:'earth', hazards:['ast']},
+    {name:'Mars',            goal:650,  speed:1.22, astInt:1.12, hue:14,  kind:'rocky', hazards:['ast','meteor'], hint:'meteor showers inbound'},
+    {name:'Jupiter',         goal:800,  speed:1.45, astInt:0.98, hue:27,  kind:'gas',   hazards:['ast','rad'],    hint:'radiation clouds — don\u2019t linger inside'},
+    {name:'Saturn',          goal:1000, speed:1.68, astInt:0.90, hue:45,  kind:'gas', ring:true, hazards:['ast','ring'], hint:'ring debris crossing fast'},
+    {name:'Uranus',          goal:1200, speed:1.92, astInt:0.82, hue:185, kind:'ice',   hazards:['ast','ice'],    hint:'ice shards cutting diagonally'},
+    {name:'Neptune',          goal:1400, speed:2.18, astInt:0.75, hue:222, kind:'ice',   hazards:['ast','bolt'],   hint:'storm cells — dodge the warning columns'},
+    {name:'Pluto',           goal:1600, speed:2.45, astInt:0.68, hue:0,   kind:'rocky', gray:true, hazards:['ast','ice','meteor'], hint:'everything is sharper out here'},
+    {name:'Oort Cloud',      goal:1800, speed:2.75, astInt:0.62, hue:262, kind:'cloud', hazards:['ast','comet'],  hint:'long-period comets streaking through'},
+    {name:'Alpha Centauri',  goal:2000, speed:3.05, astInt:0.56, hue:46,  kind:'star',  hazards:['ast','meteor','bolt','comet'], hint:'full hazard spectrum'},
+    {name:'Deep Space',      goal:2000, speed:3.40, astInt:0.52, hue:285, kind:'cloud', endless:true, hazards:['ast','meteor','bolt','comet','rad','ring','ice'], hint:'the frontier never ends'}
+];
+const zoneOf=i=>ZONES[Math.max(0,Math.min(i,ZONES.length-1))];
+
+/* ━━━━━━━━━ SHIPS ━━━━━━━━━ */
+const SHIPS=[
+    {id:'scout',  name:'Scout',  cost:0,   desc:'Balanced starter',           speedMult:1.00, shieldBonus:0, hull:'#c9d4e2', accent:'#6fcbff', w:12, hitR:11, icon:'rocket'},
+    {id:'fighter',name:'Fighter',cost:50,  desc:'+15% speed',                 speedMult:1.15, shieldBonus:0, hull:'#d8ccc4', accent:'#ff6b6b', w:11, hitR:10, icon:'rocket'},
+    {id:'tank',   name:'Tank',   cost:100, desc:'+1 shield · −15% speed',     speedMult:0.85, shieldBonus:1, hull:'#cbd8c6', accent:'#7ddc9a', w:15, hitR:12, icon:'shield'},
+    {id:'stealth',name:'Stealth',cost:150, desc:'+30% speed · slim hull',     speedMult:1.30, shieldBonus:0, hull:'#596073', accent:'#a78bfa', w:9,  hitR:9,  icon:'rocket'},
+    {id:'nexus',  name:'Nexus',  cost:250, desc:'+20% speed · +1 shield',     speedMult:1.20, shieldBonus:1, hull:'#d9d2f0', accent:'#c4a5ff', w:13, hitR:11, glow:true, icon:'rocket'}
+];
+
+/* ━━━━━━━━━ UPGRADES & MISSIONS ━━━━━━━━━ */
+const UPGRADE_POOL=[
+    {id:'shield',    name:'Shield Cell',    desc:'+1 max shield',            icon:'shield', avail:()=>1+sim.up.shields+(SHIPS[equippedShip].shieldBonus||0)<4},
+    {id:'speed',     name:'Agility',        desc:'+6% speed & control',      icon:'rocket', avail:()=>sim.up.speed<6},
+    {id:'magnet',    name:'Magnet Range',   desc:'+50% magnet radius',       icon:'coin',   avail:()=>sim.up.magnet<4},
+    {id:'multiplier',name:'Warp Multiplier',desc:'+0.2× distance rate',      icon:'star',   avail:()=>sim.up.mult<2},
+    {id:'slow',      name:'Slow Field',     desc:'Near misses dilate time',  icon:'bolt',   avail:()=>!sim.up.slow},
+    {id:'refill',    name:'Field Repair',   desc:'Shields + 15 coins',       icon:'shield', avail:()=>true}
+];
+const MISSION_POOL=[
+    {id:'coins25', name:'Collect 25 coins', goal:25, key:'coins', reward:20, icon:'coin'},
+    {id:'near15',  name:'Graze 15 hazards', goal:15, key:'near',  reward:20, icon:'comet'},
+    {id:'reachJup',name:'Reach Jupiter',    goal:2,  key:'reach', reward:25, icon:'planet'},
+    {id:'reachSat',name:'Reach Saturn',     goal:3,  key:'reach', reward:30, icon:'planet'},
+    {id:'dist600', name:'Travel 600 in one run', goal:600, key:'runDist', reward:30, icon:'rocket'},
+    {id:'flow6',   name:'Reach Flow ×6',    goal:6,  key:'flow',  reward:20, icon:'bolt'},
+    {id:'coins50', name:'Collect 50 coins', goal:50, key:'coins', reward:35, icon:'coin'},
+    {id:'pups3',   name:'Grab 3 power-ups', goal:3,  key:'pups',  reward:15, icon:'star'}
+];
+
+/* ━━━━━━━━━ SOUND (procedural WebAudio) ━━━━━━━━━ */
+const Sfx={
+    ctx:null, master:null, noiseBuf:null, hum:null,
+    init(){
+        if(this.ctx) return;
+        const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+        try{
+            this.ctx=new AC();
+            this.master=this.ctx.createGain();
+            this.master.gain.value=muted?0:0.5;
+            this.master.connect(this.ctx.destination);
+            const len=this.ctx.sampleRate*0.5;
+            this.noiseBuf=this.ctx.createBuffer(1,len,this.ctx.sampleRate);
+            const d=this.noiseBuf.getChannelData(0);
+            for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+        }catch(e){ this.ctx=null; }
+    },
+    resume(){ if(this.ctx&&this.ctx.state==='suspended') this.ctx.resume(); },
+    setMuted(m){ muted=m; store.set('fps_muted',m?'1':'0'); if(this.master&&this.ctx) this.master.gain.setTargetAtTime(m?0:0.5,this.ctx.currentTime,0.02); },
+    tone(f,dur,type,vol,slide,delay){
+        if(!this.ctx||muted) return;
+        try{
+            const t0=this.ctx.currentTime+(delay||0);
+            const o=this.ctx.createOscillator(), g=this.ctx.createGain();
+            o.type=type||'sine'; o.frequency.setValueAtTime(f,t0);
+            if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,f+slide),t0+dur);
+            g.gain.setValueAtTime(0,t0);
+            g.gain.linearRampToValueAtTime(vol||0.2,t0+0.012);
+            g.gain.exponentialRampToValueAtTime(0.0008,t0+dur);
+            o.connect(g); g.connect(this.master);
+            o.start(t0); o.stop(t0+dur+0.05);
+        }catch(e){}
+    },
+    noise(dur,vol,fc,type,delay){
+        if(!this.ctx||muted||!this.noiseBuf) return;
+        try{
+            const t0=this.ctx.currentTime+(delay||0);
+            const src=this.ctx.createBufferSource(); src.buffer=this.noiseBuf; src.loop=true;
+            const f=this.ctx.createBiquadFilter(); f.type=type||'lowpass'; f.frequency.value=fc||800;
+            const g=this.ctx.createGain();
+            g.gain.setValueAtTime(0,t0);
+            g.gain.linearRampToValueAtTime(vol||0.3,t0+0.012);
+            g.gain.exponentialRampToValueAtTime(0.0008,t0+dur);
+            src.connect(f); f.connect(g); g.connect(this.master);
+            src.start(t0); src.stop(t0+dur+0.05);
+        }catch(e){}
+    },
+    coin(streak){ const p=Math.pow(1.059,Math.min(streak||0,10));
+        this.tone(920*p,0.09,'sine',0.15); this.tone(1380*p,0.14,'sine',0.13,0,0.055); },
+    near(){ this.noise(0.12,0.055,1700,'bandpass'); },
+    power(){ this.tone(280,0.35,'sine',0.17,620); },
+    hit(){ this.noise(0.35,0.5,600); this.tone(130,0.4,'sawtooth',0.22,-90); },
+    bolt(){ this.noise(0.18,0.4,2600,'highpass'); this.tone(70,0.25,'square',0.18,-40); },
+    tick(){ this.tone(1250,0.045,'square',0.05); },
+    warp(){ this.tone(140,1.2,'sawtooth',0.1,1100); this.noise(1.0,0.09,900); },
+    arrive(){ [523,659,784,1046].forEach((f,i)=>this.tone(f,0.5,'sine',0.11,0,i*0.09)); },
+    over(){ this.tone(300,0.9,'sawtooth',0.18,-240); this.noise(0.8,0.28,420); },
+    humStart(){
+        if(!this.ctx||this.hum) return;
+        try{
+            const o=this.ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=52;
+            const f=this.ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=240;
+            const g=this.ctx.createGain(); g.gain.value=0.0;
+            g.gain.setTargetAtTime(0.045,this.ctx.currentTime,0.4);
+            o.connect(f); f.connect(g); g.connect(this.master); o.start();
+            this.hum={o,f,g};
+        }catch(e){}
+    },
+    humSet(k){ if(!this.hum||!this.ctx) return;
+        try{ this.hum.o.frequency.setTargetAtTime(52*Math.max(0.25,k),this.ctx.currentTime,0.06);
+             this.hum.f.frequency.setTargetAtTime(240*Math.max(0.3,k),this.ctx.currentTime,0.06); }catch(e){} },
+    humStop(){ if(!this.hum||!this.ctx) return;
+        try{ this.hum.g.gain.setTargetAtTime(0,this.ctx.currentTime,0.15);
+             const h=this.hum; setTimeout(()=>{ try{h.o.stop();}catch(e){} },500);
+        }catch(e){} this.hum=null; }
+};
+
+/* ━━━━━━━━━ CANVAS & BACKGROUND ━━━━━━━━━ */
+let W=0,H=0,vigCanvas=null;
+let stars=[],nebulas=[];
+const SPEEDF=[0.12,0.30,0.60];
+function clampN(v,a,b){ return v<a?a:(v>b?b:v); }
+
+function initStarsAndNebulas(){
+    stars=[];
+    const count=Math.min(700,Math.floor((W*H)/2600));
+    for(let i=0;i<count;i++){
+        stars.push({x:Math.random()*W,y:Math.random()*H,
+            size:Math.random()*2.4+0.3, layer:1+Math.floor(Math.random()*3),
+            b:Math.random()*0.6+0.4, tw:Math.random()*2.5+0.5, ph:Math.random()*6.28});
+    }
+    nebulas=[];
+    for(let i=0;i<5;i++){
+        nebulas.push({x:Math.random()*W,y:Math.random()*H,
+            r:Math.random()*380+240, ho:(Math.random()-0.5)*130, ph:Math.random()*6.28});
+    }
+}
+function buildVignette(){
+    vigCanvas=document.createElement('canvas');
+    vigCanvas.width=W; vigCanvas.height=H;
+    const c=vigCanvas.getContext('2d');
+    const g=c.createRadialGradient(W/2,H*0.45,Math.min(W,H)*0.42,W/2,H*0.45,Math.hypot(W,H)*0.62);
+    g.addColorStop(0,'rgba(3,5,9,0)');
+    g.addColorStop(1,'rgba(3,5,9,0.62)');
+    c.fillStyle=g; c.fillRect(0,0,W,H);
+}
+function resizeCanvas(){
+    const dpr=Math.min(2,window.devicePixelRatio||1);
+    W=window.innerWidth; H=window.innerHeight;
+    canvas.width=W*dpr; canvas.height=H*dpr;
+    canvas.style.width=W+'px'; canvas.style.height=H+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.lineCap='round';
+    buildVignette();
+    initStarsAndNebulas();
+    const rk=sim.rocket;
+    rk.x=clampN(rk.x||W/2,22,W-22);
+    rk.tx=clampN(rk.tx||rk.x,22,W-22);
+    if(sim.state==='menu'){ rk.x=rk.tx=W/2; rk.y=rk.ty=H-140; }
+    rk.y=clampN(rk.y||H-140,H*0.3,H-90);
+    rk.ty=clampN(rk.ty||rk.y,H*0.3,H-90);
+}
+window.addEventListener('resize',resizeCanvas);
+
+/* ━━━━━━━━━ SIM STATE ━━━━━━━━━ */
+const sim={
+    state:'menu', time:0, ts:1, scroll:46,
+    rocket:{x:0,y:0,tx:0,ty:0,tilt:0,vxS:0},
+    hazards:[], clouds:[], bolts:[], coins:[], pups:[], parts:[], texts:[],
+    dist:0, segStart:0, goal:500, zone:0,
+    lives:1, maxLives:1, invincible:0, rad:0, radTickT:0,
+    flow:0, flowT:0, maxFlow:0, coinStreak:0, coinStreakT:0,
+    up:{shields:0,speed:0,magnet:0,mult:1,slow:false},
+    speedFactor:1, magnetRange:110, distMult:1,
+    runCoins:0, dyingT:0, warpT:0, warpK:1, warpFlash:false, warpBase:200, hintT:0,
+    astT:1.2, coinT:1, pupT:10, meteorQ:null, hT:{},
+    slowmoT:0, slowmoF:1, pupSlowT:0, magnetT:0,
+    shake:0, flash:0, flashC:'255,255,255'
+};
+function recalcStats(){
+    const ship=SHIPS[equippedShip]||SHIPS[0];
+    sim.speedFactor=(ship.speedMult||1)*(1+0.06*sim.up.speed);
+    sim.maxLives=Math.min(4,1+sim.up.shields+(ship.shieldBonus||0));
+    sim.magnetRange=110*(1+0.5*sim.up.magnet);
+    sim.distMult=sim.up.mult;
+}
+function shipHitR(){ return (SHIPS[equippedShip]||SHIPS[0]).hitR||11; }
+function saveProgress(){
+    store.set('fps_coins',totalCoins);
+    store.set('fps_best',bestScore);
+    store.set('fps_total_dist',totalFlown);
+    store.set('fps_sessions',sessionCount);
+    store.set('fps_equipped_ship',equippedShip);
+    store.set('fps_unlocked_ships',JSON.stringify(unlockedShips));
+    store.set('fps_daily_missions',JSON.stringify(dailyMissions));
+}
+function slowmo(f,d){ sim.slowmoF=f; sim.slowmoT=Math.max(sim.slowmoT,d); }
+
+/* ━━━━━━━━━ INPUT ━━━━━━━━━ */
+const keys={l:false,r:false,u:false,d:false};
+function setTarget(x,y){
+    sim.rocket.tx=clampN(x,22,W-22);
+    sim.rocket.ty=clampN(y-36,H*0.3,H-90);
+}
+canvas.addEventListener('pointermove',e=>{ if(sim.state==='playing') setTarget(e.clientX,e.clientY); });
+canvas.addEventListener('pointerdown',e=>{ Sfx.init(); Sfx.resume(); if(sim.state==='playing') setTarget(e.clientX,e.clientY); });
+window.addEventListener('keydown',e=>{
+    const k=e.key;
+    if(k==='ArrowLeft'||k==='a'||k==='A'){keys.l=true;e.preventDefault();}
+    if(k==='ArrowRight'||k==='d'||k==='D'){keys.r=true;e.preventDefault();}
+    if(k==='ArrowUp'||k==='w'||k==='W'){keys.u=true;e.preventDefault();}
+    if(k==='ArrowDown'||k==='s'||k==='S'){keys.d=true;e.preventDefault();}
+    if(k==='Escape'){
+        if(sim.state==='playing') pauseGame();
+        else if(sim.state==='paused') resumeGame();
+        else if(sim.state==='dead') quitToMenu();
+    }
+    if((k==='r'||k==='R')&&['playing','paused','dead','dying','choose'].includes(sim.state)) startRun();
+    if(k==='m'||k==='M'){ Sfx.init(); Sfx.setMuted(!muted); updateMuteDisplay(); }
+});
+window.addEventListener('keyup',e=>{
+    const k=e.key;
+    if(k==='ArrowLeft'||k==='a'||k==='A')keys.l=false;
+    if(k==='ArrowRight'||k==='d'||k==='D')keys.r=false;
+    if(k==='ArrowUp'||k==='w'||k==='W')keys.u=false;
+    if(k==='ArrowDown'||k==='s'||k==='S')keys.d=false;
+});
+document.addEventListener('visibilitychange',()=>{ if(document.hidden&&sim.state==='playing') pauseGame(); });
+
+/* ━━━━━━━━━ SPAWNERS ━━━━━━━━━ */
+function rockVerts(r){
+    const vs=[],n=8;
+    for(let i=0;i<n;i++) vs.push({a:i/n*Math.PI*2,d:r*(0.72+Math.random()*0.28)});
+    return vs;
+}
+function spawnAsteroid(b,e,r){
+    const rad=12+Math.random()*22;
+    const x=30+Math.random()*(W-60);
+    const vy=clampN(b*(1.1+Math.random()*0.45)*e*r,170,1120);
+    sim.hazards.push({type:'ast',x,y:-40-Math.random()*30,
+        vx:(Math.random()-0.5)*b*0.22,vy:vy,r:rad,
+        rot:Math.random()*6,vr:(Math.random()-0.5)*1.6,verts:rockVerts(rad),nm:false});
+    if(Math.random()<0.22){
+        const r2=rad*0.6+6, x2=clampN(x+(Math.random()<0.5?-1:1)*(70+Math.random()*70),30,W-30);
+        sim.hazards.push({type:'ast',x:x2,y:-30-Math.random()*30,
+            vx:(Math.random()-0.5)*b*0.22,vy:vy*(1+Math.random()*0.2),r:r2,
+            rot:Math.random()*6,vr:(Math.random()-0.5)*2,verts:rockVerts(r2),nm:false});
+    }
+}
+const SPECIAL={
+    meteor:{iv:7, spawn(b){
+        const fromLeft=Math.random()<0.5;
+        const x0=fromLeft?W*0.08+Math.random()*W*0.25:W*0.67+Math.random()*W*0.25;
+        sim.meteorQ={left:5,t:0,x0,y0:-30,
+            vx:(x0<W/2?1:-1)*(b*1.1+120), vy:b*1.5+140};
+    }},
+    rad:{iv:8.5, spawn(b){
+        sim.clouds.push({x:90+Math.random()*(W-180),y:-140,
+            r:70+Math.random()*28,vy:b*0.33,t:Math.random()*6,seed:Math.random()*10});
+    }},
+    ring:{iv:8, spawn(b){
+        const laneY=H*0.16+Math.random()*H*0.5;
+        const side=Math.random()<0.5?1:-1;
+        const vx=side*(b*2.2+160);
+        const n=4+Math.floor(Math.random()*3);
+        for(let i=0;i<n;i++){
+            const r=8+Math.random()*5;
+            sim.hazards.push({type:'ring',
+                x:side>0?-60-i*110:W+60+i*110,
+                y:laneY+(Math.random()-0.5)*26,
+                vx:vx, vy:b*(0.14+Math.random()*0.12), r:r,
+                rot:Math.random()*6, vr:(Math.random()-0.5)*5, verts:rockVerts(r), nm:false});
+        }
+        burst(side>0?14:W-14,laneY,'255,210,74',6,140);
+    }},
+    ice:{iv:4.5, spawn(b,e,r){
+        for(let i=0;i<2;i++){
+            const rr=8+Math.random()*3;
+            sim.hazards.push({type:'shard',x:20+Math.random()*(W-40),y:-30-i*60,
+                vx:(Math.random()<0.5?-1:1)*(b*0.28+Math.random()*b*0.22),
+                vy:clampN(b*1.5*e*r,230,1250), r:rr,
+                rot:Math.random()*6, vr:(Math.random()-0.5)*3, nm:false});
+        }
+    }},
+    bolt:{iv:6.4, spawn(){
+        sim.bolts.push({x:60+Math.random()*(W-120),w:76,state:'warn',t:0.95,tick:0,pts:null});
+    }},
+    comet:{iv:7.5, spawn(b){
+        const fromLeft=Math.random()<0.5;
+        sim.hazards.push({type:'comet',
+            x:fromLeft?-60:W+60, y:Math.random()*H*0.35,
+            vx:(fromLeft?1:-1)*(b*1.7+150), vy:b*1.9+160, r:13, nm:false});
+    }}
+};
+function spawnCoins(b){
+    const cluster=Math.random()<0.3?3:1;
+    const bx=50+Math.random()*(W-100);
+    for(let i=0;i<cluster;i++)
+        sim.coins.push({x:clampN(bx+i*36,30,W-30),y:-20-i*16,vy:b*0.92,phase:Math.random()*6});
+}
+function spawnPup(b){
+    const roll=Math.random(), low=sim.lives<sim.maxLives;
+    const type=roll<(low?0.45:0.15)?'shield':(roll<0.75?'magnet':'slow');
+    sim.pups.push({x:50+Math.random()*(W-100),y:-30,vy:b*0.5,type:type,t:Math.random()*6});
+}
+function spawnLogic(sdt,zone,ramp,expM,hzBase){
+    if(sim.hazards.length<42){
+        sim.astT-=sdt*expM*ramp;
+        if(sim.astT<=0){
+            spawnAsteroid(hzBase,expM,ramp);
+            sim.astT=Math.max(0.3,zone.astInt/(0.55+0.45*expM));
+            if(Math.random()<0.3) sim.astT*=0.6;
+        }
+    }
+    for(const h of zone.hazards){
+        if(h==='ast') continue;
+        if(sim.hT[h]===undefined) sim.hT[h]=2.5+Math.random()*2.5;
+        sim.hT[h]-=sdt;
+        if(sim.hT[h]<=0){
+            SPECIAL[h].spawn(hzBase,expM,ramp);
+            sim.hT[h]=SPECIAL[h].iv*(0.7+Math.random()*0.6)/(0.7+0.3*zone.speed);
+        }
+    }
+    if(sim.meteorQ){
+        const q=sim.meteorQ; q.t-=sdt;
+        if(q.t<=0){
+            sim.hazards.push({type:'meteor',x:q.x0,y:q.y0,vx:q.vx,vy:q.vy,r:8,
+                rot:Math.random()*6,vr:(Math.random()-0.5)*6,verts:rockVerts(8),nm:false});
+            q.left--; q.t=0.15;
+            if(q.left<=0) sim.meteorQ=null;
+        }
+    }
+    sim.coinT-=sdt;
+    if(sim.coinT<=0){ spawnCoins(hzBase); sim.coinT=1.4+Math.random()*1.4; }
+    sim.pupT-=sdt;
+    if(sim.pupT<=0){ spawnPup(hzBase); sim.pupT=12+Math.random()*7; }
+}
+
+/* ━━━━━━━━━ PARTICLES / TEXT ━━━━━━━━━ */
+function burst(x,y,color,n,speed){
+    if(sim.parts.length>520) sim.parts.splice(0,sim.parts.length-520);
+    for(let i=0;i<n;i++){
+        const a=Math.random()*Math.PI*2, sp=speed*(0.3+Math.random()*0.7);
+        sim.parts.push({type:'spark',x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
+            life:0.45+Math.random()*0.4,max:0.85,size:2+Math.random()*2.5,color:color});
+    }
+    sim.parts.push({type:'puff',x:x,y:y,vx:0,vy:0,life:0.5,max:0.5,size:16});
+}
+function pushText(x,y,str,color){
+    if(sim.texts.length>12) sim.texts.shift();
+    sim.texts.push({x:x,y:y,str:str,color:color,life:1.3,max:1.3});
+}
+function updateParts(dt){
+    for(let i=sim.parts.length-1;i>=0;i--){
+        const p=sim.parts[i];
+        p.x+=p.vx*dt; p.y+=p.vy*dt;
+        p.vx-=p.vx*2.2*dt; p.vy-=p.vy*2.2*dt;
+        p.life-=dt;
+        if(p.life<=0) sim.parts.splice(i,1);
+    }
+}
+function updateTexts(dt){
+    for(let i=sim.texts.length-1;i>=0;i--){
+        const t=sim.texts[i]; t.y-=42*dt; t.life-=dt;
+        if(t.life<=0) sim.texts.splice(i,1);
+    }
+}
+
+/* ━━━━━━━━━ COMBAT / EVENTS ━━━━━━━━━ */
+const NEARMISSABLE={ast:1,shard:1,ring:1,meteor:1,comet:1};
+function damage(){
+    if(sim.invincible>0||sim.state!=='playing') return;
+    sim.lives--;
+    Sfx.hit();
+    sim.shake=24; sim.flash=0.5; sim.flashC='255,80,80';
+    slowmo(0.3,0.5);
+    burst(sim.rocket.x,sim.rocket.y,'255,154,90',16,320);
+    sim.flow=0; sim.flowT=0; sim.rad=0;
+    if(sim.lives<=0) die();
+    else sim.invincible=2.2;
+}
+function die(){
+    sim.state='dying'; sim.dyingT=0;
+    burst(sim.rocket.x,sim.rocket.y,'255,90,70',26,430);
+    burst(sim.rocket.x,sim.rocket.y,'255,160,80',18,300);
+    sim.parts.push({type:'puff',x:sim.rocket.x,y:sim.rocket.y,vx:0,vy:0,life:0.9,max:0.9,size:60});
+    sim.shake=34; sim.flash=0.7; sim.flashC='255,70,60';
+    Sfx.over(); Sfx.humStop();
+    slowmo(0.25,0.9);
+}
+function nearMiss(h){
+    sim.flow++; sim.flowT=3.5;
+    if(sim.flow>sim.maxFlow) sim.maxFlow=sim.flow;
+    missionEvent('flow',sim.flow,true);
+    missionEvent('near',1);
+    sim.dist+=3;
+    Sfx.near();
+    const hr=shipHitR();
+    const a=Math.atan2(h.y-sim.rocket.y,h.x-sim.rocket.x);
+    burst(sim.rocket.x+Math.cos(a)*(hr+h.r+12),sim.rocket.y+Math.sin(a)*(hr+h.r+12),'190,232,255',5,170);
+    if(sim.up.slow) slowmo(0.45,0.4);
+    if(sim.flow>1&&sim.flow%5===0) pushText(sim.rocket.x,sim.rocket.y-42,'FLOW ×'+sim.flow,'#6fcbff');
+}
+function collectCoin(c){
+    totalCoins++; sim.runCoins++;
+    sim.dist+=2;
+    sim.coinStreak++; sim.coinStreakT=1.4;
+    Sfx.coin(sim.coinStreak);
+    burst(c.x,c.y,'255,210,74',4,150);
+    missionEvent('coins',1);
+    if(sim.runCoins%25===0) saveProgress();
+}
+function applyPup(p){
+    Sfx.power();
+    missionEvent('pups',1);
+    if(p.type==='shield'){
+        if(sim.lives<sim.maxLives){ sim.lives++; pushText(p.x,p.y,'+1 SHIELD','#6fcbff'); }
+        else{ totalCoins+=10; sim.runCoins+=10; pushText(p.x,p.y,'+10 COINS','#ffd700'); }
+    }else if(p.type==='magnet'){
+        sim.magnetT=8; pushText(p.x,p.y,'MAGNET','#ffd700');
+    }else{
+        sim.pupSlowT=5; pushText(p.x,p.y,'TIME DILATION','#a78bfa');
+    }
+    burst(p.x,p.y,p.type==='shield'?'111,203,255':(p.type==='magnet'?'255,210,74':'167,139,250'),10,220);
+}
+
+/* ━━━━━━━━━ ENTITY UPDATES ━━━━━━━━━ */
+function moveRocket(sdt){
+    const rk=sim.rocket;
+    const ks=760*sdt;
+    if(keys.l) rk.tx-=ks; if(keys.r) rk.tx+=ks;
+    if(keys.u) rk.ty-=ks; if(keys.d) rk.ty+=ks;
+    rk.tx=clampN(rk.tx,22,W-22); rk.ty=clampN(rk.ty,H*0.3,H-90);
+    const k=Math.min(1,(5+5*sensitivity)*sdt);
+    const px=rk.x;
+    rk.x+=(rk.tx-rk.x)*k;
+    rk.y+=(rk.ty-rk.y)*Math.min(1,6*sdt);
+    if(sdt>0.0001){
+        const vx=(rk.x-px)/sdt;
+        rk.vxS+=(vx-rk.vxS)*Math.min(1,10*sdt);
+    }
+    /* bank the rocket into its direction of travel */
+    const tiltT=clampN(rk.vxS/1500,-1,1)*0.5;
+    rk.tilt+=(tiltT-rk.tilt)*Math.min(1,12*sdt);
+    if(sim.state==='playing'&&Math.random()<0.9&&sim.parts.length<520){
+        const tx=rk.x-Math.sin(rk.tilt)*16, ty=rk.y+Math.cos(rk.tilt)*16;
+        sim.parts.push({type:'trail',x:tx+(Math.random()-0.5)*4,y:ty,
+            vx:(Math.random()-0.5)*30,vy:90+Math.random()*70,
+            life:0.42,max:0.42,size:3.4,color:'255,150,60'});
+    }
+}
+function updateStars(dt,scroll){
+    for(const s of stars){
+        s.y+=scroll*SPEEDF[s.layer-1]*dt;
+        if(s.y>H+6){ s.y=-6; s.x=Math.random()*W; }
+    }
+}
+function updateNebulas(dt,scroll){
+    for(const n of nebulas){
+        n.y+=scroll*0.04*dt;
+        if(n.y-n.r>H){ n.y=-n.r; n.x=Math.random()*W; }
+    }
+}
+function updateHazards(sdt){
+    const rk=sim.rocket, hr=shipHitR();
+    for(let i=sim.hazards.length-1;i>=0;i--){
+        const h=sim.hazards[i];
+        h.x+=h.vx*sdt; h.y+=h.vy*sdt;
+        if(h.vr!==undefined) h.rot+=h.vr*sdt;
+        if((h.type==='meteor'||h.type==='comet')&&Math.random()<sdt*46&&sim.parts.length<520){
+            sim.parts.push({type:'trail',x:h.x-h.vx*0.02,y:h.y-h.vy*0.02,
+                vx:(Math.random()-0.5)*30,vy:(Math.random()-0.5)*30,
+                life:0.4,max:0.4,size:h.type==='comet'?4:2.6,
+                color:h.type==='comet'?'170,220,255':'255,160,70'});
+        }
+        const d=Math.hypot(h.x-rk.x,h.y-rk.y);
+        if(d<h.r+hr){
+            if(sim.invincible<=0){
+                burst(h.x,h.y,'200,190,170',8,240);
+                burst(h.x,h.y,'255,160,80',6,200);
+                sim.hazards.splice(i,1);
+                damage();
+                continue;
             }
-
-            // ── DOM refs ──
-            const canvas = document.getElementById('simCanvas');
-            const ctx = canvas.getContext('2d');
-
-            const menuOverlay = document.getElementById('menuOverlay');
-            const playBtn = document.getElementById('playBtn');
-            const configBtn = document.getElementById('configBtn');
-            const configOverlay = document.getElementById('configOverlay');
-            const configCloseBtn = document.getElementById('configCloseBtn');
-            const resetBestBtn = document.getElementById('resetBestBtn');
-            const resetAllBtn = document.getElementById('resetAllBtn');
-            const sensToggle = document.getElementById('sensToggle');
-            const shopBtn = document.getElementById('shopBtn');
-            const shopOverlay = document.getElementById('shopOverlay');
-            const shopCloseBtn = document.getElementById('shopCloseBtn');
-            const shopGrid = document.getElementById('shopGrid');
-            const shopCoinsSpan = document.getElementById('shopCoins');
-
-            const upgradeOverlay = document.getElementById('upgradeOverlay');
-            const upgradeGrid = document.getElementById('upgradeGrid');
-            const upgradeCloseBtn = document.getElementById('upgradeCloseBtn');
-
-            const hud = document.getElementById('hud');
-            const hudScore = document.getElementById('hudScore');
-            const hudCoins = document.getElementById('hudCoins');
-            const hudCombo = document.getElementById('hudCombo');
-            const hudComboWrap = document.getElementById('hudComboWrap');
-            const hudLives = document.getElementById('hudLives');
-            const hudBest = document.getElementById('hudBest');
-            const hudPowerup = document.getElementById('hudPowerup');
-            const hudPowerupText = document.getElementById('hudPowerupText');
-
-            const progressContainer = document.getElementById('progressContainer');
-            const progressBarFill = document.getElementById('progressBarFill');
-            const progressLabel = document.getElementById('progressLabel');
-            const progressPlanet = document.getElementById('progressPlanet');
-
-            const menuBest = document.getElementById('menuBest');
-            const menuCoins = document.getElementById('menuCoins');
-            const menuSessions = document.getElementById('menuSessions');
-
-            const gameOverOverlay = document.getElementById('gameOverOverlay');
-            const goScore = document.getElementById('goScore');
-            const goBest = document.getElementById('goBest');
-            const goPlanet = document.getElementById('goPlanet');
-            const goRetryBtn = document.getElementById('goRetryBtn');
-            const goMenuBtn = document.getElementById('goMenuBtn');
-
-            const missionToast = document.getElementById('missionToast');
-
-            // ── State ──
-            let simRunning = false;
-            let simActive = false;
-            let animId = null;
-            let sessionCount = parseInt(localStorage.getItem('fps_sessions') || '0');
-            let bestScore = parseInt(localStorage.getItem('fps_best') || '0');
-            let sensitivity = parseFloat(localStorage.getItem('fps_sensitivity') || '1.0');
-            let totalCoins = parseInt(localStorage.getItem('fps_coins') || '0');
-            let equippedShip = parseInt(localStorage.getItem('fps_equipped_ship') || '0');
-            let unlockedShips = JSON.parse(localStorage.getItem('fps_unlocked_ships') || '[0]');
-            let dailyMissions = JSON.parse(localStorage.getItem('fps_daily_missions') || '{}');
-            let lastLoginDate = localStorage.getItem('fps_last_login') || '';
-
-            // ── Canvas & Context ──
-            let W, H;
-
-            function resizeCanvas() {
-                W = canvas.width = window.innerWidth;
-                H = canvas.height = window.innerHeight;
-                if (!sim.gameOver) {
-                    sim.rocket.x = W / 2;
-                    sim.rocket.y = H - 120;
-                    sim.rocket.targetX = sim.rocket.x;
-                    sim.rocket.targetY = sim.rocket.y;
-                }
-                initStarsAndNebulas();
+        }else if(!h.nm&&NEARMISSABLE[h.type]){
+            const win=h.type==='comet'?48:(h.type==='ast'?36:30);
+            if(d<h.r+hr+win){ h.nm=true; nearMiss(h); }
+        }
+        if(h.y>H+180||h.x<-280||h.x>W+280) sim.hazards.splice(i,1);
+    }
+}
+function updateClouds(sdt){
+    let inside=false;
+    for(let i=sim.clouds.length-1;i>=0;i--){
+        const c=sim.clouds[i];
+        c.t+=sdt; c.y+=c.vy*sdt; c.x+=Math.sin(c.t*0.6+c.seed)*26*sdt;
+        const d=Math.hypot(c.x-sim.rocket.x,c.y-sim.rocket.y);
+        if(d<c.r*0.78&&sim.state==='playing'){
+            inside=true;
+            sim.rad+=sdt*1.05;
+            sim.radTickT-=sdt;
+            if(sim.radTickT<=0){ Sfx.tick(); sim.radTickT=0.28; }
+            if(sim.rad>=1){
+                burst(c.x,c.y,'140,255,168',14,260);
+                sim.clouds.splice(i,1);
+                sim.rad=0;
+                damage();
+                continue;
             }
-            window.addEventListener('resize', resizeCanvas);
-
-            // ── Deep Space Background ──
-            let stars = [];
-            let nebulas = [];
-
-            function initStarsAndNebulas() {
-                stars = [];
-                const starCount = Math.floor((W * H) / 2000);
-                for (let i = 0; i < Math.min(starCount, 800); i++) {
-                    const size = Math.random() * 2.8 + 0.2;
-                    stars.push({
-                        x: Math.random() * W,
-                        y: Math.random() * H,
-                        size: size,
-                        speed: (Math.random() * 0.6 + 0.05) * (size / 1.5),
-                        brightness: Math.random() * 0.6 + 0.4,
-                        twinkleSpeed: Math.random() * 0.03 + 0.005,
-                    });
-                }
-
-                nebulas = [];
-                const colors = [
-                    'hsla(230, 80%, 60%, 0.04)',
-                    'hsla(320, 80%, 50%, 0.03)',
-                    'hsla(190, 80%, 60%, 0.03)',
-                    'hsla(40, 80%, 60%, 0.02)',
-                    'hsla(280, 80%, 50%, 0.02)'
-                ];
-                for (let i = 0; i < 6; i++) {
-                    nebulas.push({
-                        x: Math.random() * W,
-                        y: Math.random() * H,
-                        radius: Math.random() * 400 + 200,
-                        color: colors[i % colors.length],
-                        speed: Math.random() * 0.06 + 0.01,
-                        phase: Math.random() * Math.PI * 2,
-                    });
-                }
+        }
+        if(c.y>H+220) sim.clouds.splice(i,1);
+    }
+    if(!inside) sim.rad=Math.max(0,sim.rad-sdt*1.5);
+}
+function makeBoltPts(x){
+    const pts=[[x,0]]; let y=0,cx=x;
+    while(y<H){
+        y+=34+Math.random()*30;
+        cx=x+(Math.random()-0.5)*46;
+        pts.push([cx,Math.min(y,H)]);
+    }
+    return pts;
+}
+function updateBolts(sdt){
+    for(let i=sim.bolts.length-1;i>=0;i--){
+        const b=sim.bolts[i];
+        if(b.state==='warn'){
+            b.t-=sdt; b.tick-=sdt;
+            if(b.tick<=0){ Sfx.tick(); b.tick=0.22; }
+            if(b.t<=0){
+                b.state='strike'; b.t=0.22; b.pts=makeBoltPts(b.x);
+                Sfx.bolt(); sim.shake=Math.max(sim.shake,12);
             }
-
-            // ── Planets ──
-            const PLANETS = [
-                { name: 'Earth', emoji: '🌍', distance: 0, speedBase: 1.2, spawnBase: 50, extraSpawn: 0.04, color: '#4a8fcf' },
-                { name: 'Mars', emoji: '🔴', distance: 60, speedBase: 1.6, spawnBase: 42, extraSpawn: 0.06, color: '#cf6a4a' },
-                { name: 'Jupiter', emoji: '🟠', distance: 160, speedBase: 2.1, spawnBase: 34, extraSpawn: 0.09, color: '#cf9a4a' },
-                { name: 'Saturn', emoji: '🪐', distance: 320, speedBase: 2.7, spawnBase: 26, extraSpawn: 0.13, color: '#cfc64a' },
-                { name: 'Uranus', emoji: '🔵', distance: 540, speedBase: 3.4, spawnBase: 19, extraSpawn: 0.18, color: '#7acfcf' },
-                { name: 'Neptune', emoji: '🟣', distance: 820, speedBase: 4.2, spawnBase: 13, extraSpawn: 0.24, color: '#3a6acf' },
-                { name: 'Pluto', emoji: '⚪', distance: 1160, speedBase: 5.1, spawnBase: 9, extraSpawn: 0.32, color: '#cfcfcf' },
-                { name: 'Oort Cloud', emoji: '☁️', distance: 1580, speedBase: 6.2, spawnBase: 6, extraSpawn: 0.42, color: '#8a7acf' },
-                { name: 'Alpha Centauri', emoji: '⭐', distance: 2100, speedBase: 7.5, spawnBase: 4, extraSpawn: 0.55, color: '#ffcf6a' },
-            ];
-
-            // ── Ship Definitions ──
-            const SHIPS = [{
-                id: 'scout',
-                name: 'Scout',
-                cost: 0,
-                icon: 'rocket',
-                color: '#5a8aaa',
-                speedMult: 1.0,
-                shieldBonus: 0,
-                desc: 'Balanced starter'
-            }, {
-                id: 'fighter',
-                name: 'Fighter',
-                cost: 50,
-                icon: 'rocket',
-                color: '#aa5a5a',
-                speedMult: 1.15,
-                shieldBonus: 0,
-                desc: '+15% speed'
-            }, {
-                id: 'tank',
-                name: 'Tank',
-                cost: 100,
-                icon: 'shield',
-                color: '#5aaa5a',
-                speedMult: 0.85,
-                shieldBonus: 1,
-                desc: '+1 shield, -15% speed'
-            }, {
-                id: 'stealth',
-                name: 'Stealth',
-                cost: 150,
-                icon: 'rocket',
-                color: '#7a7aaa',
-                speedMult: 1.3,
-                shieldBonus: 0,
-                desc: '+30% speed'
-            }, {
-                id: 'nexus',
-                name: 'Nexus',
-                cost: 250,
-                icon: 'rocket',
-                color: '#aa7aaa',
-                speedMult: 1.2,
-                shieldBonus: 1,
-                desc: '+20% speed, +1 shield'
-            }, ];
-
-            // ── Upgrade Pool ──
-            const UPGRADE_POOL = [
-                { id: 'shield', name: 'Shield Boost', desc: '+1 Shield', icon: 'shield' },
-                { id: 'speed', name: 'Agility', desc: '+8% Speed', icon: 'rocket' },
-                { id: 'magnet', name: 'Magnet Range', desc: '+40% Coin Magnet', icon: 'coin' },
-                { id: 'multiplier', name: 'Score Multiplier', desc: '+0.2x Score', icon: 'upgrade' },
-                { id: 'slow', name: 'Slow Field', desc: 'Near-miss slows time', icon: 'comet' },
-            ];
-
-            // ── Simulation state ──
-            const sim = {
-                rocket: { x: 0, y: 0, radius: 16, targetX: 0, targetY: 0 },
-                asteroids: [],
-                particles: [],
-                coins: [],
-                powerups: [],
-                anomalies: [], // for comet, wormhole, golden asteroid
-                score: 0,
-                lives: 1,
-                maxLives: 1,
-                combo: 0,
-                maxCombo: 0,
-                gameOver: false,
-                invincible: 0,
-                spawnTimer: 0,
-                frame: 0,
-                started: false,
-                warpDisplayTimer: 0,
-                effects: { slow: 0, magnet: 0, shield: 0, invincible: 0 },
-                performance: { hitCount: 0, dodgeCount: 0, nearMissCount: 0 },
-                mouseX: 0,
-                mouseY: 0,
-                mouseInside: false,
-                config: { speedBase: 1.2, spawnBase: 50, extraSpawn: 0.04 },
-                adaptiveFactor: 1.0,
-                tempSpeedModifier: 1.0,
-                shakeX: 0,
-                shakeY: 0,
-                shakeIntensity: 0,
-                // Progression
-                currentPlanetIndex: 0,
-                nextPlanetIndex: 1,
-                scoreToNext: 60,
-                scoreProgress: 0,
-                planetReached: false,
-                shipMult: 1.0,
-                shipShieldBonus: 0,
-                upgrades: {
-                    shields: 0,
-                    speed: 0,
-                    magnet: 0,
-                    multiplier: 1.0,
-                    slow: false,
-                },
-            };
-
-            // ── Save/Load ──
-            function saveProgress() {
-                localStorage.setItem('fps_coins', String(totalCoins));
-                localStorage.setItem('fps_equipped_ship', String(equippedShip));
-                localStorage.setItem('fps_unlocked_ships', JSON.stringify(unlockedShips));
-                localStorage.setItem('fps_best', String(bestScore));
-                localStorage.setItem('fps_sessions', String(sessionCount));
-                localStorage.setItem('fps_daily_missions', JSON.stringify(dailyMissions));
-            }
-
-            function loadShop() {
-                shopCoinsSpan.textContent = totalCoins;
-                menuCoins.textContent = totalCoins;
-                hudCoins.textContent = totalCoins;
-                renderShop();
-            }
-
-            // ── HUD Updates ──
-            function updateHUD() {
-                hudScore.textContent = sim.score;
-                hudLives.textContent = sim.lives;
-                hudBest.textContent = bestScore;
-                hudCoins.textContent = totalCoins;
-                if (sim.combo > 1) {
-                    hudComboWrap.style.display = 'block';
-                    hudCombo.textContent = sim.combo;
-                } else {
-                    hudComboWrap.style.display = 'none';
-                }
-                let activeEffects = [];
-                if (sim.effects.slow > 0) activeEffects.push('Slow');
-                if (sim.effects.magnet > 0) activeEffects.push('Magnet');
-                if (sim.effects.invincible > 0) activeEffects.push('Invincible');
-                if (activeEffects.length > 0) {
-                    hudPowerup.style.display = 'block';
-                    hudPowerupText.textContent = activeEffects.join(' + ');
-                } else {
-                    hudPowerup.style.display = 'none';
-                }
-
-                // Progress
-                const pct = Math.min(100, (sim.scoreProgress / sim.scoreToNext) * 100);
-                progressBarFill.style.width = pct + '%';
-                progressLabel.textContent = `${sim.score} / ${sim.score + sim.scoreToNext}`;
-                if (sim.currentPlanetIndex < PLANETS.length - 1) {
-                    const next = PLANETS[sim.currentPlanetIndex + 1];
-                    progressPlanet.innerHTML = `${PLANETS[sim.currentPlanetIndex].name} → <span>${next.name}</span>`;
-                } else {
-                    progressPlanet.textContent = `${PLANETS[PLANETS.length - 1].name} (MAX)`;
-                }
-            }
-
-            function updateMenuStats() {
-                menuBest.textContent = bestScore;
-                menuCoins.textContent = totalCoins;
-                menuSessions.textContent = sessionCount;
-            }
-            updateMenuStats();
-
-            function updateSensitivityDisplay() {
-                sensToggle.textContent = sensitivity.toFixed(1) + '×';
-                localStorage.setItem('fps_sensitivity', String(sensitivity));
-            }
-            updateSensitivityDisplay();
-
-            // ── Shop ──
-            function renderShop() {
-                shopCoinsSpan.textContent = totalCoins;
-                let html = '';
-                SHIPS.forEach((ship, index) => {
-                    const owned = unlockedShips.includes(index);
-                    const equipped = equippedShip === index;
-                    let statusText = 'Locked';
-                    let statusClass = 'locked';
-                    let btnHtml = '';
-                    if (owned && equipped) {
-                        statusText = 'Equipped';
-                        statusClass = 'equipped';
-                        btnHtml = `<button class="shop-btn" disabled>✅ Equipped</button>`;
-                    } else if (owned) {
-                        statusText = 'Owned';
-                        statusClass = 'owned';
-                        btnHtml = `<button class="shop-btn primary" onclick="equipShip(${index})">Equip</button>`;
-                    } else {
-                        statusText = `${ship.cost}💰`;
-                        statusClass = 'locked';
-                        btnHtml =
-                            `<button class="shop-btn primary" onclick="buyShip(${index})" ${totalCoins < ship.cost ? 'disabled' : ''}>Buy</button>`;
-                    }
-                    html += `
-                        <div class="shop-item" style="border-color: ${equipped ? '#6fcbff' : 'rgba(255,255,255,0.04)'}">
-                            <div class="ship-icon">${svgIcon(ship.icon, 28)}</div>
-                            <div class="ship-name">${ship.name}</div>
-                            <div class="ship-stats">${ship.desc}</div>
-                            <div class="ship-status ${statusClass}">${statusText}</div>
-                            ${btnHtml}
-                        </div>
-                    `;
-                });
-                shopGrid.innerHTML = html;
-            }
-
-            window.buyShip = function(index) {
-                const ship = SHIPS[index];
-                if (totalCoins >= ship.cost && !unlockedShips.includes(index)) {
-                    totalCoins -= ship.cost;
-                    unlockedShips.push(index);
-                    localStorage.setItem('fps_coins', String(totalCoins));
-                    localStorage.setItem('fps_unlocked_ships', JSON.stringify(unlockedShips));
-                    loadShop();
-                    updateHUD();
-                    updateMenuStats();
-                    saveProgress();
-                    renderShop();
-                }
-            };
-
-            window.equipShip = function(index) {
-                if (unlockedShips.includes(index)) {
-                    equippedShip = index;
-                    localStorage.setItem('fps_equipped_ship', String(equippedShip));
-                    applyShipStats(index);
-                    loadShop();
-                    updateHUD();
-                    saveProgress();
-                    renderShop();
-                }
-            };
-
-            function applyShipStats(index) {
-                const ship = SHIPS[index] || SHIPS[0];
-                sim.shipMult = ship.speedMult || 1.0;
-                sim.shipShieldBonus = ship.shieldBonus || 0;
-                const baseLives = 1 + sim.upgrades.shields + sim.shipShieldBonus;
-                sim.maxLives = Math.min(3, baseLives);
-                if (sim.lives > sim.maxLives) sim.lives = sim.maxLives;
-                updateHUD();
-            }
-
-            // ── Daily Missions ──
-            function initDailyMissions() {
-                const today = new Date().toDateString();
-                if (lastLoginDate !== today) {
-                    // New day: reset missions
-                    dailyMissions = {
-                        date: today,
-                        missions: [
-                            { id: 'dodge', desc: 'Dodge 30 asteroids', target: 30, progress: 0, reward: 20 },
-                            { id: 'coins', desc: 'Collect 50 coins', target: 50, progress: 0, reward: 15 },
-                            { id: 'distance', desc: 'Reach 300 distance', target: 300, progress: 0, reward: 25 },
-                        ],
-                        completed: []
-                    };
-                    lastLoginDate = today;
-                    localStorage.setItem('fps_last_login', lastLoginDate);
-                    saveProgress();
-                }
-            }
-
-            function checkMissions() {
-                if (!dailyMissions.missions) return;
-                let changed = false;
-                dailyMissions.missions.forEach(mission => {
-                    if (dailyMissions.completed.includes(mission.id)) return;
-                    let progress = mission.progress;
-                    switch (mission.id) {
-                        case 'dodge': progress = sim.performance.dodgeCount; break;
-                        case 'coins': progress = totalCoins; break; // total coins as proxy
-                        case 'distance': progress = sim.score; break;
-                    }
-                    if (progress >= mission.target) {
-                        totalCoins += mission.reward;
-                        dailyMissions.completed.push(mission.id);
-                        showMissionToast(`Mission Complete! +${mission.reward} coins`);
-                        changed = true;
-                    }
-                    mission.progress = progress;
-                });
-                if (changed) {
-                    saveProgress();
-                    updateHUD();
-                    updateMenuStats();
-                }
-            }
-
-            function showMissionToast(text) {
-                missionToast.textContent = text;
-                missionToast.classList.add('show');
-                setTimeout(() => missionToast.classList.remove('show'), 3000);
-            }
-
-            // ── Asteroid Factory ──
-            function createAsteroid() {
-                const cfg = sim.config;
-                const adapt = sim.adaptiveFactor;
-                const speedMod = sim.tempSpeedModifier;
-                const baseSpeed = (cfg.speedBase + sim.score * 0.004) * (0.8 + adapt * 0.3) * speedMod * sim.shipMult;
-                const speed = baseSpeed * (0.8 + Math.random() * 0.4);
-                const size = 12 + Math.random() * 28;
-                const angle = (Math.random() - 0.5) * 0.5;
-                const pts = 7 + Math.floor(Math.random() * 6);
-                const vertices = [];
-                for (let i = 0; i < pts; i++) {
-                    const a = (i / pts) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
-                    const r = size * (0.6 + Math.random() * 0.4);
-                    vertices.push({ a, r });
-                }
-                return {
-                    x: 20 + Math.random() * (W - 40),
-                    y: -40,
-                    vx: Math.sin(angle) * speed * 0.6,
-                    vy: speed * (0.9 + Math.random() * 0.2),
-                    radius: size,
-                    vertices,
-                    rotation: Math.random() * Math.PI * 2,
-                    rotSpeed: (Math.random() - 0.5) * 0.04,
-                    color: `hsl(${20 + Math.random() * 30}, ${10 + Math.random() * 15}%, ${25 + Math.random() * 25}%)`,
-                };
-            }
-
-            // ── Anomaly Factory ──
-            function createAnomaly() {
-                const types = ['comet', 'wormhole', 'golden'];
-                const type = types[Math.floor(Math.random() * types.length)];
-                const x = Math.random() * W;
-                return {
-                    type,
-                    x,
-                    y: -30,
-                    radius: type === 'wormhole' ? 30 : 20,
-                    speed: 1.5 + Math.random() * 1.5,
-                };
-            }
-
-            // ── Particles ──
-            function spawnParticles(x, y, count, color, speedMult = 1, spread = 1) {
-                for (let i = 0; i < count; i++) {
-                    const ang = Math.random() * Math.PI * 2;
-                    const spd = (1 + Math.random() * 5) * speedMult;
-                    sim.particles.push({
-                        x,
-                        y,
-                        vx: Math.cos(ang) * spd * spread,
-                        vy: Math.sin(ang) * spd * spread - 0.5,
-                        life: 15 + Math.random() * 45,
-                        maxLife: 60,
-                        radius: 1.5 + Math.random() * 4.5,
-                        color: color || `hsl(${30 + Math.random() * 30}, 100%, ${55 + Math.random() * 25}%)`,
-                        decay: 0.95 + Math.random() * 0.04,
-                    });
-                }
-            }
-
-            function spawnHit(x, y) {
-                spawnParticles(x, y, 40, `hsl(${15 + Math.random() * 30}, 100%, 60%)`, 2.0);
-                spawnParticles(x, y, 20, '#ffffff', 1.0);
-                sim.shakeIntensity = Math.min(20, sim.shakeIntensity + 12);
-            }
-
-            function spawnCelebration(x, y) {
-                for (let i = 0; i < 60; i++) {
-                    const ang = Math.random() * Math.PI * 2;
-                    const spd = 2 + Math.random() * 6;
-                    const colors = ['#ffd700', '#6fcbff', '#a78bfa', '#ff6b6b', '#51cf66'];
-                    sim.particles.push({
-                        x: x + (Math.random() - 0.5) * 100,
-                        y: y + (Math.random() - 0.5) * 100,
-                        vx: Math.cos(ang) * spd,
-                        vy: Math.sin(ang) * spd - 1,
-                        life: 30 + Math.random() * 60,
-                        maxLife: 90,
-                        radius: 2 + Math.random() * 6,
-                        color: colors[Math.floor(Math.random() * colors.length)],
-                        decay: 0.97,
-                    });
-                }
-            }
-
-            function spawnNearMiss(x, y) {
-                spawnParticles(x, y, 10, '#6fcbff', 0.6, 0.5);
-                sim.shakeIntensity = Math.min(6, sim.shakeIntensity + 2);
-            }
-
-            // ── Coins ──
-            function spawnCoin(x, y, value = 1) {
-                const rect = canvas.getBoundingClientRect();
-                const scaleX = W / rect.width;
-                const scaleY = H / rect.height;
-                const targetX = 80 * scaleX;
-                const targetY = 50 * scaleY;
-                sim.coins.push({
-                    x,
-                    y,
-                    targetX,
-                    targetY,
-                    progress: 0,
-                    value,
-                    color: `hsl(${45 + Math.random() * 15}, 100%, 60%)`,
-                    radius: 8 + Math.random() * 4,
-                    rotation: 0,
-                });
-            }
-
-            // ── Powerups ──
-            function spawnPowerup(x, y) {
-                const types = ['shield', 'slow', 'magnet', 'invincible'];
-                const weights = [25, 25, 25, 25];
-                let total = weights.reduce((a, b) => a + b, 0);
-                let rand = Math.random() * total;
-                let type = 'shield';
-                for (let i = 0; i < weights.length; i++) {
-                    rand -= weights[i];
-                    if (rand <= 0) { type = types[i]; break; }
-                }
-                sim.powerups.push({
-                    x,
-                    y,
-                    type,
-                    radius: 14,
-                    speed: 1.0 + Math.random() * 0.8,
-                    life: 300,
-                    rotation: 0,
-                });
-            }
-
-            // ── Apply Powerup ──
-            function applyPowerup(type) {
-                switch (type) {
-                    case 'shield':
-                        sim.lives = Math.min(sim.maxLives + 1, 3);
-                        sim.maxLives = Math.max(sim.maxLives, sim.lives);
-                        break;
-                    case 'slow':
-                        sim.effects.slow = 300;
-                        break;
-                    case 'magnet':
-                        sim.effects.magnet = 400;
-                        break;
-                    case 'invincible':
-                        sim.effects.invincible = 180;
-                        break;
-                }
-            }
-
-            // ── Upgrade Modal ──
-            function showUpgradeModal() {
-                const shuffled = [...UPGRADE_POOL].sort(() => Math.random() - 0.5);
-                const choices = shuffled.slice(0, 3);
-                let html = '';
-                choices.forEach(upgrade => {
-                    html += `
-                        <div class="upgrade-card" onclick="applyUpgrade('${upgrade.id}')">
-                            <span class="icon">${svgIcon(upgrade.icon, 32)}</span>
-                            <div class="name">${upgrade.name}</div>
-                            <div class="desc">${upgrade.desc}</div>
-                        </div>
-                    `;
-                });
-                upgradeGrid.innerHTML = html;
-                upgradeOverlay.classList.add('active');
-                sim.paused = true;
-            }
-
-            window.applyUpgrade = function(id) {
-                switch (id) {
-                    case 'shield':
-                        sim.upgrades.shields++;
-                        sim.maxLives = Math.min(3, sim.maxLives + 1);
-                        sim.lives = Math.min(sim.lives + 1, sim.maxLives);
-                        break;
-                    case 'speed':
-                        sim.upgrades.speed += 0.08;
-                        break;
-                    case 'magnet':
-                        sim.upgrades.magnet += 0.4;
-                        break;
-                    case 'multiplier':
-                        sim.upgrades.multiplier += 0.2;
-                        break;
-                    case 'slow':
-                        sim.upgrades.slow = true;
-                        break;
-                }
-                upgradeOverlay.classList.remove('active');
-                sim.paused = false;
-                updateHUD();
-                saveProgress();
-            };
-
-            upgradeCloseBtn.addEventListener('click', () => {
-                upgradeOverlay.classList.remove('active');
-                sim.paused = false;
-            });
-
-            // ── Reset ──
-            function resetSim() {
-                sim.asteroids = [];
-                sim.particles = [];
-                sim.coins = [];
-                sim.powerups = [];
-                sim.anomalies = [];
-                sim.score = 0;
-                sim.combo = 0;
-                sim.maxCombo = 0;
-                sim.gameOver = false;
-                sim.invincible = 0;
-                sim.spawnTimer = 0;
-                sim.frame = 0;
-                sim.started = false;
-                sim.warpDisplayTimer = 0;
-                sim.effects = { slow: 0, magnet: 0, shield: 0, invincible: 0 };
-                sim.performance = { hitCount: 0, dodgeCount: 0, nearMissCount: 0 };
-                sim.adaptiveFactor = 1.0;
-                sim.tempSpeedModifier = 1.0;
-                sim.shakeIntensity = 0;
-                sim.shakeX = 0;
-                sim.shakeY = 0;
-                sim.paused = false;
-                sim.currentPlanetIndex = 0;
-                sim.nextPlanetIndex = 1;
-                sim.scoreToNext = PLANETS[1].distance;
-                sim.scoreProgress = 0;
-                sim.planetReached = false;
-
-                applyShipStats(equippedShip);
-                const baseLives = 1 + sim.upgrades.shields + sim.shipShieldBonus;
-                sim.maxLives = Math.min(3, baseLives);
-                sim.lives = sim.maxLives;
-
-                sim.config.speedBase = PLANETS[0].speedBase;
-                sim.config.spawnBase = PLANETS[0].spawnBase;
-                sim.config.extraSpawn = PLANETS[0].extraSpawn;
-
-                sim.rocket.x = W / 2;
-                sim.rocket.y = H - 120;
-                sim.rocket.targetX = sim.rocket.x;
-                sim.rocket.targetY = sim.rocket.y;
-                gameOverOverlay.classList.remove('active');
-                gameOverOverlay.style.display = 'none';
-                upgradeOverlay.classList.remove('active');
-                updateHUD();
-            }
-
-            // ── Advance Planet ──
-            function advancePlanet() {
-                const current = sim.currentPlanetIndex;
-                const next = current + 1;
-                if (next >= PLANETS.length) return;
-
-                sim.currentPlanetIndex = next;
-                sim.nextPlanetIndex = next + 1;
-                sim.scoreToNext = PLANETS[next].distance - PLANETS[current].distance;
-                sim.scoreProgress = 0;
-                sim.planetReached = true;
-
-                // Apply planet difficulty
-                const p = PLANETS[next];
-                sim.config.speedBase = p.speedBase;
-                sim.config.spawnBase = p.spawnBase;
-                sim.config.extraSpawn = p.extraSpawn;
-
-                // Celebration
-                spawnCelebration(W / 2, H / 2);
-                sim.warpDisplayTimer = 120;
-
-                // Show upgrade modal
-                showUpgradeModal();
-
-                updateHUD();
-            }
-
-            // ── Start / End ──
-            function startSimulation() {
-                resetSim();
-                simActive = true;
-                simRunning = true;
-                menuOverlay.classList.add('hidden');
-                hud.classList.add('active');
-                progressContainer.classList.add('active');
-                gameOverOverlay.classList.remove('active');
-                gameOverOverlay.style.display = 'none';
-                if (!sim.mouseInside) {
-                    sim.rocket.targetX = W / 2;
-                    sim.rocket.targetY = H - 120;
-                }
-                if (!animId) loop();
-            }
-
-            function endSimulation() {
-                simRunning = false;
-                simActive = false;
-                sim.gameOver = true;
-                if (sim.score > bestScore) {
-                    bestScore = sim.score;
-                    localStorage.setItem('fps_best', String(bestScore));
-                    updateMenuStats();
-                }
-                sessionCount++;
-                localStorage.setItem('fps_sessions', String(sessionCount));
-                updateMenuStats();
-                checkMissions();
-                goScore.textContent = sim.score;
-                goBest.textContent = bestScore;
-                const planetName = PLANETS[sim.currentPlanetIndex]?.name || 'Unknown';
-                goPlanet.textContent = planetName;
-                gameOverOverlay.style.display = 'flex';
-                requestAnimationFrame(() => {
-                    gameOverOverlay.classList.add('active');
-                });
-                updateHUD();
-                saveProgress();
-            }
-
-            function goToMenu() {
-                simRunning = false;
-                simActive = false;
-                if (animId) { cancelAnimationFrame(animId);
-                    animId = null; }
-                gameOverOverlay.classList.remove('active');
-                gameOverOverlay.style.display = 'none';
-                hud.classList.remove('active');
-                progressContainer.classList.remove('active');
-                menuOverlay.classList.remove('hidden');
-                upgradeOverlay.classList.remove('active');
-                resetSim();
-                updateMenuStats();
-                render();
-            }
-
-            // ── UPDATE ──
-            function update() {
-                if (!simRunning || sim.gameOver || sim.paused) return;
-                sim.frame++;
-
-                // ── Recover from shield loss slowdown ──
-                if (sim.tempSpeedModifier < 1.0) {
-                    sim.tempSpeedModifier += 0.005;
-                    if (sim.tempSpeedModifier > 1.0) sim.tempSpeedModifier = 1.0;
-                }
-
-                const r = sim.rocket;
-                const smooth = 0.12 * sensitivity;
-                r.x += (r.targetX - r.x) * smooth;
-                r.y += (r.targetY - r.y) * smooth;
-                r.x = Math.max(r.radius + 2, Math.min(W - r.radius - 2, r.x));
-                r.y = Math.max(r.radius + 2, Math.min(H - r.radius - 2, r.y));
-
-                // ── Warp Display ──
-                if (sim.warpDisplayTimer > 0) sim.warpDisplayTimer--;
-
-                // ── Effects Decay ──
-                if (sim.effects.slow > 0) sim.effects.slow--;
-                if (sim.effects.magnet > 0) sim.effects.magnet--;
-                if (sim.effects.invincible > 0) sim.effects.invincible--;
-
-                // ── Adaptive Difficulty ──
-                const dodgeRate = sim.performance.dodgeCount / Math.max(1, sim.frame / 60);
-                const hitRate = sim.performance.hitCount / Math.max(1, sim.frame / 60);
-                const nearMissRate = sim.performance.nearMissCount / Math.max(1, sim.frame / 60);
-                let targetFactor = 1.0 + (dodgeRate - 0.15) * 0.3 - hitRate * 0.8 + nearMissRate * 0.3;
-                targetFactor = Math.max(0.3, Math.min(2.0, targetFactor));
-                sim.adaptiveFactor += (targetFactor - sim.adaptiveFactor) * 0.01;
-
-                // ── Spawn Asteroids ──
-                if (sim.started) {
-                    const cfg = sim.config;
-                    let base = Math.max(4, cfg.spawnBase - sim.score * 0.015);
-                    base = base / (sim.adaptiveFactor * 0.2 + 0.8);
-                    const interval = Math.max(2, base - (sim.score / 200) * 1.5) / sim.tempSpeedModifier;
-                    sim.spawnTimer++;
-                    if (sim.spawnTimer >= interval) {
-                        sim.spawnTimer = 0;
-                        sim.asteroids.push(createAsteroid());
-                        if (Math.random() < cfg.extraSpawn + sim.score * 0.0003 + (sim.adaptiveFactor - 1) * 0.04) {
-                            sim.asteroids.push(createAsteroid());
-                        }
-                    }
-                    // Spawn anomalies rarely
-                    if (Math.random() < 0.005) {
-                        sim.anomalies.push(createAnomaly());
-                    }
-                }
-
-                // ── Update Asteroids ──
-                const slowFactor = sim.effects.slow > 0 ? 0.5 : 1.0;
-                for (let i = sim.asteroids.length - 1; i >= 0; i--) {
-                    const a = sim.asteroids[i];
-                    a.x += a.vx * slowFactor;
-                    a.y += a.vy * slowFactor;
-                    a.rotation += a.rotSpeed * slowFactor;
-
-                    if (a.y > H + 80) {
-                        sim.asteroids.splice(i, 1);
-                        if (sim.started && !sim.gameOver) {
-                            let points = 1 + Math.floor(sim.combo / 5);
-                            let finalPoints = Math.floor(points * sim.upgrades.multiplier);
-                            sim.score += finalPoints;
-                            sim.scoreProgress += finalPoints;
-                            sim.combo++;
-                            if (sim.combo > sim.maxCombo) sim.maxCombo = sim.combo;
-                            let coinEarn = 1 + Math.floor(sim.combo / 10);
-                            totalCoins += coinEarn;
-                            spawnCoin(a.x, H - 20, coinEarn);
-                            sim.performance.dodgeCount++;
-                            updateHUD();
-                            updateMenuStats();
-                            saveProgress();
-
-                            // ── Check Planet Progression ──
-                            if (sim.nextPlanetIndex < PLANETS.length) {
-                                const nextPlanetDist = PLANETS[sim.nextPlanetIndex].distance;
-                                if (sim.score >= nextPlanetDist) {
-                                    advancePlanet();
-                                }
-                            }
-                        }
-                        continue;
-                    }
-                    if (a.x < -80) a.x = W + 60;
-                    if (a.x > W + 80) a.x = -60;
-
-                    // ── Collision ──
-                    if (!sim.gameOver && sim.invincible === 0 && sim.effects.invincible === 0) {
-                        const d = Math.hypot(r.x - a.x, r.y - a.y);
-                        const threshold = r.radius + a.radius - 4;
-                        if (d < threshold) {
-                            sim.lives--;
-                            sim.combo = 0;
-                            sim.performance.hitCount++;
-                            spawnHit(a.x, a.y);
-                            spawnParticles(r.x, r.y, 40, '#ff8844', 2.0);
-                            if (Math.random() < 0.25) {
-                                spawnPowerup(a.x, a.y);
-                            }
-                            sim.asteroids.splice(i, 1);
-                            sim.tempSpeedModifier = 0.3;
-                            if (sim.lives <= 0) {
-                                endSimulation();
-                                return;
-                            } else {
-                                sim.invincible = 90;
-                            }
-                            updateHUD();
-                            continue;
-                        }
-
-                        // ── Near Miss ──
-                        if (d < threshold + 30 && d > threshold) {
-                            if (sim.started && sim.combo > 0) {
-                                sim.combo += 2;
-                                sim.performance.nearMissCount++;
-                                if (sim.upgrades.slow) {
-                                    sim.effects.slow = 30;
-                                }
-                                spawnNearMiss(a.x, a.y);
-                                updateHUD();
-                            }
-                        }
-                    }
-                }
-
-                // ── Update Anomalies ──
-                for (let i = sim.anomalies.length - 1; i >= 0; i--) {
-                    const anom = sim.anomalies[i];
-                    anom.y += anom.speed;
-                    if (anom.y > H + 50) {
-                        sim.anomalies.splice(i, 1);
-                        continue;
-                    }
-                    if (!sim.gameOver) {
-                        const d = Math.hypot(r.x - anom.x, r.y - anom.y);
-                        if (d < r.radius + anom.radius) {
-                            switch (anom.type) {
-                                case 'comet':
-                                    // Comet damages but drops coins
-                                    sim.lives--;
-                                    sim.combo = 0;
-                                    spawnHit(anom.x, anom.y);
-                                    spawnParticles(anom.x, anom.y, 30, '#ffaa00', 2);
-                                    sim.anomalies.splice(i, 1);
-                                    sim.tempSpeedModifier = 0.3;
-                                    if (sim.lives <= 0) { endSimulation(); return; }
-                                    break;
-                                case 'wormhole':
-                                    // Wormhole skips forward
-                                    const bonus = 30 + Math.random() * 50;
-                                    sim.score += bonus;
-                                    sim.scoreProgress += bonus;
-                                    spawnCelebration(anom.x, anom.y);
-                                    sim.anomalies.splice(i, 1);
-                                    break;
-                                case 'golden':
-                                    // Golden asteroid gives coins
-                                    const coins = 5 + Math.floor(Math.random() * 10);
-                                    totalCoins += coins;
-                                    spawnCoin(anom.x, anom.y, coins);
-                                    spawnCelebration(anom.x, anom.y);
-                                    sim.anomalies.splice(i, 1);
-                                    updateHUD();
-                                    updateMenuStats();
-                                    break;
-                            }
-                        }
-                    }
-                }
-
-                // ── Coins ──
-                const magnetRange = 30 + sim.upgrades.magnet * 20;
-                for (let i = sim.coins.length - 1; i >= 0; i--) {
-                    const c = sim.coins[i];
-                    c.progress += 0.04;
-                    c.rotation += 0.08;
-                    if (c.progress >= 1) {
-                        sim.coins.splice(i, 1);
-                        continue;
-                    }
-                    if (sim.effects.magnet > 0) {
-                        const dx = r.x - c.x;
-                        const dy = r.y - c.y;
-                        const dist = Math.hypot(dx, dy);
-                        if (dist < magnetRange) {
-                            const pull = 0.08 * (1 - dist / magnetRange);
-                            c.x += dx * pull;
-                            c.y += dy * pull;
-                        }
-                    }
-                    c.x += (c.targetX - c.x) * 0.1;
-                    c.y += (c.targetY - c.y) * 0.1;
-                    c.radius *= 0.99;
-                }
-
-                // ── Powerups ──
-                for (let i = sim.powerups.length - 1; i >= 0; i--) {
-                    const p = sim.powerups[i];
-                    p.y += p.speed * 0.6;
-                    p.rotation += 0.04;
-                    p.life--;
-                    if (p.y > H + 40 || p.life <= 0) {
-                        sim.powerups.splice(i, 1);
-                        continue;
-                    }
-                    if (!sim.gameOver) {
-                        const d = Math.hypot(r.x - p.x, r.y - p.y);
-                        if (d < r.radius + p.radius) {
-                            applyPowerup(p.type);
-                            spawnParticles(p.x, p.y, 25, '#a78bfa', 1.4);
-                            sim.powerups.splice(i, 1);
-                            updateHUD();
-                            continue;
-                        }
-                    }
-                }
-
-                // ── Engine Trail ──
-                for (let i = 0; i < 3; i++) {
-                    sim.particles.push({
-                        x: r.x + (Math.random() - 0.5) * 8,
-                        y: r.y + 22,
-                        vx: (Math.random() - 0.5) * 0.8,
-                        vy: Math.random() * 2 + 1.5,
-                        life: 10 + Math.random() * 15,
-                        maxLife: 25,
-                        radius: 2 + Math.random() * 4,
-                        color: `hsla(${30 + Math.random() * 20}, 100%, ${60 + Math.random() * 30}%, 0.8)`,
-                        decay: 0.96,
-                    });
-                }
-
-                // ── Particles ──
-                for (let i = sim.particles.length - 1; i >= 0; i--) {
-                    const p = sim.particles[i];
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    p.vx *= p.decay || 0.98;
-                    p.vy *= p.decay || 0.98;
-                    p.vy += 0.02;
-                    p.life--;
-                    if (p.life <= 0 || p.radius < 0.1) sim.particles.splice(i, 1);
-                }
-
-                // ── Screen Shake ──
-                if (sim.shakeIntensity > 0) {
-                    sim.shakeX = (Math.random() - 0.5) * sim.shakeIntensity * 1.2;
-                    sim.shakeY = (Math.random() - 0.5) * sim.shakeIntensity * 1.2;
-                    sim.shakeIntensity *= 0.92;
-                    if (sim.shakeIntensity < 0.1) sim.shakeIntensity = 0;
-                } else {
-                    sim.shakeX = 0;
-                    sim.shakeY = 0;
-                }
-
-                // ── Invincibility ──
-                if (sim.invincible > 0) sim.invincible--;
-
-                // ── Background Parallax ──
-                const speedFactor = 0.5 + sim.adaptiveFactor * 0.3 + sim.combo * 0.002;
-                for (const star of stars) {
-                    star.y += star.speed * speedFactor * 0.8;
-                    if (star.y > H) {
-                        star.y = 0;
-                        star.x = Math.random() * W;
-                    }
-                }
-                for (const nebula of nebulas) {
-                    nebula.y += nebula.speed * speedFactor * 0.6;
-                    if (nebula.y - nebula.radius > H) {
-                        nebula.y = -nebula.radius;
-                        nebula.x = Math.random() * W;
-                    }
-                }
-
-                // Haptics (if supported)
-                if (sim.shakeIntensity > 10 && navigator.vibrate) {
-                    navigator.vibrate(10);
-                }
-            }
-
-            // ── RENDER ──
-            function render() {
-                ctx.save();
-
-                if (sim.shakeIntensity > 0.5) {
-                    ctx.translate(sim.shakeX, sim.shakeY);
-                }
-
-                ctx.clearRect(-10, -10, W + 20, H + 20);
-                const planet = PLANETS[sim.currentPlanetIndex] || PLANETS[0];
-                const planetColor = planet.color || '#0e111e';
-                const grad = ctx.createRadialGradient(W / 2, H / 2, 100, W / 2, H / 2, H * 0.8);
-                grad.addColorStop(0, planetColor + '33');
-                grad.addColorStop(0.5, '#060812');
-                grad.addColorStop(1, '#020305');
-                ctx.fillStyle = grad;
-                ctx.fillRect(-10, -10, W + 20, H + 20);
-
-                // Nebulas
-                for (const nebula of nebulas) {
-                    const grd = ctx.createRadialGradient(nebula.x, nebula.y, 10, nebula.x, nebula.y, nebula.radius);
-                    grd.addColorStop(0, nebula.color);
-                    grd.addColorStop(0.5, nebula.color);
-                    grd.addColorStop(1, 'rgba(0,0,0,0)');
-                    ctx.fillStyle = grd;
-                    ctx.beginPath();
-                    ctx.arc(nebula.x, nebula.y, nebula.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-
-                // Stars
-                for (const star of stars) {
-                    const twinkle = 0.6 + 0.4 * Math.sin(sim.frame * star.twinkleSpeed + star.x);
-                    const alpha = star.brightness * twinkle * 0.8;
-                    ctx.globalAlpha = alpha;
-                    ctx.fillStyle = '#ffffff';
-                    ctx.shadowColor = 'rgba(200,220,255,0.3)';
-                    ctx.shadowBlur = star.size > 1.5 ? 8 : 2;
-                    ctx.beginPath();
-                    ctx.arc(star.x, star.y, star.size * 0.6, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                ctx.globalAlpha = 1;
-                ctx.shadowBlur = 0;
-
-                // Asteroids
-                for (const a of sim.asteroids) {
-                    drawAsteroid(a);
-                }
-
-                // Anomalies
-                for (const anom of sim.anomalies) {
-                    drawAnomaly(anom);
-                }
-
-                // Powerups
-                for (const p of sim.powerups) {
-                    drawPowerup(p);
-                }
-
-                // Coins
-                for (const c of sim.coins) {
-                    drawCoin(c);
-                }
-
-                // Particles
-                for (const p of sim.particles) {
-                    const alpha = p.life / p.maxLife;
-                    ctx.globalAlpha = alpha;
-                    ctx.fillStyle = p.color;
-                    ctx.shadowColor = p.color;
-                    ctx.shadowBlur = 10;
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, Math.max(0.5, p.radius * alpha * 0.8), 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                ctx.globalAlpha = 1;
-                ctx.shadowBlur = 0;
-
-                // Rocket
-                if (!sim.gameOver || sim.lives > 0) {
-                    const r = sim.rocket;
-                    let alpha = 1;
-                    if (sim.invincible > 0 && Math.floor(sim.invincible / 5) % 2 === 0) alpha = 0.4;
-                    if (sim.effects.invincible > 0) alpha = 0.7 + 0.3 * Math.sin(sim.frame * 0.2);
-                    ctx.globalAlpha = alpha;
-                    drawRocket(r.x, r.y);
-                    ctx.globalAlpha = 1;
-                }
-
-                // Warp Drive Text
-                if (sim.warpDisplayTimer > 0 && sim.planetReached) {
-                    const alpha = Math.min(1, sim.warpDisplayTimer / 30);
-                    const p = PLANETS[sim.currentPlanetIndex];
-                    ctx.save();
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.shadowColor = 'rgba(0, 200, 255, 0.8)';
-                    ctx.shadowBlur = 50;
-                    ctx.font = 'bold 36px Inter, sans-serif';
-                    ctx.fillStyle = `rgba(100, 220, 255, ${alpha * 0.9})`;
-                    ctx.fillText(`ARRIVED AT ${p.name.toUpperCase()}`, W / 2, H / 2 - 100);
-                    ctx.shadowBlur = 20;
-                    ctx.font = '18px Inter, sans-serif';
-                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.3})`;
-                    ctx.fillText(`+${Math.floor(10 + sim.score * 0.1)} bonus`, W / 2, H / 2 - 50);
-                    ctx.shadowBlur = 0;
-                    ctx.restore();
-                }
-
-                // Start Prompt
-                if (!sim.started && !sim.gameOver && simActive) {
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.font = '500 18px Inter, sans-serif';
-                    ctx.fillStyle = 'rgba(255,255,255,0.12)';
-                    ctx.fillText('move to begin', W / 2, H / 2 + 60);
-                }
-
-                ctx.restore();
-            }
-
-            // ── Draw Helpers ──
-            function drawAsteroid(a) {
-                ctx.save();
-                ctx.translate(a.x, a.y);
-                ctx.rotate(a.rotation);
-                ctx.shadowColor = 'rgba(0,0,0,0.6)';
-                ctx.shadowBlur = 20;
-                ctx.shadowOffsetX = 2;
-                ctx.shadowOffsetY = 4;
-
-                ctx.beginPath();
-                const pts = a.vertices;
-                for (let i = 0; i < pts.length; i++) {
-                    const { a: ang, r } = pts[i];
-                    const x = Math.cos(ang) * r;
-                    const y = Math.sin(ang) * r;
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
-                }
-                ctx.closePath();
-                const g = ctx.createRadialGradient(-a.radius * 0.2, -a.radius * 0.2, 2, 0, 0, a.radius);
-                g.addColorStop(0, '#9a8a6a');
-                g.addColorStop(0.6, '#6a5a3a');
-                g.addColorStop(1, '#2a1e10');
-                ctx.fillStyle = g;
-                ctx.fill();
-                ctx.strokeStyle = 'rgba(20,15,8,0.6)';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-
-                const n = Math.floor(a.radius / 10) + 2;
-                for (let i = 0; i < n; i++) {
-                    const ang = (i / n) * Math.PI * 2 + 0.8;
-                    const d = a.radius * (0.15 + Math.random() * 0.5);
-                    const cx = Math.cos(ang) * d;
-                    const cy = Math.sin(ang) * d;
-                    const cr = 2 + Math.random() * a.radius * 0.25;
-                    ctx.beginPath();
-                    ctx.ellipse(cx, cy, cr, cr * 0.6, Math.random() * Math.PI, 0, Math.PI * 2);
-                    ctx.fillStyle = 'rgba(20,14,8,0.35)';
-                    ctx.fill();
-                }
-                ctx.restore();
-            }
-
-            function drawPowerup(p) {
-                ctx.save();
-                ctx.translate(p.x, p.y);
-                ctx.rotate(p.rotation);
-                const r = p.radius;
-                const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, r * 2);
-                glow.addColorStop(0, 'rgba(167,139,250,0.4)');
-                glow.addColorStop(1, 'rgba(167,139,250,0)');
-                ctx.fillStyle = glow;
-                ctx.beginPath();
-                ctx.arc(0, 0, r * 2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowColor = 'rgba(167,139,250,0.6)';
-                ctx.shadowBlur = 30;
-                ctx.beginPath();
-                ctx.arc(0, 0, r, 0, Math.PI * 2);
-                const grad = ctx.createRadialGradient(-r * 0.2, -r * 0.2, 2, 0, 0, r);
-                grad.addColorStop(0, '#c4b5fd');
-                grad.addColorStop(0.7, '#7c5cbf');
-                grad.addColorStop(1, '#4a2a7a');
-                ctx.fillStyle = grad;
-                ctx.fill();
-                ctx.shadowBlur = 0;
-                ctx.fillStyle = '#fff';
-                ctx.font = `${r * 1.2}px sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                let icon = '';
-                switch (p.type) {
-                    case 'shield': icon = '🛡️'; break;
-                    case 'slow': icon = '🐢'; break;
-                    case 'magnet': icon = '🧲'; break;
-                    case 'invincible': icon = '✨'; break;
-                }
-                ctx.fillText(icon, 0, 0);
-                ctx.restore();
-            }
-
-            function drawCoin(c) {
-                ctx.save();
-                ctx.translate(c.x, c.y);
-                ctx.rotate(c.rotation);
-                const r = c.radius;
-                const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, r * 2);
-                glow.addColorStop(0, 'rgba(255,215,0,0.3)');
-                glow.addColorStop(1, 'rgba(255,215,0,0)');
-                ctx.fillStyle = glow;
-                ctx.beginPath();
-                ctx.arc(0, 0, r * 2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowColor = 'rgba(255,215,0,0.4)';
-                ctx.shadowBlur = 20;
-                ctx.beginPath();
-                ctx.arc(0, 0, r, 0, Math.PI * 2);
-                const grad = ctx.createRadialGradient(-r * 0.2, -r * 0.2, 2, 0, 0, r);
-                grad.addColorStop(0, '#ffd700');
-                grad.addColorStop(0.7, '#e6b800');
-                grad.addColorStop(1, '#b8860b');
-                ctx.fillStyle = grad;
-                ctx.fill();
-                ctx.strokeStyle = '#b8860b';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-                ctx.fillStyle = '#b8860b';
-                ctx.font = `${r * 0.8}px sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('$', 0, 0);
-                ctx.restore();
-            }
-
-            function drawAnomaly(anom) {
-                ctx.save();
-                ctx.translate(anom.x, anom.y);
-                if (anom.type === 'comet') {
-                    ctx.rotate(anom.rotation || 0);
-                    ctx.shadowColor = '#fff';
-                    ctx.shadowBlur = 20;
-                    ctx.fillStyle = '#fff';
-                    ctx.beginPath();
-                    ctx.arc(0, 0, anom.radius * 0.5, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
-                } else if (anom.type === 'wormhole') {
-                    ctx.shadowColor = '#a78bfa';
-                    ctx.shadowBlur = 30;
-                    ctx.strokeStyle = '#a78bfa';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.arc(0, 0, anom.radius, 0, Math.PI * 2);
-                    ctx.stroke();
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.arc(0, 0, anom.radius * 0.5, 0, Math.PI * 2);
-                    ctx.stroke();
-                    ctx.shadowBlur = 0;
-                } else if (anom.type === 'golden') {
-                    ctx.shadowColor = 'rgba(255,215,0,0.8)';
-                    ctx.shadowBlur = 30;
-                    ctx.fillStyle = '#ffd700';
-                    ctx.beginPath();
-                    ctx.arc(0, 0, anom.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
-                }
-                ctx.restore();
-            }
-
-            function drawRocket(x, y) {
-                ctx.save();
-                ctx.translate(x, y);
-                const w = 20,
-                    h = 34;
-
-                const grad = ctx.createRadialGradient(0, h / 2 + 6, 4, 0, h / 2 + 6, 30);
-                grad.addColorStop(0, 'rgba(255, 200, 100, 0.4)');
-                grad.addColorStop(1, 'rgba(255, 100, 20, 0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(0, h / 2 + 6, 30, 0, Math.PI * 2);
-                ctx.fill();
-
-                const ship = SHIPS[equippedShip] || SHIPS[0];
-                const shipColor = ship.color || '#5a8aaa';
-
-                ctx.beginPath();
-                ctx.moveTo(0, -h / 2);
-                ctx.quadraticCurveTo(w / 2, -h / 2 + 4, w / 2, 0);
-                ctx.quadraticCurveTo(w / 2, h / 2 - 4, w / 2 - 2, h / 2 - 2);
-                ctx.lineTo(w / 2 - 6, h / 2 + 6);
-                ctx.lineTo(-w / 2 + 6, h / 2 + 6);
-                ctx.lineTo(-w / 2 + 2, h / 2 - 2);
-                ctx.quadraticCurveTo(-w / 2, h / 2 - 4, -w / 2, 0);
-                ctx.quadraticCurveTo(-w / 2, -h / 2 + 4, 0, -h / 2);
-                ctx.closePath();
-                const bg = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
-                bg.addColorStop(0, shipColor);
-                bg.addColorStop(0.3, lightenColor(shipColor, 30));
-                bg.addColorStop(0.7, lightenColor(shipColor, 30));
-                bg.addColorStop(1, shipColor);
-                ctx.fillStyle = bg;
-                ctx.fill();
-                ctx.strokeStyle = 'rgba(20,40,60,0.6)';
-                ctx.lineWidth = 1.2;
-                ctx.stroke();
-
-                ctx.beginPath();
-                ctx.ellipse(0, -6, 6, 8, 0, 0, Math.PI * 2);
-                const cg = ctx.createRadialGradient(-2, -8, 2, 0, -6, 8);
-                cg.addColorStop(0, '#8ac8ff');
-                cg.addColorStop(0.5, '#3a8acf');
-                cg.addColorStop(1, '#1a3a6a');
-                ctx.fillStyle = cg;
-                ctx.fill();
-                ctx.strokeStyle = 'rgba(40,80,120,0.5)';
-                ctx.lineWidth = 0.8;
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.ellipse(-2, -9, 2, 3, -0.3, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(255,255,255,0.25)';
-                ctx.fill();
-
-                ctx.fillStyle = lightenColor(shipColor, 20);
-                ctx.strokeStyle = 'rgba(30,60,80,0.5)';
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(-w / 2 + 2, 2);
-                ctx.lineTo(-w / 2 - 10, 14);
-                ctx.lineTo(-w / 2 - 5, 18);
-                ctx.lineTo(-w / 2 + 2, 10);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(w / 2 - 2, 2);
-                ctx.lineTo(w / 2 + 10, 14);
-                ctx.lineTo(w / 2 + 5, 18);
-                ctx.lineTo(w / 2 - 2, 10);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-
-                ctx.fillStyle = '#2a2a3a';
-                ctx.beginPath();
-                ctx.rect(-5, h / 2 - 2, 10, 5);
-                ctx.fill();
-                ctx.fillStyle = '#4a4a5a';
-                ctx.beginPath();
-                ctx.rect(-3, h / 2, 6, 3);
-                ctx.fill();
-
-                const fl = 18 + Math.random() * 14;
-                const fg = ctx.createRadialGradient(0, h / 2 + 4, 2, 0, h / 2 + 4 + fl * 0.5, fl);
-                fg.addColorStop(0, 'rgba(255,230,150,0.95)');
-                fg.addColorStop(0.3, 'rgba(255,180,80,0.8)');
-                fg.addColorStop(0.7, 'rgba(255,80,20,0.5)');
-                fg.addColorStop(1, 'rgba(255,40,0,0)');
-                ctx.fillStyle = fg;
-                ctx.beginPath();
-                ctx.moveTo(-5, h / 2 + 2);
-                ctx.quadraticCurveTo(-2, h / 2 + 2 + fl * 0.6, 0, h / 2 + 2 + fl);
-                ctx.quadraticCurveTo(2, h / 2 + 2 + fl * 0.6, 5, h / 2 + 2);
-                ctx.closePath();
-                ctx.fill();
-
-                ctx.shadowColor = '#ff3333';
-                ctx.shadowBlur = 12;
-                ctx.fillStyle = '#ff3333';
-                ctx.beginPath();
-                ctx.arc(-w / 2 - 5, 14, 2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowColor = '#33ff33';
-                ctx.fillStyle = '#33ff33';
-                ctx.beginPath();
-                ctx.arc(w / 2 + 5, 14, 2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowBlur = 0;
-
-                ctx.restore();
-            }
-
-            function lightenColor(hex, amt) {
-                let r = parseInt(hex.slice(1, 3), 16);
-                let g = parseInt(hex.slice(3, 5), 16);
-                let b = parseInt(hex.slice(5, 7), 16);
-                r = Math.min(255, r + amt);
-                g = Math.min(255, g + amt);
-                b = Math.min(255, b + amt);
-                return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-            }
-
-            // ── LOOP ──
-            function loop() {
-                if (!simRunning && !simActive) {
-                    animId = null;
-                    return;
-                }
-                update();
-                render();
-                animId = requestAnimationFrame(loop);
-            }
-
-            // ── INPUT ──
-            function handleMouseMove(e) {
-                const rect = canvas.getBoundingClientRect();
-                const scaleX = W / rect.width;
-                const scaleY = H / rect.height;
-                const cx = (e.clientX - rect.left) * scaleX;
-                const cy = (e.clientY - rect.top) * scaleY;
-
-                sim.mouseX = Math.max(0, Math.min(W, cx));
-                sim.mouseY = Math.max(0, Math.min(H, cy));
-                sim.mouseInside = true;
-
-                if (simActive && !sim.gameOver && !sim.paused) {
-                    const r = sim.rocket;
-                    r.targetX = Math.max(r.radius + 2, Math.min(W - r.radius - 2, sim.mouseX));
-                    r.targetY = Math.max(r.radius + 2, Math.min(H - r.radius - 2, sim.mouseY));
-                    if (!sim.started) sim.started = true;
-                }
-            }
-
-            function handleMouseLeave() { sim.mouseInside = false; }
-            canvas.addEventListener('mousemove', handleMouseMove);
-            canvas.addEventListener('mouseleave', handleMouseLeave);
-
-            canvas.addEventListener('touchmove', (e) => {
-                e.preventDefault();
-                const t = e.touches[0];
-                if (!t) return;
-                const rect = canvas.getBoundingClientRect();
-                const scaleX = W / rect.width;
-                const scaleY = H / rect.height;
-                const cx = (t.clientX - rect.left) * scaleX;
-                const cy = (t.clientY - rect.top) * scaleY;
-                sim.mouseX = Math.max(0, Math.min(W, cx));
-                sim.mouseY = Math.max(0, Math.min(H, cy));
-                sim.mouseInside = true;
-                if (simActive && !sim.gameOver && !sim.paused) {
-                    const r = sim.rocket;
-                    r.targetX = Math.max(r.radius + 2, Math.min(W - r.radius - 2, sim.mouseX));
-                    r.targetY = Math.max(r.radius + 2, Math.min(H - r.radius - 2, sim.mouseY));
-                    if (!sim.started) sim.started = true;
-                }
-            }, { passive: false });
-
-            // ── UI EVENTS ──
-            playBtn.addEventListener('click', startSimulation);
-
-            configBtn.addEventListener('click', () => {
-                configOverlay.classList.add('active');
-            });
-
-            configCloseBtn.addEventListener('click', () => {
-                configOverlay.classList.remove('active');
-            });
-
-            configOverlay.addEventListener('click', (e) => {
-                if (e.target === configOverlay) configOverlay.classList.remove('active');
-            });
-
-            shopBtn.addEventListener('click', () => {
-                loadShop();
-                shopOverlay.classList.add('active');
-            });
-
-            shopCloseBtn.addEventListener('click', () => {
-                shopOverlay.classList.remove('active');
-            });
-
-            shopOverlay.addEventListener('click', (e) => {
-                if (e.target === shopOverlay) shopOverlay.classList.remove('active');
-            });
-
-            sensToggle.addEventListener('click', () => {
-                sensitivity = sensitivity >= 2.0 ? 0.5 : Math.round((sensitivity + 0.5) * 10) / 10;
-                if (sensitivity > 2.0) sensitivity = 0.5;
-                updateSensitivityDisplay();
-            });
-
-            resetBestBtn.addEventListener('click', () => {
-                if (confirm('Reset best score?')) {
-                    bestScore = 0;
-                    localStorage.setItem('fps_best', '0');
-                    updateMenuStats();
-                    updateHUD();
-                }
-            });
-
-            resetAllBtn.addEventListener('click', () => {
-                if (confirm('Reset all stats (best, coins, ships)?')) {
-                    bestScore = 0;
-                    sessionCount = 0;
-                    totalCoins = 0;
-                    sensitivity = 1.0;
-                    equippedShip = 0;
-                    unlockedShips = [0];
-                    localStorage.setItem('fps_best', '0');
-                    localStorage.setItem('fps_sessions', '0');
-                    localStorage.setItem('fps_coins', '0');
-                    localStorage.setItem('fps_sensitivity', '1.0');
-                    localStorage.setItem('fps_equipped_ship', '0');
-                    localStorage.setItem('fps_unlocked_ships', JSON.stringify([0]));
-                    updateSensitivityDisplay();
-                    updateMenuStats();
-                    updateHUD();
-                    loadShop();
-                    applyShipStats(0);
-                }
-            });
-
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !menuOverlay.classList.contains('hidden')) {
-                    playBtn.click();
-                }
-                if ((e.key === 'r' || e.key === 'R') && simActive && sim.gameOver) {
-                    goRetryBtn.click();
-                }
-                if (e.key === 'Escape' && simActive && sim.gameOver) {
-                    goMenuBtn.click();
-                }
-                if (e.key === 'Escape' && configOverlay.classList.contains('active')) {
-                    configOverlay.classList.remove('active');
-                }
-                if (e.key === 'Escape' && shopOverlay.classList.contains('active')) {
-                    shopOverlay.classList.remove('active');
-                }
-                if (e.key === 'Escape' && upgradeOverlay.classList.contains('active')) {
-                    upgradeOverlay.classList.remove('active');
-                    sim.paused = false;
-                }
-            });
-
-            goRetryBtn.addEventListener('click', startSimulation);
-            goMenuBtn.addEventListener('click', goToMenu);
-
-            // ── INIT ──
-            resizeCanvas();
-            initStarsAndNebulas();
-            applyShipStats(equippedShip);
-            resetSim();
-            updateMenuStats();
-            loadShop();
-            initDailyMissions();
-            checkMissions();
-            render();
-
-            console.log('Flight Path Simulator - Planetary Trek');
-        })();
-    </script>
-
+        }else{
+            b.t-=sdt;
+            if(Math.abs(sim.rocket.x-b.x)<b.w*0.5) damage();
+            if(b.t<=0) sim.bolts.splice(i,1);
+        }
+    }
+}
+function updateCoins(sdt){
+    const rk=sim.rocket;
+    const attractR=sim.magnetT>0?sim.magnetRange:36;
+    for(let i=sim.coins.length-1;i>=0;i--){
+        const c=sim.coins[i];
+        c.y+=c.vy*sdt;
+        c.x+=Math.sin((c.phase+=sdt*3))*14*sdt;
+        const dx=rk.x-c.x, dy=rk.y-c.y, d=Math.hypot(dx,dy)||1;
+        if(d<attractR){
+            c.x+=dx/d*760*sdt;
+            c.y+=dy/d*760*sdt;
+        }
+        if(d<24+shipHitR()){ collectCoin(c); sim.coins.splice(i,1); }
+        else if(c.y>H+60) sim.coins.splice(i,1);
+    }
+}
+function updatePups(sdt){
+    const rk=sim.rocket;
+    for(let i=sim.pups.length-1;i>=0;i--){
+        const p=sim.pups[i];
+        p.y+=p.vy*sdt; p.t+=sdt;
+        if(Math.hypot(p.x-rk.x,p.y-rk.y)<32){ applyPup(p); sim.pups.splice(i,1); }
+        else if(p.y>H+60) sim.pups.splice(i,1);
+    }
+}
+
+/* ━━━━━━━━━ GAME FLOW ━━━━━━━━━ */
+function updateGame(sdt,rdt){
+    const zone=zoneOf(sim.zone);
+    const segProg=Math.min(1,(sim.dist-sim.segStart)/sim.goal);
+    const ramp=1+0.22*segProg;
+    const expM=getExpMult();
+    sim.scroll=200*zone.speed*sim.speedFactor;
+    const hzBase=200*zone.speed;
+    sim.time+=sdt;
+    if(sim.invincible>0) sim.invincible-=rdt;
+    if(sim.magnetT>0) sim.magnetT-=rdt;
+    if(sim.pupSlowT>0) sim.pupSlowT-=rdt;
+    if(sim.slowmoT>0) sim.slowmoT-=rdt;
+    if(sim.hintT>0) sim.hintT-=rdt;
+    if(sim.flowT>0) sim.flowT-=rdt;
+    else if(sim.flow>0){ sim.flow--; sim.flowT=0.7; }
+    if(sim.coinStreakT>0) sim.coinStreakT-=rdt; else sim.coinStreak=0;
+    const flowMult=1+Math.min(0.5,sim.flow*0.05);
+    sim.dist+=sim.scroll*0.08*flowMult*sim.distMult*sdt;
+    moveRocket(sdt);
+    updateStars(sdt,sim.scroll);
+    updateNebulas(sdt,sim.scroll);
+    spawnLogic(sdt,zone,ramp,expM,hzBase);
+    updateHazards(sdt);
+    updateClouds(sdt);
+    updateBolts(sdt);
+    updateCoins(sdt);
+    updatePups(sdt);
+    updateParts(sdt);
+    updateTexts(rdt);
+    Sfx.humSet(sim.ts);
+    if(sim.dist-sim.segStart>=sim.goal) startWarp();
+}
+function startWarp(){
+    if(sim.state!=='playing') return;
+    sim.state='warp'; sim.warpT=0; sim.warpFlash=false; sim.warpK=1;
+    sim.warpBase=sim.scroll;
+    Sfx.warp();
+    sim.hazards.forEach(h=>burst(h.x,h.y,'159,214,255',6,220));
+    sim.hazards=[]; sim.clouds=[]; sim.bolts=[]; sim.pups=[]; sim.coins=[];
+    sim.meteorQ=null; sim.rad=0;
+    saveProgress();
+}
+function updateWarp(rdt){
+    sim.warpT+=rdt; sim.time+=rdt;
+    const t=Math.min(1,sim.warpT/0.9);
+    sim.warpK=1+16*t*t;
+    sim.scroll=sim.warpBase*sim.warpK;
+    updateStars(rdt,sim.scroll);
+    updateNebulas(rdt,sim.scroll*0.5);
+    updateParts(rdt);
+    if(!sim.warpFlash&&sim.warpT>0.55){
+        sim.warpFlash=true; sim.flash=0.9; sim.flashC='220,240,255'; sim.shake=8;
+    }
+    if(sim.warpT>=1.5){ openUpgrades(); sim.state='choose'; }
+}
+function updateDying(rdt){
+    sim.dyingT+=rdt; sim.time+=rdt*0.3;
+    updateStars(rdt*sim.ts,sim.scroll*0.25);
+    updateParts(rdt*sim.ts);
+    updateTexts(rdt);
+    if(sim.dyingT>1.35) showGameOver();
+}
+function upgradeLevel(id){
+    if(id==='shield') return sim.up.shields;
+    if(id==='speed') return sim.up.speed;
+    if(id==='magnet') return sim.up.magnet;
+    if(id==='multiplier') return Math.round((sim.up.mult-1)/0.2);
+    return 0;
+}
+function openUpgrades(){
+    Sfx.arrive();
+    const opts=UPGRADE_POOL.filter(u=>u.avail());
+    for(let i=opts.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=opts[i]; opts[i]=opts[j]; opts[j]=t; }
+    const picks=opts.slice(0,3);
+    while(picks.length<3) picks.push(UPGRADE_POOL[UPGRADE_POOL.length-1]);
+    upgradeGrid.innerHTML=picks.map(u=>{
+        const lvl=upgradeLevel(u.id);
+        return '<div class="upgrade-card" data-id="'+u.id+'">'
+            +'<span class="icon">'+svgIcon(u.icon,30)+'</span>'
+            +'<span class="name">'+u.name+'</span>'
+            +'<span class="desc">'+u.desc+'</span>'
+            +(lvl?'<span class="lvl">Lv '+lvl+' → '+(lvl+1)+'</span>':'')
+            +'</div>';
+    }).join('');
+    upgradeOverlay.classList.add('active');
+}
+function applyUpgrade(id){
+    if(id==='shield'){ sim.up.shields++; recalcStats(); sim.lives=sim.maxLives; }
+    else if(id==='speed'){ sim.up.speed++; recalcStats(); }
+    else if(id==='magnet'){ sim.up.magnet++; recalcStats(); }
+    else if(id==='multiplier'){ sim.up.mult=Math.min(2.4,sim.up.mult+0.2); recalcStats(); }
+    else if(id==='slow'){ sim.up.slow=true; }
+    else if(id==='refill'){ sim.lives=sim.maxLives; totalCoins+=15; sim.runCoins+=15; }
+    Sfx.power();
+}
+function advanceZone(){
+    sim.zone++;
+    const z=zoneOf(sim.zone);
+    sim.segStart=sim.dist;
+    sim.goal=z.goal;
+    recalcStats();
+    sim.lives=sim.maxLives;
+    sim.invincible=2.5;
+    sim.hT={}; sim.astT=0.9; sim.coinT=0.8;
+    const bonus=8+sim.zone*2;
+    totalCoins+=bonus; sim.runCoins+=bonus;
+    missionEvent('reach',sim.zone,true);
+    saveProgress();
+    showToast('Arrived at '+z.name+' · +'+bonus+' coins'+(z.hint?' — '+z.hint:''));
+    sim.state='playing';
+    updateHUD();
+}
+function chooseUpgrade(id){
+    if(sim.state!=='choose') return;
+    applyUpgrade(id);
+    upgradeOverlay.classList.remove('active');
+    advanceZone();
+}
+function resetRun(){
+    sim.state='playing';
+    sim.zone=0; sim.segStart=0; sim.dist=0; sim.goal=ZONES[0].goal;
+    sim.hazards=[]; sim.clouds=[]; sim.bolts=[]; sim.coins=[]; sim.pups=[]; sim.parts=[]; sim.texts=[];
+    sim.flow=0; sim.flowT=0; sim.maxFlow=0; sim.rad=0; sim.coinStreak=0;
+    sim.up={shields:0,speed:0,magnet:0,mult:1,slow:false};
+    recalcStats();
+    sim.lives=sim.maxLives;
+    sim.runCoins=0; sim.invincible=2.0;
+    sim.shake=0; sim.flash=0; sim.ts=1;
+    sim.slowmoT=0; sim.pupSlowT=0; sim.magnetT=0;
+    sim.astT=1.2; sim.coinT=1.0; sim.pupT=9+Math.random()*6;
+    sim.meteorQ=null; sim.hT={};
+    sim.rocket.x=sim.rocket.tx=W/2;
+    sim.rocket.y=sim.rocket.ty=H-140;
+    sim.rocket.tilt=0; sim.rocket.vxS=0;
+    sim.time=0; sim.hintT=5;
+    updateHUD();
+}
+function startRun(){
+    Sfx.init(); Sfx.resume(); Sfx.humStart();
+    sessionCount++; store.set('fps_sessions',sessionCount);
+    menuOverlay.classList.add('hidden');
+    gameOverOverlay.classList.remove('active');
+    pauseOverlay.classList.remove('active');
+    upgradeOverlay.classList.remove('active');
+    hud.classList.add('active');
+    progressContainer.classList.add('active');
+    pauseBtn.style.display='flex';
+    resetRun();
+}
+function quitToMenu(){
+    if(['playing','paused','warp','choose','dying'].includes(sim.state)){
+        totalFlown+=Math.floor(sim.dist);
+        store.set('fps_total_dist',totalFlown);
+    }
+    saveProgress();
+    Sfx.humStop();
+    sim.state='menu';
+    menuOverlay.classList.remove('hidden');
+    gameOverOverlay.classList.remove('active');
+    pauseOverlay.classList.remove('active');
+    upgradeOverlay.classList.remove('active');
+    hud.classList.remove('active');
+    progressContainer.classList.remove('active');
+    pauseBtn.style.display='none';
+    updateMenuStats(); renderMissions(); renderShop();
+}
+function showGameOver(){
+    const d=Math.floor(sim.dist);
+    const newBest=d>bestScore;
+    bestScore=Math.max(bestScore,d);
+    totalFlown+=d;
+    store.set('fps_total_dist',totalFlown);
+    saveProgress();
+    missionEvent('runDist',d);
+    goIcon.innerHTML=svgIcon('boom',46);
+    goScore.textContent=d;
+    goBest.textContent=String(bestScore)+(newBest?' · new best':'');
+    goPlanet.textContent=zoneOf(sim.zone).name;
+    goCoins.textContent='+'+sim.runCoins+' coins this run';
+    gameOverOverlay.classList.add('active');
+    sim.state='dead';
+    updateMenuStats(); renderMissions();
+}
+function pauseGame(){
+    if(sim.state!=='playing') return;
+    sim.state='paused';
+    pauseOverlay.classList.add('active');
+    Sfx.humSet(0.15);
+}
+function resumeGame(){
+    if(sim.state!=='paused') return;
+    pauseOverlay.classList.remove('active');
+    sim.state='playing';
+}
+
+/* ━━━━━━━━━ RENDER ━━━━━━━━━ */
+function drawStars(){
+    const wk=sim.state==='warp'?Math.min(sim.warpK,22):1;
+    for(const s of stars){
+        const a=s.b*(0.65+0.35*Math.sin(sim.time*s.tw+s.ph));
+        if(wk>1.4){
+            const len=Math.min(230,sim.scroll*SPEEDF[s.layer-1]*0.05*wk);
+            ctx.strokeStyle='rgba(190,215,255,'+a.toFixed(3)+')';
+            ctx.lineWidth=Math.max(0.6,s.size*0.8);
+            ctx.beginPath(); ctx.moveTo(s.x,s.y-len); ctx.lineTo(s.x,s.y); ctx.stroke();
+        }else{
+            ctx.fillStyle='rgba(220,235,255,'+a.toFixed(3)+')';
+            ctx.beginPath(); ctx.arc(s.x,s.y,s.size,0,7); ctx.fill();
+        }
+    }
+}
+function drawNebulas(){
+    const hue=zoneOf(sim.zone).hue;
+    for(const n of nebulas){
+        const h=hue+n.ho;
+        const nx=n.x+Math.sin(sim.time*0.05+n.ph)*40;
+        const g=ctx.createRadialGradient(nx,n.y,0,nx,n.y,n.r);
+        g.addColorStop(0,'hsla('+h+',70%,60%,0.05)');
+        g.addColorStop(1,'hsla('+h+',70%,60%,0)');
+        ctx.fillStyle=g;
+        ctx.beginPath(); ctx.arc(nx,n.y,n.r,0,7); ctx.fill();
+    }
+}
+function drawPlanetBody(x,y,r,zone,alpha){
+    if(r<1) return;
+    ctx.save(); ctx.globalAlpha=alpha;
+    const hue=zone.hue, sat=zone.gray?10:60;
+    if(zone.ring&&r>26){
+        ctx.strokeStyle='hsla('+hue+',55%,70%,0.45)';
+        ctx.lineWidth=Math.max(2,r*0.16);
+        ctx.beginPath(); ctx.ellipse(x,y,r*1.6,r*0.52,-0.35,0,7); ctx.stroke();
+    }
+    const g=ctx.createRadialGradient(x-r*0.35,y-r*0.4,r*0.12,x,y,r);
+    g.addColorStop(0,'hsl('+hue+','+sat+'%,74%)');
+    g.addColorStop(0.6,'hsl('+hue+','+sat+'%,50%)');
+    g.addColorStop(1,'hsl('+hue+','+sat+'%,22%)');
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
+    ctx.save();
+    ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.clip();
+    if(zone.kind==='gas'||zone.ring){
+        for(let i=0;i<4;i++){
+            ctx.fillStyle='hsla('+hue+','+sat+'%,28%,0.16)';
+            ctx.beginPath();
+            ctx.ellipse(x+(i%2?r*0.15:-r*0.1),y-r*0.6+i*r*0.4,r*1.15,r*0.09,0,0,7);
+            ctx.fill();
+        }
+    }
+    if(zone.kind==='rocky'){
+        ctx.fillStyle='rgba(0,0,0,0.15)';
+        ctx.beginPath(); ctx.arc(x-r*0.3,y-r*0.15,r*0.2,0,7); ctx.fill();
+        ctx.beginPath(); ctx.arc(x+r*0.25,y+r*0.28,r*0.14,0,7); ctx.fill();
+        ctx.beginPath(); ctx.arc(x+r*0.05,y+r*0.55,r*0.1,0,7); ctx.fill();
+    }
+    if(zone.kind==='earth'){
+        ctx.fillStyle='hsla(140,45%,42%,0.75)';
+        ctx.beginPath(); ctx.ellipse(x-r*0.3,y-r*0.1,r*0.4,r*0.25,0.5,0,7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x+r*0.35,y+r*0.3,r*0.3,r*0.2,-0.4,0,7); ctx.fill();
+    }
+    if(zone.kind==='star'){
+        ctx.globalCompositeOperation='lighter';
+        const cg=ctx.createRadialGradient(x,y,0,x,y,r*0.8);
+        cg.addColorStop(0,'rgba(255,250,220,0.8)');
+        cg.addColorStop(1,'rgba(255,220,150,0)');
+        ctx.fillStyle=cg;
+        ctx.beginPath(); ctx.arc(x,y,r*0.8,0,7); ctx.fill();
+        ctx.globalCompositeOperation='source-over';
+    }
+    ctx.restore();
+    ctx.strokeStyle='hsla('+hue+',80%,80%,0.35)';
+    ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.stroke();
+    if(zone.ring&&r>26){
+        ctx.strokeStyle='hsla('+hue+',60%,78%,0.6)';
+        ctx.lineWidth=Math.max(2,r*0.16);
+        ctx.beginPath(); ctx.ellipse(x,y,r*1.6,r*0.52,-0.35,0.15*Math.PI,0.85*Math.PI); ctx.stroke();
+    }
+    ctx.restore();
+}
+function drawApproachPlanet(){
+    if(sim.state==='menu') return;
+    const segP=sim.goal>0?Math.min(1,(sim.dist-sim.segStart)/sim.goal):0;
+    let t=0;
+    if(segP>0.55) t=(segP-0.55)/0.45;
+    if(sim.state==='choose') t=1;
+    if(sim.state==='warp') t=1+sim.warpT;
+    if(t<=0) return;
+    const nz=zoneOf(sim.zone+1);
+    let r=12+t*t*110;
+    if(sim.state==='warp') r+=sim.warpK*sim.warpK*12;
+    drawPlanetBody(W/2,46,Math.min(r,W*1.5),nz,Math.min(1,t+0.25));
+}
+function rrect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+}
+function drawClouds(){
+    for(const c of sim.clouds){
+        const pulse=0.5+0.5*Math.sin(c.t*2);
+        for(let i=0;i<5;i++){
+            const ang=c.t*0.5+i*1.256;
+            const bx=c.x+Math.cos(ang)*c.r*0.32;
+            const by=c.y+Math.sin(ang*1.3)*c.r*0.22;
+            const br=c.r*(0.5+0.1*Math.sin(c.t*2+i));
+            const g=ctx.createRadialGradient(bx,by,0,bx,by,br);
+            g.addColorStop(0,'hsla(130,90%,62%,0.14)');
+            g.addColorStop(1,'hsla(130,90%,62%,0)');
+            ctx.fillStyle=g;
+            ctx.beginPath(); ctx.arc(bx,by,br,0,7); ctx.fill();
+        }
+        ctx.fillStyle='rgba(160,255,190,'+(0.3+pulse*0.25)+')';
+        for(let i=0;i<7;i++){
+            const a=c.t*0.9+i*0.9, d=c.r*0.55;
+            ctx.beginPath();
+            ctx.arc(c.x+Math.cos(a+c.seed)*d,c.y+Math.sin(a*1.2+c.seed)*d*0.7,1.8,0,7);
+            ctx.fill();
+        }
+    }
+}
+function drawBolts(){
+    for(const b of sim.bolts){
+        if(b.state==='warn'){
+            const pulse=0.5+0.5*Math.sin(sim.time*18);
+            rrect(b.x-b.w/2,0,b.w,H,10);
+            ctx.fillStyle='rgba(120,190,255,'+(0.05+0.05*pulse)+')'; ctx.fill();
+            ctx.strokeStyle='rgba(140,200,255,'+(0.22+0.3*pulse)+')';
+            ctx.lineWidth=1.5; ctx.stroke();
+            ctx.fillStyle='rgba(160,220,255,'+(0.5+0.5*pulse)+')';
+            ctx.beginPath(); ctx.moveTo(b.x-8,6); ctx.lineTo(b.x+8,6); ctx.lineTo(b.x,18); ctx.closePath(); ctx.fill();
+        }else{
+            const a=Math.max(0,b.t/0.22);
+            ctx.save();
+            ctx.globalCompositeOperation='lighter';
+            ctx.lineJoin='round';
+            ctx.strokeStyle='rgba(150,200,255,'+(a*0.45)+')';
+            ctx.lineWidth=9;
+            ctx.beginPath();
+            b.pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));
+            ctx.stroke();
+            ctx.strokeStyle='rgba(255,255,255,'+a+')';
+            ctx.lineWidth=2.5;
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+}
+function drawRock(h){
+    ctx.beginPath();
+    h.verts.forEach((v,i)=>{
+        const px=Math.cos(v.a)*v.d, py=Math.sin(v.a)*v.d;
+        i?ctx.lineTo(px,py):ctx.moveTo(px,py);
+    });
+    ctx.closePath();
+    ctx.fillStyle='#8b8178'; ctx.fill();
+    ctx.strokeStyle='rgba(40,36,32,0.8)'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle='rgba(0,0,0,0.18)';
+    ctx.beginPath(); ctx.arc(-h.r*0.3,-h.r*0.15,h.r*0.22,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(h.r*0.25,h.r*0.3,h.r*0.14,0,7); ctx.fill();
+}
+function drawHazards(){
+    for(const h of sim.hazards){
+        if(h.type==='ring'||h.type==='meteor'||h.type==='comet'){
+            const sp=Math.hypot(h.vx,h.vy)||1;
+            const nx=h.vx/sp, ny=h.vy/sp;
+            const len=h.type==='comet'?70:26;
+            ctx.strokeStyle=h.type==='comet'?'rgba(170,220,255,0.35)':'rgba(255,170,90,0.25)';
+            ctx.lineWidth=h.r*0.8;
+            ctx.beginPath(); ctx.moveTo(h.x-nx*len,h.y-ny*len); ctx.lineTo(h.x,h.y); ctx.stroke();
+        }
+        if(h.type==='comet'){
+            ctx.save();
+            ctx.globalCompositeOperation='lighter';
+            const g=ctx.createRadialGradient(h.x,h.y,2,h.x,h.y,h.r*2.6);
+            g.addColorStop(0,'rgba(200,235,255,0.7)');
+            g.addColorStop(1,'rgba(150,200,255,0)');
+            ctx.fillStyle=g;
+            ctx.beginPath(); ctx.arc(h.x,h.y,h.r*2.6,0,7); ctx.fill();
+            ctx.fillStyle='#fff';
+            ctx.beginPath(); ctx.arc(h.x,h.y,h.r*0.55,0,7); ctx.fill();
+            ctx.restore();
+            continue;
+        }
+        ctx.save();
+        ctx.translate(h.x,h.y);
+        if(h.type==='ast'){ ctx.rotate(h.rot); drawRock(h); }
+        else if(h.type==='ring'){
+            ctx.rotate(h.rot); drawRock(h);
+            ctx.strokeStyle='rgba(200,190,170,0.4)'; ctx.lineWidth=1;
+        }
+        else if(h.type==='meteor'){
+            ctx.rotate(h.rot); drawRock(h);
+            ctx.globalCompositeOperation='lighter';
+            ctx.fillStyle='rgba(255,150,60,0.3)';
+            ctx.beginPath(); ctx.arc(0,0,h.r*1.7,0,7); ctx.fill();
+        }
+        else if(h.type==='shard'){
+            ctx.rotate(h.rot);
+            ctx.beginPath();
+            ctx.moveTo(0,-h.r); ctx.lineTo(h.r*0.55,0); ctx.lineTo(0,h.r); ctx.lineTo(-h.r*0.55,0);
+            ctx.closePath();
+            ctx.fillStyle='#dff4fb'; ctx.fill();
+            ctx.strokeStyle='#8fd0e0'; ctx.lineWidth=1; ctx.stroke();
+            ctx.strokeStyle='rgba(255,255,255,0.7)';
+            ctx.beginPath(); ctx.moveTo(-1.5,-h.r*0.5); ctx.lineTo(1.5,-h.r*0.1); ctx.stroke();
+        }
+        ctx.restore();
+    }
+}
+function drawCoins(){
+    for(const c of sim.coins){
+        ctx.save();
+        ctx.translate(c.x,c.y);
+        ctx.globalCompositeOperation='lighter';
+        ctx.fillStyle='rgba(255,215,80,0.16)';
+        ctx.beginPath(); ctx.arc(0,0,12,0,7); ctx.fill();
+        ctx.globalCompositeOperation='source-over';
+        const sx=0.35+0.65*Math.abs(Math.cos(c.phase));
+        ctx.scale(sx,1);
+        ctx.fillStyle='#ffd24a';
+        ctx.beginPath(); ctx.arc(0,0,9,0,7); ctx.fill();
+        ctx.strokeStyle='#a87b12'; ctx.lineWidth=1.5; ctx.stroke();
+        ctx.fillStyle='#ffe9a3';
+        ctx.beginPath(); ctx.arc(0,0,5.2,0,7); ctx.fill();
+        ctx.restore();
+    }
+}
+function drawPups(){
+    const COL={shield:'#6fcbff',magnet:'#ffd700',slow:'#a78bfa'};
+    for(const p of sim.pups){
+        const col=COL[p.type]||'#6fcbff';
+        ctx.save();
+        ctx.translate(p.x,p.y+Math.sin(p.t*3)*3);
+        ctx.globalCompositeOperation='lighter';
+        ctx.fillStyle=col; ctx.globalAlpha=0.12;
+        ctx.beginPath(); ctx.arc(0,0,22,0,7); ctx.fill();
+        ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over';
+        ctx.save();
+        ctx.rotate(p.t*0.8);
+        ctx.strokeStyle=col; ctx.lineWidth=2;
+        ctx.beginPath();
+        for(let i=0;i<6;i++){
+            const a=i/6*Math.PI*2;
+            i?ctx.lineTo(Math.cos(a)*14,Math.sin(a)*14):ctx.moveTo(Math.cos(a)*14,Math.sin(a)*14);
+        }
+        ctx.closePath(); ctx.stroke();
+        ctx.restore();
+        ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=2.4;
+        if(p.type==='shield'){
+            ctx.beginPath();
+            ctx.moveTo(0,-6); ctx.lineTo(5,-4); ctx.lineTo(5,1);
+            ctx.quadraticCurveTo(5,5,0,7); ctx.quadraticCurveTo(-5,5,-5,1);
+            ctx.lineTo(-5,-4); ctx.closePath(); ctx.fill();
+        }else if(p.type==='magnet'){
+            ctx.beginPath(); ctx.arc(0,1.5,5,Math.PI,0); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(-5,1.5); ctx.lineTo(-5,-3); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(5,1.5); ctx.lineTo(5,-3); ctx.stroke();
+        }else{
+            ctx.beginPath(); ctx.arc(0,0,6,0,7); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-4); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(3,1); ctx.stroke();
+        }
+        ctx.restore();
+    }
+}
+function flamePath(hw,y0,len){
+    ctx.beginPath();
+    ctx.moveTo(-hw,y0);
+    ctx.quadraticCurveTo(0,y0+len*1.3,hw,y0);
+    ctx.closePath();
+    ctx.fill();
+}
+function drawRocket(){
+    const rk=sim.rocket, ship=SHIPS[equippedShip]||SHIPS[0];
+    ctx.save();
+    ctx.translate(rk.x,rk.y);
+    ctx.rotate(rk.tilt);
+    if(sim.invincible>0&&Math.floor(sim.time*12)%2===0) ctx.globalAlpha=0.35;
+    if(ship.glow){
+        ctx.globalCompositeOperation='lighter';
+        const g=ctx.createRadialGradient(0,-2,4,0,-2,34);
+        g.addColorStop(0,'rgba(196,165,255,0.2)');
+        g.addColorStop(1,'rgba(196,165,255,0)');
+        ctx.fillStyle=g;
+        ctx.beginPath(); ctx.arc(0,-2,34,0,7); ctx.fill();
+        ctx.globalCompositeOperation='source-over';
+    }
+    const th=sim.state==='playing'?1:0.4;
+    const L=(20+Math.sin(sim.time*30)*4+Math.random()*4)*th;
+    ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle='rgba(255,150,60,0.55)';
+    flamePath(ship.w*0.55,13,14+L);
+    ctx.fillStyle='rgba(255,230,120,0.9)';
+    flamePath(ship.w*0.3,13,8+L*0.55);
+    ctx.globalCompositeOperation='source-over';
+    const w=ship.w;
+    ctx.fillStyle=ship.hull;
+    ctx.beginPath();
+    ctx.moveTo(0,-22);
+    ctx.quadraticCurveTo(w*0.9,-10,w*0.95,6);
+    ctx.lineTo(w*0.6,15); ctx.lineTo(-w*0.6,15); ctx.lineTo(-w*0.95,6);
+    ctx.quadraticCurveTo(-w*0.9,-10,0,-22);
+    ctx.fill();
+    ctx.fillStyle='rgba(0,0,0,0.22)';
+    ctx.beginPath();
+    ctx.moveTo(0,-22);
+    ctx.quadraticCurveTo(w*0.9,-10,w*0.95,6);
+    ctx.lineTo(w*0.6,15); ctx.lineTo(0,15);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle=ship.accent;
+    ctx.beginPath();
+    ctx.moveTo(0,-22);
+    ctx.quadraticCurveTo(w*0.62,-13,w*0.72,-7);
+    ctx.lineTo(-w*0.72,-7);
+    ctx.quadraticCurveTo(-w*0.62,-13,0,-22);
+    ctx.fill();
+    ctx.fillStyle=ship.accent;
+    ctx.beginPath(); ctx.moveTo(w*0.95,4); ctx.lineTo(w+8,17); ctx.lineTo(w*0.6,15); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-w*0.95,4); ctx.lineTo(-w-8,17); ctx.lineTo(-w*0.6,15); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#0a1622';
+    ctx.beginPath(); ctx.arc(0,-2,5.4,0,7); ctx.fill();
+    ctx.fillStyle='#9ee0ff';
+    ctx.beginPath(); ctx.arc(0,-2,3.9,0,7); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.75)';
+    ctx.beginPath(); ctx.arc(-1.4,-3.4,1.3,0,7); ctx.fill();
+    if(sim.lives>1){
+        ctx.strokeStyle='rgba(111,203,255,0.5)';
+        ctx.setLineDash([5,6]); ctx.lineWidth=1.5;
+        ctx.beginPath(); ctx.arc(0,-2,24,0,7); ctx.stroke();
+        ctx.setLineDash([]);
+    }
+    ctx.restore();
+}
+function drawParticles(){
+    for(const p of sim.parts){
+        if(p.type!=='puff') continue;
+        const t=1-p.life/p.max;
+        ctx.fillStyle='rgba(90,90,105,'+(0.3*p.life/p.max).toFixed(3)+')';
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.size*(1+t*1.6),0,7); ctx.fill();
+    }
+    ctx.globalCompositeOperation='lighter';
+    for(const p of sim.parts){
+        if(p.type==='puff') continue;
+        const a=Math.max(0,p.life/p.max);
+        ctx.fillStyle='rgba('+p.color+','+(a*0.9).toFixed(3)+')';
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.size*(0.4+0.6*a),0,7); ctx.fill();
+    }
+    ctx.globalCompositeOperation='source-over';
+}
+function drawTexts(){
+    ctx.font='600 13px "Space Grotesk",sans-serif';
+    ctx.textAlign='center';
+    for(const t of sim.texts){
+        const a=Math.max(0,t.life/t.max);
+        ctx.fillStyle=t.color;
+        ctx.globalAlpha=a;
+        ctx.fillText(t.str,t.x,t.y);
+    }
+    ctx.globalAlpha=1;
+}
+function drawRadiationUI(){
+    if(sim.rad<=0||sim.state!=='playing') return;
+    const rk=sim.rocket;
+    ctx.save();
+    ctx.translate(rk.x,rk.y);
+    ctx.strokeStyle='rgba(255,120,90,0.22)'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(0,0,30,0,7); ctx.stroke();
+    ctx.strokeStyle=sim.rad>0.7?'rgba(255,90,70,0.95)':'rgba(255,200,80,0.9)';
+    ctx.beginPath(); ctx.arc(0,0,30,-Math.PI/2,-Math.PI/2+sim.rad*Math.PI*2); ctx.stroke();
+    ctx.restore();
+}
+function drawHint(){
+    if(sim.state!=='playing'||sim.hintT<=0) return;
+    ctx.save();
+    ctx.globalAlpha=Math.min(1,sim.hintT)*0.75;
+    ctx.fillStyle='#cfe2ff';
+    ctx.font='500 14px Inter,sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('Steer with mouse, touch or arrows — graze hazards to build Flow',W/2,H*0.42);
+    ctx.restore();
+}
+function render(){
+    ctx.fillStyle='#05070a';
+    ctx.fillRect(0,0,W,H);
+    ctx.save();
+    if(sim.shake>0.5) ctx.translate((Math.random()-0.5)*sim.shake,(Math.random()-0.5)*sim.shake);
+    drawNebulas();
+    drawStars();
+    drawApproachPlanet();
+    drawClouds();
+    drawBolts();
+    drawHazards();
+    drawCoins();
+    drawPups();
+    if(['playing','warp','choose','paused'].includes(sim.state)) drawRocket();
+    drawParticles();
+    drawTexts();
+    drawRadiationUI();
+    ctx.restore();
+    drawHint();
+    if(sim.flash>0){
+        ctx.globalAlpha=Math.min(1,sim.flash);
+        ctx.fillStyle='rgb('+sim.flashC+')';
+        ctx.fillRect(0,0,W,H);
+        ctx.globalAlpha=1;
+    }
+    if(vigCanvas) ctx.drawImage(vigCanvas,0,0,W,H);
+}
+
+/* ━━━━━━━━━ HUD / MENU / MISSIONS ━━━━━━━━━ */
+const hudCache={};
+function setT(el,key,v){ if(hudCache[key]!==v){ hudCache[key]=v; el.textContent=v; } }
+function updateHUD(){
+    setT(hudScore,'score',String(Math.floor(sim.dist)));
+    setT(hudCoins,'coins',String(totalCoins));
+    setT(hudLives,'lives',String(Math.max(0,sim.lives)));
+    setT(hudBest,'best',String(Math.max(bestScore,Math.floor(sim.dist))));
+    const showFlow=sim.flow>=2;
+    if(hudCache.flowOn!==showFlow){ hudCache.flowOn=showFlow; hudComboWrap.style.display=showFlow?'block':'none'; }
+    if(showFlow) setT(hudCombo,'flow','×'+sim.flow);
+    const fx=[];
+    if(sim.magnetT>0) fx.push('Magnet '+Math.ceil(sim.magnetT)+'s');
+    if(sim.pupSlowT>0) fx.push('Slow '+Math.ceil(sim.pupSlowT)+'s');
+    if(sim.invincible>0) fx.push('Shield');
+    const fs=fx.join(' · ');
+    if(hudCache.fx!==fs){
+        hudCache.fx=fs;
+        hudPowerup.style.display=fs?'block':'none';
+        if(fs) hudPowerupText.textContent=fs;
+    }
+    /* Progress: segment-relative — integers only, denominator never moves */
+    const segD=Math.max(0,Math.floor(sim.dist-sim.segStart));
+    setT(progressLabel,'pl',segD+' / '+sim.goal);
+    const pct=Math.min(100,(sim.dist-sim.segStart)/sim.goal*100);
+    if(Math.abs((hudCache.pct||0)-pct)>0.4){ hudCache.pct=pct; progressBarFill.style.width=pct+'%'; }
+    const zi=Math.min(sim.zone,ZONES.length-1);
+    let pl;
+    if(zi>=ZONES.length-1) pl=ZONES[zi].name+' · endless';
+    else pl=ZONES[zi].name+'|'+ZONES[zi+1].name;
+    if(hudCache.plZone!==pl){
+        hudCache.plZone=pl;
+        if(zi>=ZONES.length-1) progressPlanet.textContent=pl;
+        else progressPlanet.innerHTML=ZONES[zi].name+' → <span>'+ZONES[zi+1].name+'</span>';
+    }
+}
+function updateMenuStats(){
+    menuBest.textContent=bestScore;
+    menuCoins.textContent=totalCoins;
+    const em=getExpMult();
+    const rank=Math.round((em-1)*10)+1;
+    menuSessions.textContent=rank;
+    rankChip.innerHTML=svgIcon('rank',13)+'<span>Pilot Rank '+rank+' · hazard speed +'+Math.round((em-1)*100)+'%</span>';
+}
+let toastTO=null;
+function showToast(msg){
+    missionToast.textContent=msg;
+    missionToast.classList.add('show');
+    clearTimeout(toastTO);
+    toastTO=setTimeout(()=>missionToast.classList.remove('show'),3400);
+}
+function todayKey(){ return new Date().toISOString().slice(0,10); }
+function initDailyMissions(){
+    const today=todayKey();
+    if(!dailyMissions||dailyMissions.date!==today||!Array.isArray(dailyMissions.list)){
+        let seed=0;
+        for(const ch of today) seed+=ch.charCodeAt(0);
+        const arr=MISSION_POOL.map((m,i)=>({m:m,r:Math.sin(seed*9.7+i*13.3)*0.5+0.5}));
+        arr.sort((a,b)=>a.r-b.r);
+        dailyMissions={date:today,list:arr.slice(0,3).map(o=>{
+            const m=o.m; return {id:m.id,name:m.name,goal:m.goal,key:m.key,reward:m.reward,icon:m.icon,prog:0,done:false};
+        })};
+        store.set('fps_daily_missions',JSON.stringify(dailyMissions));
+    }
+    renderMissions();
+}
+function renderMissions(){
+    if(!dailyMissions||!Array.isArray(dailyMissions.list)) return;
+    let html='<div class="m-head">Daily missions</div>';
+    dailyMissions.list.forEach(m=>{
+        const pct=Math.min(100,m.prog/m.goal*100);
+        html+='<div class="mission-row'+(m.done?' done':'')+'">'
+            +'<div class="m-icon">'+(m.done?svgIcon('check',14):svgIcon(m.icon,14))+'</div>'
+            +'<div class="m-body"><div class="m-name">'+m.name+'</div>'
+            +'<div class="m-bar"><div class="m-fill" style="width:'+pct+'%"></div></div></div>'
+            +'<div class="m-prog">'+(m.done?'done':Math.floor(m.prog)+'/'+m.goal)+'</div>'
+            +'</div>';
+    });
+    missionsList.innerHTML=html;
+}
+function missionEvent(key,val,isMax){
+    if(!dailyMissions||!Array.isArray(dailyMissions.list)) return;
+    let changed=false;
+    for(const m of dailyMissions.list){
+        if(m.done||m.key!==key) continue;
+        if(isMax) m.prog=Math.max(m.prog,val);
+        else m.prog+=val;
+        if(m.prog>=m.goal){
+            m.done=true; m.prog=m.goal;
+            totalCoins+=m.reward;
+            showToast('Mission complete · '+m.name+' · +'+m.reward+' coins');
+            changed=true;
+        }else changed=true;
+    }
+    if(changed){ saveProgress(); renderMissions(); updateMenuStats(); }
+}
+
+/* ━━━━━━━━━ SHOP ━━━━━━━━━ */
+function renderShop(){
+    shopCoinsSpan.textContent=totalCoins;
+    let html='';
+    SHIPS.forEach((ship,i)=>{
+        const owned=unlockedShips.includes(i), eq=equippedShip===i;
+        let status,cls,btn;
+        if(owned&&eq){ status='Equipped'; cls='equipped'; btn='<button class="shop-btn" disabled>Equipped</button>'; }
+        else if(owned){ status='Owned'; cls='owned'; btn='<button class="shop-btn primary" data-act="equip" data-idx="'+i+'">Equip</button>'; }
+        else{ status=ship.cost+' coins'; cls='locked';
+            btn='<button class="shop-btn primary" data-act="buy" data-idx="'+i+'"'+(totalCoins<ship.cost?' disabled':'')+'>Buy</button>'; }
+        html+='<div class="shop-item" style="border-color:'+(eq?'#6fcbff':'rgba(255,255,255,0.04)')+'">'
+            +'<div class="ship-icon">'+svgIcon(ship.icon,28)+'</div>'
+            +'<div class="ship-name">'+ship.name+'</div>'
+            +'<div class="ship-stats">'+ship.desc+'</div>'
+            +'<div class="ship-status '+cls+'">'+status+'</div>'
+            +'<div>'+btn+'</div>'
+            +'</div>';
+    });
+    shopGrid.innerHTML=html;
+}
+shopGrid.addEventListener('click',e=>{
+    const btn=e.target.closest('button[data-act]');
+    if(!btn||btn.disabled) return;
+    const idx=parseInt(btn.dataset.idx,10);
+    const ship=SHIPS[idx];
+    if(btn.dataset.act==='buy'){
+        if(totalCoins>=ship.cost&&!unlockedShips.includes(idx)){
+            totalCoins-=ship.cost;
+            unlockedShips.push(idx);
+            equippedShip=idx;
+            recalcStats();
+            saveProgress(); renderShop(); updateMenuStats();
+            showToast(ship.name+' purchased & equipped');
+        }
+    }else{
+        if(unlockedShips.includes(idx)){
+            equippedShip=idx;
+            recalcStats();
+            saveProgress(); renderShop();
+        }
+    }
+});
+upgradeGrid.addEventListener('click',e=>{
+    const card=e.target.closest('.upgrade-card');
+    if(card) chooseUpgrade(card.dataset.id);
+});
+
+/* ━━━━━━━━━ CONFIG / BUTTONS ━━━━━━━━━ */
+const SENS_STEPS=[0.6,0.8,1.0,1.3,1.6];
+function updateSensitivityDisplay(){ sensToggle.textContent=sensitivity.toFixed(1)+'×'; }
+function updateMuteDisplay(){ muteToggle.textContent=muted?'Off':'On'; }
+sensToggle.addEventListener('click',()=>{
+    let i=0;
+    for(let k=0;k<SENS_STEPS.length;k++) if(Math.abs(SENS_STEPS[k]-sensitivity)<0.01) i=k;
+    sensitivity=SENS_STEPS[(i+1)%SENS_STEPS.length];
+    store.set('fps_sensitivity',String(sensitivity));
+    updateSensitivityDisplay();
+});
+muteToggle.addEventListener('click',()=>{ Sfx.init(); Sfx.setMuted(!muted); updateMuteDisplay(); });
+resetBestBtn.addEventListener('click',()=>{ bestScore=0; saveProgress(); updateMenuStats(); showToast('Best score reset'); });
+resetAllBtn.addEventListener('click',()=>{
+    bestScore=0; totalCoins=0; totalFlown=0; sessionCount=0;
+    equippedShip=0; unlockedShips=[0]; dailyMissions={};
+    store.set('fps_best','0'); store.set('fps_coins','0');
+    store.set('fps_total_dist','0'); store.set('fps_sessions','0');
+    store.set('fps_equipped_ship','0'); store.set('fps_unlocked_ships','[0]');
+    store.set('fps_daily_missions','{}');
+    recalcStats(); initDailyMissions(); updateMenuStats(); renderShop();
+    showToast('All progress reset');
+});
+configBtn.addEventListener('click',()=>configOverlay.classList.add('active'));
+configCloseBtn.addEventListener('click',()=>configOverlay.classList.remove('active'));
+shopBtn.addEventListener('click',()=>{ renderShop(); shopOverlay.classList.add('active'); });
+shopCloseBtn.addEventListener('click',()=>shopOverlay.classList.remove('active'));
+upgradeCloseBtn.addEventListener('click',()=>{
+    if(sim.state==='choose'){ upgradeOverlay.classList.remove('active'); advanceZone(); }
+});
+playBtn.addEventListener('click',startRun);
+goRetryBtn.addEventListener('click',startRun);
+goMenuBtn.addEventListener('click',quitToMenu);
+pauseBtn.addEventListener('click',pauseGame);
+pauseResumeBtn.addEventListener('click',resumeGame);
+pauseQuitBtn.addEventListener('click',quitToMenu);
+
+/* ━━━━━━━━━ MAIN LOOP ━━━━━━━━━ */
+function computeTargetTS(){
+    if(sim.slowmoT>0) return sim.slowmoF;
+    if(sim.pupSlowT>0) return 0.55;
+    return 1;
+}
+let lastT=performance.now();
+function frame(now){
+    requestAnimationFrame(frame);
+    let rdt=(now-lastT)/1000;
+    lastT=now;
+    if(rdt>0.06) rdt=0.06;
+    if(rdt<0) rdt=0;
+    const tts=computeTargetTS();
+    sim.ts+=(tts-sim.ts)*Math.min(1,10*rdt);
+    const sdt=rdt*sim.ts;
+    switch(sim.state){
+        case 'menu':
+            sim.time+=rdt; sim.scroll=46;
+            updateStars(rdt,46); updateNebulas(rdt,46);
+            break;
+        case 'playing': updateGame(sdt,rdt); break;
+        case 'warp': updateWarp(rdt); break;
+        case 'dying': updateDying(rdt); break;
+    }
+    sim.flash=Math.max(0,sim.flash-rdt*2.2);
+    sim.shake*=Math.exp(-6*rdt);
+    if(sim.shake<0.3) sim.shake=0;
+    render();
+    if(sim.state==='playing'||sim.state==='warp') updateHUD();
+}
+
+/* ━━━━━━━━━ BOOT ━━━━━━━━━ */
+document.querySelectorAll('[data-icon]').forEach(el=>{
+    el.innerHTML=svgIcon(el.dataset.icon,parseInt(el.dataset.size,10)||24);
+});
+initDailyMissions();
+recalcStats();
+resizeCanvas();
+sim.rocket.x=sim.rocket.tx=W/2;
+sim.rocket.y=sim.rocket.ty=H-140;
+renderShop();
+updateMenuStats();
+updateSensitivityDisplay();
+updateMuteDisplay();
+requestAnimationFrame(frame);
+
+})();
+</script>
 </body>
 </html>
