@@ -1,0 +1,2363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flight Path · Planetary Trek</title>
+    <style>
+        /* ── RESET & BASE ── */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #05070a;
+            color: #e8edf5;
+        }
+
+        /* ── CANVAS ── */
+        #simCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: block;
+            background: #05070a;
+            z-index: 0;
+            cursor: none;
+        }
+
+        /* ── MENU OVERLAY ── */
+        #menuOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(5, 7, 10, 0.85);
+            backdrop-filter: blur(12px);
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+        #menuOverlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .menu-card {
+            background: rgba(18, 22, 36, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 32px;
+            padding: 48px 52px 44px;
+            max-width: 460px;
+            width: 92%;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.02);
+            text-align: center;
+        }
+
+        .menu-card .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            margin-bottom: 6px;
+        }
+        .menu-card .logo .icon {
+            font-size: 40px;
+            line-height: 1;
+        }
+        .menu-card .logo h1 {
+            font-weight: 500;
+            font-size: 30px;
+            letter-spacing: -0.02em;
+            color: #f0f5ff;
+            margin: 0;
+        }
+        .menu-card .subtitle {
+            font-weight: 400;
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.35);
+            margin-bottom: 32px;
+            letter-spacing: 0.01em;
+            border-left: none;
+            padding-left: 0;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 28px;
+            justify-content: center;
+        }
+        .action-row .play-btn {
+            flex: 1;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #2a6df4, #1a4fc3);
+            border: none;
+            border-radius: 18px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-family: inherit;
+            letter-spacing: 0.02em;
+            box-shadow: 0 4px 32px rgba(42, 109, 244, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .action-row .play-btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 48px rgba(42, 109, 244, 0.4);
+            background: linear-gradient(135deg, #3a7df4, #2a5fc3);
+        }
+        .action-row .play-btn:active {
+            transform: translateY(0px) scale(0.98);
+        }
+        .action-row .config-btn {
+            flex: 0 0 60px;
+            padding: 0;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 18px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: inherit;
+        }
+        .action-row .config-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 18px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .stats-row .stat-item {
+            text-align: center;
+        }
+        .stats-row .stat-item .stat-val {
+            font-size: 20px;
+            font-weight: 600;
+            color: #e8edf5;
+        }
+        .stats-row .stat-item .stat-lbl {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: rgba(255, 255, 255, 0.2);
+            margin-top: 4px;
+        }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.08);
+            letter-spacing: 0.02em;
+        }
+
+        /* ── HUD ── */
+        #hud {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 16px 24px;
+            display: none;
+            justify-content: space-between;
+            align-items: flex-start;
+            z-index: 5;
+            pointer-events: none;
+            font-family: 'Inter', sans-serif;
+        }
+        #hud.active {
+            display: flex;
+        }
+
+        .hud-left,
+        .hud-right {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .hud-left {
+            align-items: flex-start;
+        }
+        .hud-right {
+            align-items: flex-end;
+        }
+
+        .hud-item {
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.8);
+            letter-spacing: 0.01em;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 3px 14px;
+            border-radius: 40px;
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .hud-item .hud-val {
+            font-weight: 600;
+            color: #fff;
+        }
+        .hud-item .hud-label {
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 10px;
+            margin-right: 4px;
+        }
+        .hud-item.lives .hud-val {
+            color: #ff6b6b;
+        }
+        .hud-item.score .hud-val {
+            color: #ffd93d;
+            font-size: 16px;
+        }
+        .hud-item.best .hud-val {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .hud-item.combo .hud-val {
+            color: #6fcbff;
+        }
+        .hud-item.coins .hud-val {
+            color: #ffd700;
+        }
+        .hud-item.powerup-indicator {
+            color: #a78bfa;
+            border-color: rgba(167, 139, 250, 0.15);
+            background: rgba(167, 139, 250, 0.05);
+        }
+
+        /* Progress Bar */
+        #progressContainer {
+            position: fixed;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 6;
+            pointer-events: none;
+            display: none;
+            width: 340px;
+            max-width: 70vw;
+            text-align: center;
+        }
+        #progressContainer.active {
+            display: block;
+        }
+        #progressPlanet {
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 0.06em;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+            margin-bottom: 4px;
+        }
+        #progressPlanet span {
+            color: #ffd93d;
+        }
+        #progressBarBg {
+            width: 100%;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+        #progressBarFill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #6fcbff, #a78bfa);
+            border-radius: 4px;
+            transition: width 0.15s ease;
+        }
+        #progressLabel {
+            text-align: center;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.25);
+            margin-top: 3px;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+        }
+
+        /* ── MODALS ── */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 20;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(5, 7, 10, 0.75);
+            backdrop-filter: blur(10px);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: rgba(18, 22, 36, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 32px;
+            padding: 32px 36px 36px;
+            max-width: 520px;
+            width: 92%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
+            text-align: center;
+        }
+        .modal-card h2 {
+            font-weight: 500;
+            font-size: 24px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .modal-card .modal-sub {
+            color: rgba(255, 255, 255, 0.35);
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .upgrade-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin: 16px 0 20px;
+        }
+        .upgrade-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 18px;
+            padding: 16px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        .upgrade-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+        }
+        .upgrade-card .icon {
+            font-size: 32px;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .upgrade-card .name {
+            font-weight: 600;
+            font-size: 15px;
+            color: #fff;
+        }
+        .upgrade-card .desc {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 2px;
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 12px 0 16px;
+        }
+        .shop-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            padding: 14px 12px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+        .shop-item .ship-icon {
+            font-size: 28px;
+        }
+        .shop-item .ship-name {
+            font-weight: 500;
+            font-size: 14px;
+            color: #fff;
+            margin-top: 2px;
+        }
+        .shop-item .ship-stats {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+            margin: 4px 0 8px;
+        }
+        .shop-item .ship-cost {
+            font-size: 13px;
+            font-weight: 600;
+            color: #ffd700;
+        }
+        .shop-item .ship-status {
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            display: inline-block;
+            margin-top: 4px;
+        }
+        .shop-item .ship-status.equipped {
+            background: rgba(111, 203, 255, 0.15);
+            color: #6fcbff;
+        }
+        .shop-item .ship-status.owned {
+            background: rgba(167, 139, 250, 0.1);
+            color: #a78bfa;
+        }
+        .shop-item .ship-status.locked {
+            background: rgba(255, 107, 107, 0.05);
+            color: #ff6b6b;
+        }
+        .shop-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 4px 14px;
+            color: #e8edf5;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            margin-top: 4px;
+        }
+        .shop-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .shop-btn.primary {
+            background: linear-gradient(135deg, #2a6df4, #1a4fc3);
+            border: none;
+            color: #fff;
+        }
+        .shop-btn.primary:hover {
+            transform: scale(1.05);
+        }
+        .shop-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .modal-close {
+            margin-top: 16px;
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+        }
+
+        .modal-coin-balance {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 16px;
+            color: #ffd700;
+            margin-bottom: 12px;
+            padding: 8px;
+            background: rgba(255, 215, 0, 0.03);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 215, 0, 0.05);
+        }
+
+        /* ── GAME OVER ── */
+        #gameOverOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 8;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(5, 7, 10, 0.7);
+            backdrop-filter: blur(8px);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        #gameOverOverlay.active {
+            display: flex;
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .go-card {
+            background: rgba(18, 22, 36, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 32px;
+            padding: 40px 48px 38px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
+        }
+        .go-card .go-icon {
+            font-size: 48px;
+            margin-bottom: 6px;
+        }
+        .go-card h2 {
+            font-weight: 500;
+            font-size: 26px;
+            color: #f0f5ff;
+            margin-bottom: 2px;
+        }
+        .go-card .go-sub {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 15px;
+            margin-bottom: 18px;
+        }
+        .go-card .go-score {
+            font-size: 44px;
+            font-weight: 600;
+            color: #ffd93d;
+            letter-spacing: -0.02em;
+        }
+        .go-card .go-best {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-top: 2px;
+            margin-bottom: 24px;
+        }
+        .go-card .go-best span {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .go-btn-row {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .go-btn {
+            padding: 12px 28px;
+            border-radius: 16px;
+            font-size: 15px;
+            font-weight: 500;
+            font-family: inherit;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .go-btn.primary {
+            background: linear-gradient(135deg, #2a6df4, #1a4fc3);
+            color: #fff;
+            box-shadow: 0 4px 24px rgba(42, 109, 244, 0.2);
+        }
+        .go-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(42, 109, 244, 0.3);
+        }
+        .go-btn.secondary {
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .go-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        /* ── CONFIG ── */
+        #configOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 15;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(5, 7, 10, 0.7);
+            backdrop-filter: blur(8px);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        #configOverlay.active {
+            display: flex;
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .config-card {
+            background: rgba(18, 22, 36, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 32px;
+            padding: 32px 40px 36px;
+            max-width: 380px;
+            width: 90%;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
+        }
+        .config-card h3 {
+            font-weight: 500;
+            font-size: 22px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .config-card .config-sub {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .config-card .config-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .config-card .config-item:last-child {
+            border-bottom: none;
+        }
+        .config-card .config-item .label {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 15px;
+        }
+        .config-btn-sm {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 6px 18px;
+            color: #e8edf5;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        .config-btn-sm:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .config-btn-sm.danger:hover {
+            background: rgba(255, 80, 80, 0.12);
+            border-color: rgba(255, 80, 80, 0.15);
+            color: #ff6b6b;
+        }
+        .config-close {
+            margin-top: 20px;
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        .config-close:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+        }
+
+        @media (max-width: 500px) {
+            .menu-card {
+                padding: 32px 24px 28px;
+            }
+            .menu-card .logo h1 {
+                font-size: 24px;
+            }
+            .action-row .play-btn {
+                font-size: 16px;
+                padding: 14px 16px;
+            }
+            .action-row .config-btn {
+                flex: 0 0 54px;
+                font-size: 20px;
+            }
+            .hud-item {
+                font-size: 11px;
+                padding: 2px 10px;
+            }
+            #hud {
+                padding: 12px 12px;
+            }
+            .modal-card {
+                padding: 24px 20px 28px;
+                max-width: 95vw;
+            }
+            .upgrade-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            .shop-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 6px;
+            }
+            #progressContainer {
+                width: 60vw;
+                top: 8px;
+            }
+            .stats-row .stat-item .stat-val {
+                font-size: 16px;
+            }
+        }
+        @media (max-width: 400px) {
+            .menu-card .logo .icon {
+                font-size: 32px;
+            }
+            .menu-card .logo h1 {
+                font-size: 20px;
+            }
+            .menu-card .subtitle {
+                font-size: 13px;
+            }
+            .shop-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- CANVAS -->
+    <canvas id="simCanvas"></canvas>
+
+    <!-- PROGRESS BAR -->
+    <div id="progressContainer">
+        <div id="progressPlanet">🌍 EARTH → <span>MARS</span></div>
+        <div id="progressBarBg">
+            <div id="progressBarFill" style="width:0%"></div>
+        </div>
+        <div id="progressLabel">0 / 60</div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud">
+        <div class="hud-left">
+            <div class="hud-item coins"><span class="hud-label">💰</span><span class="hud-val" id="hudCoins">0</span></div>
+            <div class="hud-item score"><span class="hud-label">Dist</span><span class="hud-val" id="hudScore">0</span></div>
+            <div class="hud-item combo" id="hudComboWrap" style="display:none;"><span class="hud-label">Flow</span><span class="hud-val" id="hudCombo">0</span><span style="font-weight:400;color:rgba(255,255,255,0.15);font-size:12px;margin-left:2px;">×</span></div>
+            <div class="hud-item powerup-indicator" id="hudPowerup" style="display:none;"><span class="hud-label">⚡</span><span class="hud-val" id="hudPowerupText">—</span></div>
+        </div>
+        <div class="hud-right">
+            <div class="hud-item lives"><span class="hud-label">Shield</span><span class="hud-val" id="hudLives">1</span></div>
+            <div class="hud-item best"><span class="hud-label">Best</span><span class="hud-val" id="hudBest">0</span></div>
+        </div>
+    </div>
+
+    <!-- MAIN MENU -->
+    <div id="menuOverlay">
+        <div class="menu-card">
+            <div class="logo">
+                <span class="icon">✦</span>
+                <h1>Flight Path</h1>
+            </div>
+            <div class="subtitle">Trek through the solar system · 1 hit</div>
+
+            <div class="action-row">
+                <button class="play-btn" id="playBtn">
+                    <span>Start Mission</span>
+                    <span class="arrow">→</span>
+                </button>
+                <button class="config-btn" id="configBtn" title="Settings">⚙</button>
+            </div>
+            <div style="display:flex; gap:12px; margin-bottom:18px; justify-content:center;">
+                <button class="config-btn" id="shopBtn" style="flex:1; padding:10px; font-size:14px; border-radius:18px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); color:rgba(255,255,255,0.5); cursor:pointer; font-family:inherit; transition:all 0.2s;">🛒 Ship Bay</button>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div class="stat-val" id="menuBest">0</div>
+                    <div class="stat-lbl">Best distance</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-val" id="menuCoins">0</div>
+                    <div class="stat-lbl">Ship Coins</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-val" id="menuSessions">0</div>
+                    <div class="stat-lbl">Sessions</div>
+                </div>
+            </div>
+
+            <div class="footer-note">v4.0 · R to reset · Esc to menu</div>
+        </div>
+    </div>
+
+    <!-- GAME OVER -->
+    <div id="gameOverOverlay">
+        <div class="go-card">
+            <div class="go-icon">💥</div>
+            <h2>Shield lost</h2>
+            <div class="go-sub">You crashed at <span id="goPlanet">Earth</span></div>
+            <div class="go-score" id="goScore">0</div>
+            <div class="go-best">best: <span id="goBest">0</span></div>
+            <div class="go-btn-row">
+                <button class="go-btn secondary" id="goMenuBtn">↩ Menu</button>
+                <button class="go-btn primary" id="goRetryBtn">⟳ Retry from Earth</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UPGRADE MODAL -->
+    <div class="modal-overlay" id="upgradeOverlay">
+        <div class="modal-card">
+            <h2>⬆ Arrival Bonus</h2>
+            <div class="modal-sub">Choose your enhancement</div>
+            <div class="upgrade-grid" id="upgradeGrid"></div>
+            <button class="modal-close" id="upgradeCloseBtn">Skip</button>
+        </div>
+    </div>
+
+    <!-- SHOP MODAL -->
+    <div class="modal-overlay" id="shopOverlay">
+        <div class="modal-card">
+            <h2>🛒 Ship Bay</h2>
+            <div class="modal-sub">Purchase and equip new ships</div>
+            <div class="modal-coin-balance">💰 <span id="shopCoins">0</span> Ship Coins</div>
+            <div class="shop-grid" id="shopGrid"></div>
+            <button class="modal-close" id="shopCloseBtn">Close</button>
+        </div>
+    </div>
+
+    <!-- CONFIG -->
+    <div id="configOverlay">
+        <div class="config-card">
+            <h3>⚙ Settings</h3>
+            <div class="config-sub">Adjust simulation parameters</div>
+            <div class="config-item">
+                <span class="label">Mouse sensitivity</span>
+                <button class="config-btn-sm" id="sensToggle">1.0×</button>
+            </div>
+            <div class="config-item">
+                <span class="label">Reset best score</span>
+                <button class="config-btn-sm danger" id="resetBestBtn">Reset</button>
+            </div>
+            <div class="config-item">
+                <span class="label">Reset all stats</span>
+                <button class="config-btn-sm danger" id="resetAllBtn">Reset</button>
+            </div>
+            <button class="config-close" id="configCloseBtn">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  FLIGHT PATH SIMULATOR  –  Planetary Trek
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        (function() {
+            'use strict';
+
+            // ── DOM refs ──
+            const canvas = document.getElementById('simCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const menuOverlay = document.getElementById('menuOverlay');
+            const playBtn = document.getElementById('playBtn');
+            const configBtn = document.getElementById('configBtn');
+            const configOverlay = document.getElementById('configOverlay');
+            const configCloseBtn = document.getElementById('configCloseBtn');
+            const resetBestBtn = document.getElementById('resetBestBtn');
+            const resetAllBtn = document.getElementById('resetAllBtn');
+            const sensToggle = document.getElementById('sensToggle');
+            const shopBtn = document.getElementById('shopBtn');
+            const shopOverlay = document.getElementById('shopOverlay');
+            const shopCloseBtn = document.getElementById('shopCloseBtn');
+            const shopGrid = document.getElementById('shopGrid');
+            const shopCoinsSpan = document.getElementById('shopCoins');
+
+            const upgradeOverlay = document.getElementById('upgradeOverlay');
+            const upgradeGrid = document.getElementById('upgradeGrid');
+            const upgradeCloseBtn = document.getElementById('upgradeCloseBtn');
+
+            const hud = document.getElementById('hud');
+            const hudScore = document.getElementById('hudScore');
+            const hudCoins = document.getElementById('hudCoins');
+            const hudCombo = document.getElementById('hudCombo');
+            const hudComboWrap = document.getElementById('hudComboWrap');
+            const hudLives = document.getElementById('hudLives');
+            const hudBest = document.getElementById('hudBest');
+            const hudPowerup = document.getElementById('hudPowerup');
+            const hudPowerupText = document.getElementById('hudPowerupText');
+
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBarFill = document.getElementById('progressBarFill');
+            const progressLabel = document.getElementById('progressLabel');
+            const progressPlanet = document.getElementById('progressPlanet');
+
+            const menuBest = document.getElementById('menuBest');
+            const menuCoins = document.getElementById('menuCoins');
+            const menuSessions = document.getElementById('menuSessions');
+
+            const gameOverOverlay = document.getElementById('gameOverOverlay');
+            const goScore = document.getElementById('goScore');
+            const goBest = document.getElementById('goBest');
+            const goPlanet = document.getElementById('goPlanet');
+            const goRetryBtn = document.getElementById('goRetryBtn');
+            const goMenuBtn = document.getElementById('goMenuBtn');
+
+            // ── State ──
+            let simRunning = false;
+            let simActive = false;
+            let animId = null;
+            let sessionCount = parseInt(localStorage.getItem('fps_sessions') || '0');
+            let bestScore = parseInt(localStorage.getItem('fps_best') || '0');
+            let sensitivity = parseFloat(localStorage.getItem('fps_sensitivity') || '1.0');
+            let totalCoins = parseInt(localStorage.getItem('fps_coins') || '0');
+            let equippedShip = parseInt(localStorage.getItem('fps_equipped_ship') || '0');
+            let unlockedShips = JSON.parse(localStorage.getItem('fps_unlocked_ships') || '[0]');
+
+            // ── Canvas & Context ──
+            let W, H;
+
+            function resizeCanvas() {
+                W = canvas.width = window.innerWidth;
+                H = canvas.height = window.innerHeight;
+                if (!sim.gameOver) {
+                    sim.rocket.x = W / 2;
+                    sim.rocket.y = H - 120;
+                    sim.rocket.targetX = sim.rocket.x;
+                    sim.rocket.targetY = sim.rocket.y;
+                }
+                initStarsAndNebulas();
+            }
+            window.addEventListener('resize', resizeCanvas);
+
+            // ── Deep Space Background ──
+            let stars = [];
+            let nebulas = [];
+
+            function initStarsAndNebulas() {
+                stars = [];
+                const starCount = Math.floor((W * H) / 2000);
+                for (let i = 0; i < Math.min(starCount, 800); i++) {
+                    const size = Math.random() * 2.8 + 0.2;
+                    stars.push({
+                        x: Math.random() * W,
+                        y: Math.random() * H,
+                        size: size,
+                        speed: (Math.random() * 0.6 + 0.05) * (size / 1.5),
+                        brightness: Math.random() * 0.6 + 0.4,
+                        twinkleSpeed: Math.random() * 0.03 + 0.005,
+                    });
+                }
+
+                nebulas = [];
+                const colors = [
+                    'hsla(230, 80%, 60%, 0.04)',
+                    'hsla(320, 80%, 50%, 0.03)',
+                    'hsla(190, 80%, 60%, 0.03)',
+                    'hsla(40, 80%, 60%, 0.02)',
+                    'hsla(280, 80%, 50%, 0.02)'
+                ];
+                for (let i = 0; i < 6; i++) {
+                    nebulas.push({
+                        x: Math.random() * W,
+                        y: Math.random() * H,
+                        radius: Math.random() * 400 + 200,
+                        color: colors[i % colors.length],
+                        speed: Math.random() * 0.06 + 0.01,
+                        phase: Math.random() * Math.PI * 2,
+                    });
+                }
+            }
+
+            // ── Planets ──
+            const PLANETS = [
+                { name: 'Earth', emoji: '🌍', distance: 0, speedBase: 1.2, spawnBase: 50, extraSpawn: 0.04,
+                color: '#4a8fcf' },
+                { name: 'Mars', emoji: '🔴', distance: 60, speedBase: 1.6, spawnBase: 42, extraSpawn: 0.06,
+                color: '#cf6a4a' },
+                { name: 'Jupiter', emoji: '🟠', distance: 160, speedBase: 2.1, spawnBase: 34, extraSpawn: 0.09,
+                    color: '#cf9a4a' },
+                { name: 'Saturn', emoji: '🪐', distance: 320, speedBase: 2.7, spawnBase: 26, extraSpawn: 0.13,
+                    color: '#cfc64a' },
+                { name: 'Uranus', emoji: '🔵', distance: 540, speedBase: 3.4, spawnBase: 19, extraSpawn: 0.18,
+                    color: '#7acfcf' },
+                { name: 'Neptune', emoji: '🟣', distance: 820, speedBase: 4.2, spawnBase: 13, extraSpawn: 0.24,
+                    color: '#3a6acf' },
+                { name: 'Pluto', emoji: '⚪', distance: 1160, speedBase: 5.1, spawnBase: 9, extraSpawn: 0.32,
+                    color: '#cfcfcf' },
+                { name: 'Oort Cloud', emoji: '☁️', distance: 1580, speedBase: 6.2, spawnBase: 6, extraSpawn: 0.42,
+                    color: '#8a7acf' },
+                { name: 'Alpha Centauri', emoji: '⭐', distance: 2100, speedBase: 7.5, spawnBase: 4, extraSpawn: 0.55,
+                    color: '#ffcf6a' },
+            ];
+
+            // ── Ship Definitions ──
+            const SHIPS = [{
+                id: 'scout',
+                name: 'Scout',
+                cost: 0,
+                icon: '🚀',
+                color: '#5a8aaa',
+                speedMult: 1.0,
+                shieldBonus: 0,
+                desc: 'Balanced starter'
+            }, {
+                id: 'fighter',
+                name: 'Fighter',
+                cost: 50,
+                icon: '⚡',
+                color: '#aa5a5a',
+                speedMult: 1.15,
+                shieldBonus: 0,
+                desc: '+15% speed'
+            }, {
+                id: 'tank',
+                name: 'Tank',
+                cost: 100,
+                icon: '🛡️',
+                color: '#5aaa5a',
+                speedMult: 0.85,
+                shieldBonus: 1,
+                desc: '+1 shield, -15% speed'
+            }, {
+                id: 'stealth',
+                name: 'Stealth',
+                cost: 150,
+                icon: '🌙',
+                color: '#7a7aaa',
+                speedMult: 1.3,
+                shieldBonus: 0,
+                desc: '+30% speed'
+            }, {
+                id: 'nexus',
+                name: 'Nexus',
+                cost: 250,
+                icon: '✨',
+                color: '#aa7aaa',
+                speedMult: 1.2,
+                shieldBonus: 1,
+                desc: '+20% speed, +1 shield'
+            }, ];
+
+            // ── Upgrade Pool ──
+            const UPGRADE_POOL = [
+                { id: 'shield', name: 'Shield Boost', desc: '+1 Shield', icon: '🛡️' },
+                { id: 'speed', name: 'Agility', desc: '+8% Speed', icon: '💨' },
+                { id: 'magnet', name: 'Magnet Range', desc: '+40% Coin Magnet', icon: '🧲' },
+                { id: 'multiplier', name: 'Score Multiplier', desc: '+0.2x Score', icon: '⭐' },
+                { id: 'slow', name: 'Slow Field', desc: 'Near-miss slows time', icon: '🐢' },
+            ];
+
+            // ── Simulation state ──
+            const sim = {
+                rocket: { x: 0, y: 0, radius: 16, targetX: 0, targetY: 0 },
+                asteroids: [],
+                particles: [],
+                stars: stars,
+                nebulas: nebulas,
+                coins: [],
+                powerups: [],
+                score: 0,
+                lives: 1,
+                maxLives: 1,
+                combo: 0,
+                maxCombo: 0,
+                gameOver: false,
+                invincible: 0,
+                spawnTimer: 0,
+                frame: 0,
+                started: false,
+                warpDisplayTimer: 0,
+                effects: { slow: 0, magnet: 0, shield: 0, invincible: 0 },
+                performance: { hitCount: 0, dodgeCount: 0, nearMissCount: 0 },
+                mouseX: 0,
+                mouseY: 0,
+                mouseInside: false,
+                config: { speedBase: 1.2, spawnBase: 50, extraSpawn: 0.04 },
+                adaptiveFactor: 1.0,
+                tempSpeedModifier: 1.0,
+                shakeX: 0,
+                shakeY: 0,
+                shakeIntensity: 0,
+                // Progression
+                currentPlanetIndex: 0,
+                nextPlanetIndex: 1,
+                scoreToNext: 60,
+                scoreProgress: 0,
+                planetReached: false,
+                shipMult: 1.0,
+                shipShieldBonus: 0,
+                upgrades: {
+                    shields: 0,
+                    speed: 0,
+                    magnet: 0,
+                    multiplier: 1.0,
+                    slow: false,
+                },
+            };
+
+            // ── Save/Load ──
+            function saveProgress() {
+                localStorage.setItem('fps_coins', String(totalCoins));
+                localStorage.setItem('fps_equipped_ship', String(equippedShip));
+                localStorage.setItem('fps_unlocked_ships', JSON.stringify(unlockedShips));
+                localStorage.setItem('fps_best', String(bestScore));
+                localStorage.setItem('fps_sessions', String(sessionCount));
+            }
+
+            function loadShop() {
+                shopCoinsSpan.textContent = totalCoins;
+                menuCoins.textContent = totalCoins;
+                hudCoins.textContent = totalCoins;
+                renderShop();
+            }
+
+            // ── HUD Updates ──
+            function updateHUD() {
+                hudScore.textContent = sim.score;
+                hudLives.textContent = sim.lives;
+                hudBest.textContent = bestScore;
+                hudCoins.textContent = totalCoins;
+                if (sim.combo > 1) {
+                    hudComboWrap.style.display = 'block';
+                    hudCombo.textContent = sim.combo;
+                } else {
+                    hudComboWrap.style.display = 'none';
+                }
+                let activeEffects = [];
+                if (sim.effects.slow > 0) activeEffects.push('Slow');
+                if (sim.effects.magnet > 0) activeEffects.push('Magnet');
+                if (sim.effects.invincible > 0) activeEffects.push('Invincible');
+                if (activeEffects.length > 0) {
+                    hudPowerup.style.display = 'block';
+                    hudPowerupText.textContent = activeEffects.join(' + ');
+                } else {
+                    hudPowerup.style.display = 'none';
+                }
+
+                // Progress
+                const pct = Math.min(100, (sim.scoreProgress / sim.scoreToNext) * 100);
+                progressBarFill.style.width = pct + '%';
+                progressLabel.textContent = `${sim.score} / ${sim.score + sim.scoreToNext}`;
+                if (sim.currentPlanetIndex < PLANETS.length - 1) {
+                    const next = PLANETS[sim.currentPlanetIndex + 1];
+                    progressPlanet.innerHTML =
+                        `${PLANETS[sim.currentPlanetIndex].emoji} ${PLANETS[sim.currentPlanetIndex].name} → <span>${next.emoji} ${next.name}</span>`;
+                } else {
+                    progressPlanet.textContent = `⭐ ${PLANETS[PLANETS.length - 1].name} (MAX)`;
+                }
+            }
+
+            function updateMenuStats() {
+                menuBest.textContent = bestScore;
+                menuCoins.textContent = totalCoins;
+                menuSessions.textContent = sessionCount;
+            }
+            updateMenuStats();
+
+            function updateSensitivityDisplay() {
+                sensToggle.textContent = sensitivity.toFixed(1) + '×';
+                localStorage.setItem('fps_sensitivity', String(sensitivity));
+            }
+            updateSensitivityDisplay();
+
+            // ── Shop ──
+            function renderShop() {
+                shopCoinsSpan.textContent = totalCoins;
+                let html = '';
+                SHIPS.forEach((ship, index) => {
+                    const owned = unlockedShips.includes(index);
+                    const equipped = equippedShip === index;
+                    let statusText = 'Locked';
+                    let statusClass = 'locked';
+                    let btnHtml = '';
+                    if (owned && equipped) {
+                        statusText = 'Equipped';
+                        statusClass = 'equipped';
+                        btnHtml = `<button class="shop-btn" disabled>✅ Equipped</button>`;
+                    } else if (owned) {
+                        statusText = 'Owned';
+                        statusClass = 'owned';
+                        btnHtml = `<button class="shop-btn primary" onclick="equipShip(${index})">Equip</button>`;
+                    } else {
+                        statusText = `${ship.cost}💰`;
+                        statusClass = 'locked';
+                        btnHtml =
+                            `<button class="shop-btn primary" onclick="buyShip(${index})" ${totalCoins < ship.cost ? 'disabled' : ''}>Buy</button>`;
+                    }
+                    html += `
+                        <div class="shop-item" style="border-color: ${equipped ? '#6fcbff' : 'rgba(255,255,255,0.04)'}">
+                            <div class="ship-icon">${ship.icon}</div>
+                            <div class="ship-name">${ship.name}</div>
+                            <div class="ship-stats">${ship.desc}</div>
+                            <div class="ship-status ${statusClass}">${statusText}</div>
+                            ${btnHtml}
+                        </div>
+                    `;
+                });
+                shopGrid.innerHTML = html;
+            }
+
+            window.buyShip = function(index) {
+                const ship = SHIPS[index];
+                if (totalCoins >= ship.cost && !unlockedShips.includes(index)) {
+                    totalCoins -= ship.cost;
+                    unlockedShips.push(index);
+                    localStorage.setItem('fps_coins', String(totalCoins));
+                    localStorage.setItem('fps_unlocked_ships', JSON.stringify(unlockedShips));
+                    loadShop();
+                    updateHUD();
+                    updateMenuStats();
+                    saveProgress();
+                    renderShop();
+                }
+            };
+
+            window.equipShip = function(index) {
+                if (unlockedShips.includes(index)) {
+                    equippedShip = index;
+                    localStorage.setItem('fps_equipped_ship', String(equippedShip));
+                    applyShipStats(index);
+                    loadShop();
+                    updateHUD();
+                    saveProgress();
+                    renderShop();
+                }
+            };
+
+            function applyShipStats(index) {
+                const ship = SHIPS[index] || SHIPS[0];
+                sim.shipMult = ship.speedMult || 1.0;
+                sim.shipShieldBonus = ship.shieldBonus || 0;
+                const baseLives = 1 + sim.upgrades.shields + sim.shipShieldBonus;
+                sim.maxLives = Math.min(3, baseLives);
+                if (sim.lives > sim.maxLives) sim.lives = sim.maxLives;
+                updateHUD();
+            }
+
+            // ── Asteroid Factory ──
+            function createAsteroid() {
+                const cfg = sim.config;
+                const adapt = sim.adaptiveFactor;
+                const speedMod = sim.tempSpeedModifier;
+                const baseSpeed = (cfg.speedBase + sim.score * 0.004) * (0.8 + adapt * 0.3) * speedMod * sim.shipMult;
+                const speed = baseSpeed * (0.8 + Math.random() * 0.4);
+                const size = 12 + Math.random() * 28;
+                const angle = (Math.random() - 0.5) * 0.5;
+                const pts = 7 + Math.floor(Math.random() * 6);
+                const vertices = [];
+                for (let i = 0; i < pts; i++) {
+                    const a = (i / pts) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+                    const r = size * (0.6 + Math.random() * 0.4);
+                    vertices.push({ a, r });
+                }
+                return {
+                    x: 20 + Math.random() * (W - 40),
+                    y: -40,
+                    vx: Math.sin(angle) * speed * 0.6,
+                    vy: speed * (0.9 + Math.random() * 0.2),
+                    radius: size,
+                    vertices,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotSpeed: (Math.random() - 0.5) * 0.04,
+                    color: `hsl(${20 + Math.random() * 30}, ${10 + Math.random() * 15}%, ${25 + Math.random() * 25}%)`,
+                };
+            }
+
+            // ── Particles ──
+            function spawnParticles(x, y, count, color, speedMult = 1, spread = 1) {
+                for (let i = 0; i < count; i++) {
+                    const ang = Math.random() * Math.PI * 2;
+                    const spd = (1 + Math.random() * 5) * speedMult;
+                    sim.particles.push({
+                        x,
+                        y,
+                        vx: Math.cos(ang) * spd * spread,
+                        vy: Math.sin(ang) * spd * spread - 0.5,
+                        life: 15 + Math.random() * 45,
+                        maxLife: 60,
+                        radius: 1.5 + Math.random() * 4.5,
+                        color: color || `hsl(${30 + Math.random() * 30}, 100%, ${55 + Math.random() * 25}%)`,
+                        decay: 0.95 + Math.random() * 0.04,
+                    });
+                }
+            }
+
+            function spawnHit(x, y) {
+                spawnParticles(x, y, 40, `hsl(${15 + Math.random() * 30}, 100%, 60%)`, 2.0);
+                spawnParticles(x, y, 20, '#ffffff', 1.0);
+                sim.shakeIntensity = Math.min(20, sim.shakeIntensity + 12);
+            }
+
+            function spawnCelebration(x, y) {
+                for (let i = 0; i < 60; i++) {
+                    const ang = Math.random() * Math.PI * 2;
+                    const spd = 2 + Math.random() * 6;
+                    const colors = ['#ffd700', '#6fcbff', '#a78bfa', '#ff6b6b', '#51cf66'];
+                    sim.particles.push({
+                        x: x + (Math.random() - 0.5) * 100,
+                        y: y + (Math.random() - 0.5) * 100,
+                        vx: Math.cos(ang) * spd,
+                        vy: Math.sin(ang) * spd - 1,
+                        life: 30 + Math.random() * 60,
+                        maxLife: 90,
+                        radius: 2 + Math.random() * 6,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        decay: 0.97,
+                    });
+                }
+            }
+
+            function spawnNearMiss(x, y) {
+                spawnParticles(x, y, 10, '#6fcbff', 0.6, 0.5);
+                sim.shakeIntensity = Math.min(6, sim.shakeIntensity + 2);
+            }
+
+            // ── Coins ──
+            function spawnCoin(x, y, value = 1) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = W / rect.width;
+                const scaleY = H / rect.height;
+                const targetX = 80 * scaleX;
+                const targetY = 50 * scaleY;
+                sim.coins.push({
+                    x,
+                    y,
+                    targetX,
+                    targetY,
+                    progress: 0,
+                    value,
+                    color: `hsl(${45 + Math.random() * 15}, 100%, 60%)`,
+                    radius: 8 + Math.random() * 4,
+                    rotation: 0,
+                });
+            }
+
+            // ── Powerups ──
+            function spawnPowerup(x, y) {
+                const types = ['shield', 'slow', 'magnet', 'invincible'];
+                const weights = [25, 25, 25, 25];
+                let total = weights.reduce((a, b) => a + b, 0);
+                let rand = Math.random() * total;
+                let type = 'shield';
+                for (let i = 0; i < weights.length; i++) {
+                    rand -= weights[i];
+                    if (rand <= 0) { type = types[i]; break; }
+                }
+                sim.powerups.push({
+                    x,
+                    y,
+                    type,
+                    radius: 14,
+                    speed: 1.0 + Math.random() * 0.8,
+                    life: 300,
+                    rotation: 0,
+                });
+            }
+
+            // ── Apply Powerup ──
+            function applyPowerup(type) {
+                switch (type) {
+                    case 'shield':
+                        sim.lives = Math.min(sim.maxLives + 1, 3);
+                        sim.maxLives = Math.max(sim.maxLives, sim.lives);
+                        break;
+                    case 'slow':
+                        sim.effects.slow = 300;
+                        break;
+                    case 'magnet':
+                        sim.effects.magnet = 400;
+                        break;
+                    case 'invincible':
+                        sim.effects.invincible = 180;
+                        break;
+                }
+            }
+
+            // ── Upgrade Modal ──
+            function showUpgradeModal() {
+                const shuffled = [...UPGRADE_POOL].sort(() => Math.random() - 0.5);
+                const choices = shuffled.slice(0, 3);
+                let html = '';
+                choices.forEach(upgrade => {
+                    html += `
+                        <div class="upgrade-card" onclick="applyUpgrade('${upgrade.id}')">
+                            <span class="icon">${upgrade.icon}</span>
+                            <div class="name">${upgrade.name}</div>
+                            <div class="desc">${upgrade.desc}</div>
+                        </div>
+                    `;
+                });
+                upgradeGrid.innerHTML = html;
+                upgradeOverlay.classList.add('active');
+                sim.paused = true;
+            }
+
+            window.applyUpgrade = function(id) {
+                switch (id) {
+                    case 'shield':
+                        sim.upgrades.shields++;
+                        sim.maxLives = Math.min(3, sim.maxLives + 1);
+                        sim.lives = Math.min(sim.lives + 1, sim.maxLives);
+                        break;
+                    case 'speed':
+                        sim.upgrades.speed += 0.08;
+                        break;
+                    case 'magnet':
+                        sim.upgrades.magnet += 0.4;
+                        break;
+                    case 'multiplier':
+                        sim.upgrades.multiplier += 0.2;
+                        break;
+                    case 'slow':
+                        sim.upgrades.slow = true;
+                        break;
+                }
+                upgradeOverlay.classList.remove('active');
+                sim.paused = false;
+                updateHUD();
+                saveProgress();
+            };
+
+            upgradeCloseBtn.addEventListener('click', () => {
+                upgradeOverlay.classList.remove('active');
+                sim.paused = false;
+            });
+
+            // ── Reset ──
+            function resetSim() {
+                sim.asteroids = [];
+                sim.particles = [];
+                sim.coins = [];
+                sim.powerups = [];
+                sim.engineParticles = [];
+                sim.score = 0;
+                sim.combo = 0;
+                sim.maxCombo = 0;
+                sim.gameOver = false;
+                sim.invincible = 0;
+                sim.spawnTimer = 0;
+                sim.frame = 0;
+                sim.started = false;
+                sim.warpDisplayTimer = 0;
+                sim.effects = { slow: 0, magnet: 0, shield: 0, invincible: 0 };
+                sim.performance = { hitCount: 0, dodgeCount: 0, nearMissCount: 0 };
+                sim.adaptiveFactor = 1.0;
+                sim.tempSpeedModifier = 1.0;
+                sim.shakeIntensity = 0;
+                sim.shakeX = 0;
+                sim.shakeY = 0;
+                sim.paused = false;
+                sim.currentPlanetIndex = 0;
+                sim.nextPlanetIndex = 1;
+                sim.scoreToNext = PLANETS[1].distance;
+                sim.scoreProgress = 0;
+                sim.planetReached = false;
+
+                applyShipStats(equippedShip);
+                const baseLives = 1 + sim.upgrades.shields + sim.shipShieldBonus;
+                sim.maxLives = Math.min(3, baseLives);
+                sim.lives = sim.maxLives;
+
+                sim.config.speedBase = PLANETS[0].speedBase;
+                sim.config.spawnBase = PLANETS[0].spawnBase;
+                sim.config.extraSpawn = PLANETS[0].extraSpawn;
+
+                sim.rocket.x = W / 2;
+                sim.rocket.y = H - 120;
+                sim.rocket.targetX = sim.rocket.x;
+                sim.rocket.targetY = sim.rocket.y;
+                gameOverOverlay.classList.remove('active');
+                gameOverOverlay.style.display = 'none';
+                upgradeOverlay.classList.remove('active');
+                updateHUD();
+            }
+
+            // ── Advance Planet ──
+            function advancePlanet() {
+                const current = sim.currentPlanetIndex;
+                const next = current + 1;
+                if (next >= PLANETS.length) return;
+
+                sim.currentPlanetIndex = next;
+                sim.nextPlanetIndex = next + 1;
+                sim.scoreToNext = PLANETS[next].distance - PLANETS[current].distance;
+                sim.scoreProgress = 0;
+                sim.planetReached = true;
+
+                // Apply planet difficulty
+                const p = PLANETS[next];
+                sim.config.speedBase = p.speedBase;
+                sim.config.spawnBase = p.spawnBase;
+                sim.config.extraSpawn = p.extraSpawn;
+
+                // Celebration
+                spawnCelebration(W / 2, H / 2);
+                sim.warpDisplayTimer = 120;
+
+                // Show upgrade modal
+                showUpgradeModal();
+
+                updateHUD();
+            }
+
+            // ── Start / End ──
+            function startSimulation() {
+                resetSim();
+                simActive = true;
+                simRunning = true;
+                menuOverlay.classList.add('hidden');
+                hud.classList.add('active');
+                progressContainer.classList.add('active');
+                gameOverOverlay.classList.remove('active');
+                gameOverOverlay.style.display = 'none';
+                if (!sim.mouseInside) {
+                    sim.rocket.targetX = W / 2;
+                    sim.rocket.targetY = H - 120;
+                }
+                if (!animId) loop();
+            }
+
+            function endSimulation() {
+                simRunning = false;
+                simActive = false;
+                sim.gameOver = true;
+                if (sim.score > bestScore) {
+                    bestScore = sim.score;
+                    localStorage.setItem('fps_best', String(bestScore));
+                    updateMenuStats();
+                }
+                sessionCount++;
+                localStorage.setItem('fps_sessions', String(sessionCount));
+                updateMenuStats();
+                goScore.textContent = sim.score;
+                goBest.textContent = bestScore;
+                const planetName = PLANETS[sim.currentPlanetIndex]?.name || 'Unknown';
+                goPlanet.textContent = planetName;
+                gameOverOverlay.style.display = 'flex';
+                requestAnimationFrame(() => {
+                    gameOverOverlay.classList.add('active');
+                });
+                updateHUD();
+                saveProgress();
+            }
+
+            function goToMenu() {
+                simRunning = false;
+                simActive = false;
+                if (animId) { cancelAnimationFrame(animId);
+                    animId = null; }
+                gameOverOverlay.classList.remove('active');
+                gameOverOverlay.style.display = 'none';
+                hud.classList.remove('active');
+                progressContainer.classList.remove('active');
+                menuOverlay.classList.remove('hidden');
+                upgradeOverlay.classList.remove('active');
+                resetSim();
+                updateMenuStats();
+                render();
+            }
+
+            // ── UPDATE ──
+            function update() {
+                if (!simRunning || sim.gameOver || sim.paused) return;
+                sim.frame++;
+
+                // ── Recover from shield loss slowdown ──
+                if (sim.tempSpeedModifier < 1.0) {
+                    sim.tempSpeedModifier += 0.005;
+                    if (sim.tempSpeedModifier > 1.0) sim.tempSpeedModifier = 1.0;
+                }
+
+                const r = sim.rocket;
+                const smooth = 0.12 * sensitivity;
+                r.x += (r.targetX - r.x) * smooth;
+                r.y += (r.targetY - r.y) * smooth;
+                r.x = Math.max(r.radius + 2, Math.min(W - r.radius - 2, r.x));
+                r.y = Math.max(r.radius + 2, Math.min(H - r.radius - 2, r.y));
+
+                // ── Warp Display ──
+                if (sim.warpDisplayTimer > 0) sim.warpDisplayTimer--;
+
+                // ── Effects Decay ──
+                if (sim.effects.slow > 0) sim.effects.slow--;
+                if (sim.effects.magnet > 0) sim.effects.magnet--;
+                if (sim.effects.invincible > 0) sim.effects.invincible--;
+
+                // ── Adaptive Difficulty ──
+                const dodgeRate = sim.performance.dodgeCount / Math.max(1, sim.frame / 60);
+                const hitRate = sim.performance.hitCount / Math.max(1, sim.frame / 60);
+                const nearMissRate = sim.performance.nearMissCount / Math.max(1, sim.frame / 60);
+                let targetFactor = 1.0 + (dodgeRate - 0.15) * 0.3 - hitRate * 0.8 + nearMissRate * 0.3;
+                targetFactor = Math.max(0.3, Math.min(2.0, targetFactor));
+                sim.adaptiveFactor += (targetFactor - sim.adaptiveFactor) * 0.01;
+
+                // ── Spawn Asteroids ──
+                if (sim.started) {
+                    const cfg = sim.config;
+                    let base = Math.max(4, cfg.spawnBase - sim.score * 0.015);
+                    base = base / (sim.adaptiveFactor * 0.2 + 0.8);
+                    const interval = Math.max(2, base - (sim.score / 200) * 1.5) / sim.tempSpeedModifier;
+                    sim.spawnTimer++;
+                    if (sim.spawnTimer >= interval) {
+                        sim.spawnTimer = 0;
+                        sim.asteroids.push(createAsteroid());
+                        if (Math.random() < cfg.extraSpawn + sim.score * 0.0003 + (sim.adaptiveFactor - 1) * 0.04) {
+                            sim.asteroids.push(createAsteroid());
+                        }
+                    }
+                }
+
+                // ── Update Asteroids ──
+                const slowFactor = sim.effects.slow > 0 ? 0.5 : 1.0;
+                for (let i = sim.asteroids.length - 1; i >= 0; i--) {
+                    const a = sim.asteroids[i];
+                    a.x += a.vx * slowFactor;
+                    a.y += a.vy * slowFactor;
+                    a.rotation += a.rotSpeed * slowFactor;
+
+                    if (a.y > H + 80) {
+                        sim.asteroids.splice(i, 1);
+                        if (sim.started && !sim.gameOver) {
+                            let points = 1 + Math.floor(sim.combo / 5);
+                            let finalPoints = Math.floor(points * sim.upgrades.multiplier);
+                            sim.score += finalPoints;
+                            sim.scoreProgress += finalPoints;
+                            sim.combo++;
+                            if (sim.combo > sim.maxCombo) sim.maxCombo = sim.combo;
+                            let coinEarn = 1 + Math.floor(sim.combo / 10);
+                            totalCoins += coinEarn;
+                            spawnCoin(a.x, H - 20, coinEarn);
+                            sim.performance.dodgeCount++;
+                            updateHUD();
+                            updateMenuStats();
+                            saveProgress();
+
+                            // ── Check Planet Progression ──
+                            if (sim.nextPlanetIndex < PLANETS.length) {
+                                const nextPlanetDist = PLANETS[sim.nextPlanetIndex].distance;
+                                if (sim.score >= nextPlanetDist) {
+                                    advancePlanet();
+                                }
+                            }
+                        }
+                        continue;
+                    }
+                    if (a.x < -80) a.x = W + 60;
+                    if (a.x > W + 80) a.x = -60;
+
+                    // ── Collision ──
+                    if (!sim.gameOver && sim.invincible === 0 && sim.effects.invincible === 0) {
+                        const d = Math.hypot(r.x - a.x, r.y - a.y);
+                        const threshold = r.radius + a.radius - 4;
+                        if (d < threshold) {
+                            sim.lives--;
+                            sim.combo = 0;
+                            sim.performance.hitCount++;
+                            spawnHit(a.x, a.y);
+                            spawnParticles(r.x, r.y, 40, '#ff8844', 2.0);
+                            if (Math.random() < 0.25) {
+                                spawnPowerup(a.x, a.y);
+                            }
+                            sim.asteroids.splice(i, 1);
+                            sim.tempSpeedModifier = 0.3;
+                            if (sim.lives <= 0) {
+                                endSimulation();
+                                return;
+                            } else {
+                                sim.invincible = 90;
+                            }
+                            updateHUD();
+                            continue;
+                        }
+
+                        // ── Near Miss ──
+                        if (d < threshold + 30 && d > threshold) {
+                            if (sim.started && sim.combo > 0) {
+                                sim.combo += 2;
+                                sim.performance.nearMissCount++;
+                                if (sim.upgrades.slow) {
+                                    sim.effects.slow = 30;
+                                }
+                                spawnNearMiss(a.x, a.y);
+                                updateHUD();
+                            }
+                        }
+                    }
+                }
+
+                // ── Coins ──
+                const magnetRange = 30 + sim.upgrades.magnet * 20;
+                for (let i = sim.coins.length - 1; i >= 0; i--) {
+                    const c = sim.coins[i];
+                    c.progress += 0.04;
+                    c.rotation += 0.08;
+                    if (c.progress >= 1) {
+                        sim.coins.splice(i, 1);
+                        continue;
+                    }
+                    if (sim.effects.magnet > 0) {
+                        const dx = r.x - c.x;
+                        const dy = r.y - c.y;
+                        const dist = Math.hypot(dx, dy);
+                        if (dist < magnetRange) {
+                            const pull = 0.08 * (1 - dist / magnetRange);
+                            c.x += dx * pull;
+                            c.y += dy * pull;
+                        }
+                    }
+                    c.x += (c.targetX - c.x) * 0.1;
+                    c.y += (c.targetY - c.y) * 0.1;
+                    c.radius *= 0.99;
+                }
+
+                // ── Powerups ──
+                for (let i = sim.powerups.length - 1; i >= 0; i--) {
+                    const p = sim.powerups[i];
+                    p.y += p.speed * 0.6;
+                    p.rotation += 0.04;
+                    p.life--;
+                    if (p.y > H + 40 || p.life <= 0) {
+                        sim.powerups.splice(i, 1);
+                        continue;
+                    }
+                    if (!sim.gameOver) {
+                        const d = Math.hypot(r.x - p.x, r.y - p.y);
+                        if (d < r.radius + p.radius) {
+                            applyPowerup(p.type);
+                            spawnParticles(p.x, p.y, 25, '#a78bfa', 1.4);
+                            sim.powerups.splice(i, 1);
+                            updateHUD();
+                            continue;
+                        }
+                    }
+                }
+
+                // ── Engine Trail ──
+                for (let i = 0; i < 3; i++) {
+                    sim.particles.push({
+                        x: r.x + (Math.random() - 0.5) * 8,
+                        y: r.y + 22,
+                        vx: (Math.random() - 0.5) * 0.8,
+                        vy: Math.random() * 2 + 1.5,
+                        life: 10 + Math.random() * 15,
+                        maxLife: 25,
+                        radius: 2 + Math.random() * 4,
+                        color: `hsla(${30 + Math.random() * 20}, 100%, ${60 + Math.random() * 30}%, 0.8)`,
+                        decay: 0.96,
+                    });
+                }
+
+                // ── Particles ──
+                for (let i = sim.particles.length - 1; i >= 0; i--) {
+                    const p = sim.particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vx *= p.decay || 0.98;
+                    p.vy *= p.decay || 0.98;
+                    p.vy += 0.02;
+                    p.life--;
+                    if (p.life <= 0 || p.radius < 0.1) sim.particles.splice(i, 1);
+                }
+
+                // ── Screen Shake ──
+                if (sim.shakeIntensity > 0) {
+                    sim.shakeX = (Math.random() - 0.5) * sim.shakeIntensity * 1.2;
+                    sim.shakeY = (Math.random() - 0.5) * sim.shakeIntensity * 1.2;
+                    sim.shakeIntensity *= 0.92;
+                    if (sim.shakeIntensity < 0.1) sim.shakeIntensity = 0;
+                } else {
+                    sim.shakeX = 0;
+                    sim.shakeY = 0;
+                }
+
+                // ── Invincibility ──
+                if (sim.invincible > 0) sim.invincible--;
+
+                // ── Background Parallax ──
+                const speedFactor = 0.5 + sim.adaptiveFactor * 0.3 + sim.combo * 0.002;
+                for (const star of stars) {
+                    star.y += star.speed * speedFactor * 0.8;
+                    if (star.y > H) {
+                        star.y = 0;
+                        star.x = Math.random() * W;
+                    }
+                }
+                for (const nebula of nebulas) {
+                    nebula.y += nebula.speed * speedFactor * 0.6;
+                    if (nebula.y - nebula.radius > H) {
+                        nebula.y = -nebula.radius;
+                        nebula.x = Math.random() * W;
+                    }
+                }
+            }
+
+            // ── RENDER ──
+            function render() {
+                ctx.save();
+
+                if (sim.shakeIntensity > 0.5) {
+                    ctx.translate(sim.shakeX, sim.shakeY);
+                }
+
+                ctx.clearRect(-10, -10, W + 20, H + 20);
+                const planet = PLANETS[sim.currentPlanetIndex] || PLANETS[0];
+                const planetColor = planet.color || '#0e111e';
+                const grad = ctx.createRadialGradient(W / 2, H / 2, 100, W / 2, H / 2, H * 0.8);
+                grad.addColorStop(0, planetColor + '33');
+                grad.addColorStop(0.5, '#060812');
+                grad.addColorStop(1, '#020305');
+                ctx.fillStyle = grad;
+                ctx.fillRect(-10, -10, W + 20, H + 20);
+
+                // Nebulas
+                for (const nebula of nebulas) {
+                    const grd = ctx.createRadialGradient(nebula.x, nebula.y, 10, nebula.x, nebula.y, nebula.radius);
+                    grd.addColorStop(0, nebula.color);
+                    grd.addColorStop(0.5, nebula.color);
+                    grd.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = grd;
+                    ctx.beginPath();
+                    ctx.arc(nebula.x, nebula.y, nebula.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Stars
+                for (const star of stars) {
+                    const twinkle = 0.6 + 0.4 * Math.sin(sim.frame * star.twinkleSpeed + star.x);
+                    const alpha = star.brightness * twinkle * 0.8;
+                    ctx.globalAlpha = alpha;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowColor = 'rgba(200,220,255,0.3)';
+                    ctx.shadowBlur = star.size > 1.5 ? 8 : 2;
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.size * 0.6, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
+
+                // Asteroids
+                for (const a of sim.asteroids) {
+                    drawAsteroid(a);
+                }
+
+                // Powerups
+                for (const p of sim.powerups) {
+                    drawPowerup(p);
+                }
+
+                // Coins
+                for (const c of sim.coins) {
+                    drawCoin(c);
+                }
+
+                // Particles
+                for (const p of sim.particles) {
+                    const alpha = p.life / p.maxLife;
+                    ctx.globalAlpha = alpha;
+                    ctx.fillStyle = p.color;
+                    ctx.shadowColor = p.color;
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, Math.max(0.5, p.radius * alpha * 0.8), 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
+
+                // Rocket
+                if (!sim.gameOver || sim.lives > 0) {
+                    const r = sim.rocket;
+                    let alpha = 1;
+                    if (sim.invincible > 0 && Math.floor(sim.invincible / 5) % 2 === 0) alpha = 0.4;
+                    if (sim.effects.invincible > 0) alpha = 0.7 + 0.3 * Math.sin(sim.frame * 0.2);
+                    ctx.globalAlpha = alpha;
+                    drawRocket(r.x, r.y);
+                    ctx.globalAlpha = 1;
+                }
+
+                // Warp Drive Text (planet arrival)
+                if (sim.warpDisplayTimer > 0 && sim.planetReached) {
+                    const alpha = Math.min(1, sim.warpDisplayTimer / 30);
+                    const p = PLANETS[sim.currentPlanetIndex];
+                    ctx.save();
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.shadowColor = 'rgba(0, 200, 255, 0.8)';
+                    ctx.shadowBlur = 50;
+                    ctx.font = 'bold 36px Inter, sans-serif';
+                    ctx.fillStyle = `rgba(100, 220, 255, ${alpha * 0.9})`;
+                    ctx.fillText(`🚀 ARRIVED AT ${p.emoji} ${p.name.toUpperCase()}`, W / 2, H / 2 - 100);
+                    ctx.shadowBlur = 20;
+                    ctx.font = '18px Inter, sans-serif';
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.3})`;
+                    ctx.fillText(`+${Math.floor(10 + sim.score * 0.1)} bonus`, W / 2, H / 2 - 50);
+                    ctx.shadowBlur = 0;
+                    ctx.restore();
+                }
+
+                // Start Prompt
+                if (!sim.started && !sim.gameOver && simActive) {
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.font = '500 18px Inter, sans-serif';
+                    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+                    ctx.fillText('move to begin', W / 2, H / 2 + 60);
+                }
+
+                ctx.restore();
+            }
+
+            // ── Draw Helpers ──
+            function drawAsteroid(a) {
+                ctx.save();
+                ctx.translate(a.x, a.y);
+                ctx.rotate(a.rotation);
+                ctx.shadowColor = 'rgba(0,0,0,0.6)';
+                ctx.shadowBlur = 20;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 4;
+
+                ctx.beginPath();
+                const pts = a.vertices;
+                for (let i = 0; i < pts.length; i++) {
+                    const { a: ang, r } = pts[i];
+                    const x = Math.cos(ang) * r;
+                    const y = Math.sin(ang) * r;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                const g = ctx.createRadialGradient(-a.radius * 0.2, -a.radius * 0.2, 2, 0, 0, a.radius);
+                g.addColorStop(0, '#9a8a6a');
+                g.addColorStop(0.6, '#6a5a3a');
+                g.addColorStop(1, '#2a1e10');
+                ctx.fillStyle = g;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(20,15,8,0.6)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                const n = Math.floor(a.radius / 10) + 2;
+                for (let i = 0; i < n; i++) {
+                    const ang = (i / n) * Math.PI * 2 + 0.8;
+                    const d = a.radius * (0.15 + Math.random() * 0.5);
+                    const cx = Math.cos(ang) * d;
+                    const cy = Math.sin(ang) * d;
+                    const cr = 2 + Math.random() * a.radius * 0.25;
+                    ctx.beginPath();
+                    ctx.ellipse(cx, cy, cr, cr * 0.6, Math.random() * Math.PI, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(20,14,8,0.35)';
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
+            function drawPowerup(p) {
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation);
+                const r = p.radius;
+                const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, r * 2);
+                glow.addColorStop(0, 'rgba(167,139,250,0.4)');
+                glow.addColorStop(1, 'rgba(167,139,250,0)');
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowColor = 'rgba(167,139,250,0.6)';
+                ctx.shadowBlur = 30;
+                ctx.beginPath();
+                ctx.arc(0, 0, r, 0, Math.PI * 2);
+                const grad = ctx.createRadialGradient(-r * 0.2, -r * 0.2, 2, 0, 0, r);
+                grad.addColorStop(0, '#c4b5fd');
+                grad.addColorStop(0.7, '#7c5cbf');
+                grad.addColorStop(1, '#4a2a7a');
+                ctx.fillStyle = grad;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#fff';
+                ctx.font = `${r * 1.2}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                let icon = '';
+                switch (p.type) {
+                    case 'shield':
+                        icon = '🛡️';
+                        break;
+                    case 'slow':
+                        icon = '🐢';
+                        break;
+                    case 'magnet':
+                        icon = '🧲';
+                        break;
+                    case 'invincible':
+                        icon = '✨';
+                        break;
+                }
+                ctx.fillText(icon, 0, 0);
+                ctx.restore();
+            }
+
+            function drawCoin(c) {
+                ctx.save();
+                ctx.translate(c.x, c.y);
+                ctx.rotate(c.rotation);
+                const r = c.radius;
+                const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, r * 2);
+                glow.addColorStop(0, 'rgba(255,215,0,0.3)');
+                glow.addColorStop(1, 'rgba(255,215,0,0)');
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowColor = 'rgba(255,215,0,0.4)';
+                ctx.shadowBlur = 20;
+                ctx.beginPath();
+                ctx.arc(0, 0, r, 0, Math.PI * 2);
+                const grad = ctx.createRadialGradient(-r * 0.2, -r * 0.2, 2, 0, 0, r);
+                grad.addColorStop(0, '#ffd700');
+                grad.addColorStop(0.7, '#e6b800');
+                grad.addColorStop(1, '#b8860b');
+                ctx.fillStyle = grad;
+                ctx.fill();
+                ctx.strokeStyle = '#b8860b';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#b8860b';
+                ctx.font = `${r * 0.8}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('★', 0, 0);
+                ctx.restore();
+            }
+
+            function drawRocket(x, y) {
+                ctx.save();
+                ctx.translate(x, y);
+                const w = 20,
+                    h = 34;
+
+                const grad = ctx.createRadialGradient(0, h / 2 + 6, 4, 0, h / 2 + 6, 30);
+                grad.addColorStop(0, 'rgba(255, 200, 100, 0.4)');
+                grad.addColorStop(1, 'rgba(255, 100, 20, 0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(0, h / 2 + 6, 30, 0, Math.PI * 2);
+                ctx.fill();
+
+                const ship = SHIPS[equippedShip] || SHIPS[0];
+                const shipColor = ship.color || '#5a8aaa';
+
+                ctx.beginPath();
+                ctx.moveTo(0, -h / 2);
+                ctx.quadraticCurveTo(w / 2, -h / 2 + 4, w / 2, 0);
+                ctx.quadraticCurveTo(w / 2, h / 2 - 4, w / 2 - 2, h / 2 - 2);
+                ctx.lineTo(w / 2 - 6, h / 2 + 6);
+                ctx.lineTo(-w / 2 + 6, h / 2 + 6);
+                ctx.lineTo(-w / 2 + 2, h / 2 - 2);
+                ctx.quadraticCurveTo(-w / 2, h / 2 - 4, -w / 2, 0);
+                ctx.quadraticCurveTo(-w / 2, -h / 2 + 4, 0, -h / 2);
+                ctx.closePath();
+                const bg = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
+                bg.addColorStop(0, shipColor);
+                bg.addColorStop(0.3, lightenColor(shipColor, 30));
+                bg.addColorStop(0.7, lightenColor(shipColor, 30));
+                bg.addColorStop(1, shipColor);
+                ctx.fillStyle = bg;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(20,40,60,0.6)';
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.ellipse(0, -6, 6, 8, 0, 0, Math.PI * 2);
+                const cg = ctx.createRadialGradient(-2, -8, 2, 0, -6, 8);
+                cg.addColorStop(0, '#8ac8ff');
+                cg.addColorStop(0.5, '#3a8acf');
+                cg.addColorStop(1, '#1a3a6a');
+                ctx.fillStyle = cg;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(40,80,120,0.5)';
+                ctx.lineWidth = 0.8;
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.ellipse(-2, -9, 2, 3, -0.3, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.25)';
+                ctx.fill();
+
+                ctx.fillStyle = lightenColor(shipColor, 20);
+                ctx.strokeStyle = 'rgba(30,60,80,0.5)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(-w / 2 + 2, 2);
+                ctx.lineTo(-w / 2 - 10, 14);
+                ctx.lineTo(-w / 2 - 5, 18);
+                ctx.lineTo(-w / 2 + 2, 10);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(w / 2 - 2, 2);
+                ctx.lineTo(w / 2 + 10, 14);
+                ctx.lineTo(w / 2 + 5, 18);
+                ctx.lineTo(w / 2 - 2, 10);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#2a2a3a';
+                ctx.beginPath();
+                ctx.rect(-5, h / 2 - 2, 10, 5);
+                ctx.fill();
+                ctx.fillStyle = '#4a4a5a';
+                ctx.beginPath();
+                ctx.rect(-3, h / 2, 6, 3);
+                ctx.fill();
+
+                const fl = 18 + Math.random() * 14;
+                const fg = ctx.createRadialGradient(0, h / 2 + 4, 2, 0, h / 2 + 4 + fl * 0.5, fl);
+                fg.addColorStop(0, 'rgba(255,230,150,0.95)');
+                fg.addColorStop(0.3, 'rgba(255,180,80,0.8)');
+                fg.addColorStop(0.7, 'rgba(255,80,20,0.5)');
+                fg.addColorStop(1, 'rgba(255,40,0,0)');
+                ctx.fillStyle = fg;
+                ctx.beginPath();
+                ctx.moveTo(-5, h / 2 + 2);
+                ctx.quadraticCurveTo(-2, h / 2 + 2 + fl * 0.6, 0, h / 2 + 2 + fl);
+                ctx.quadraticCurveTo(2, h / 2 + 2 + fl * 0.6, 5, h / 2 + 2);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.shadowColor = '#ff3333';
+                ctx.shadowBlur = 12;
+                ctx.fillStyle = '#ff3333';
+                ctx.beginPath();
+                ctx.arc(-w / 2 - 5, 14, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowColor = '#33ff33';
+                ctx.fillStyle = '#33ff33';
+                ctx.beginPath();
+                ctx.arc(w / 2 + 5, 14, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                ctx.restore();
+            }
+
+            function lightenColor(hex, amt) {
+                let r = parseInt(hex.slice(1, 3), 16);
+                let g = parseInt(hex.slice(3, 5), 16);
+                let b = parseInt(hex.slice(5, 7), 16);
+                r = Math.min(255, r + amt);
+                g = Math.min(255, g + amt);
+                b = Math.min(255, b + amt);
+                return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+            }
+
+            // ── LOOP ──
+            function loop() {
+                if (!simRunning && !simActive) {
+                    animId = null;
+                    return;
+                }
+                update();
+                render();
+                animId = requestAnimationFrame(loop);
+            }
+
+            // ── INPUT ──
+            function handleMouseMove(e) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = W / rect.width;
+                const scaleY = H / rect.height;
+                const cx = (e.clientX - rect.left) * scaleX;
+                const cy = (e.clientY - rect.top) * scaleY;
+
+                sim.mouseX = Math.max(0, Math.min(W, cx));
+                sim.mouseY = Math.max(0, Math.min(H, cy));
+                sim.mouseInside = true;
+
+                if (simActive && !sim.gameOver && !sim.paused) {
+                    const r = sim.rocket;
+                    r.targetX = Math.max(r.radius + 2, Math.min(W - r.radius - 2, sim.mouseX));
+                    r.targetY = Math.max(r.radius + 2, Math.min(H - r.radius - 2, sim.mouseY));
+                    if (!sim.started) sim.started = true;
+                }
+            }
+
+            function handleMouseLeave() { sim.mouseInside = false; }
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseleave', handleMouseLeave);
+
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const t = e.touches[0];
+                if (!t) return;
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = W / rect.width;
+                const scaleY = H / rect.height;
+                const cx = (t.clientX - rect.left) * scaleX;
+                const cy = (t.clientY - rect.top) * scaleY;
+                sim.mouseX = Math.max(0, Math.min(W, cx));
+                sim.mouseY = Math.max(0, Math.min(H, cy));
+                sim.mouseInside = true;
+                if (simActive && !sim.gameOver && !sim.paused) {
+                    const r = sim.rocket;
+                    r.targetX = Math.max(r.radius + 2, Math.min(W - r.radius - 2, sim.mouseX));
+                    r.targetY = Math.max(r.radius + 2, Math.min(H - r.radius - 2, sim.mouseY));
+                    if (!sim.started) sim.started = true;
+                }
+            }, { passive: false });
+
+            // ── UI EVENTS ──
+            playBtn.addEventListener('click', startSimulation);
+
+            configBtn.addEventListener('click', () => {
+                configOverlay.classList.add('active');
+            });
+
+            configCloseBtn.addEventListener('click', () => {
+                configOverlay.classList.remove('active');
+            });
+
+            configOverlay.addEventListener('click', (e) => {
+                if (e.target === configOverlay) configOverlay.classList.remove('active');
+            });
+
+            shopBtn.addEventListener('click', () => {
+                loadShop();
+                shopOverlay.classList.add('active');
+            });
+
+            shopCloseBtn.addEventListener('click', () => {
+                shopOverlay.classList.remove('active');
+            });
+
+            shopOverlay.addEventListener('click', (e) => {
+                if (e.target === shopOverlay) shopOverlay.classList.remove('active');
+            });
+
+            sensToggle.addEventListener('click', () => {
+                sensitivity = sensitivity >= 2.0 ? 0.5 : Math.round((sensitivity + 0.5) * 10) / 10;
+                if (sensitivity > 2.0) sensitivity = 0.5;
+                updateSensitivityDisplay();
+            });
+
+            resetBestBtn.addEventListener('click', () => {
+                if (confirm('Reset best score?')) {
+                    bestScore = 0;
+                    localStorage.setItem('fps_best', '0');
+                    updateMenuStats();
+                    updateHUD();
+                }
+            });
+
+            resetAllBtn.addEventListener('click', () => {
+                if (confirm('Reset all stats (best, coins, ships)?')) {
+                    bestScore = 0;
+                    sessionCount = 0;
+                    totalCoins = 0;
+                    sensitivity = 1.0;
+                    equippedShip = 0;
+                    unlockedShips = [0];
+                    localStorage.setItem('fps_best', '0');
+                    localStorage.setItem('fps_sessions', '0');
+                    localStorage.setItem('fps_coins', '0');
+                    localStorage.setItem('fps_sensitivity', '1.0');
+                    localStorage.setItem('fps_equipped_ship', '0');
+                    localStorage.setItem('fps_unlocked_ships', JSON.stringify([0]));
+                    updateSensitivityDisplay();
+                    updateMenuStats();
+                    updateHUD();
+                    loadShop();
+                    applyShipStats(0);
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !menuOverlay.classList.contains('hidden')) {
+                    playBtn.click();
+                }
+                if ((e.key === 'r' || e.key === 'R') && simActive && sim.gameOver) {
+                    goRetryBtn.click();
+                }
+                if (e.key === 'Escape' && simActive && sim.gameOver) {
+                    goMenuBtn.click();
+                }
+                if (e.key === 'Escape' && configOverlay.classList.contains('active')) {
+                    configOverlay.classList.remove('active');
+                }
+                if (e.key === 'Escape' && shopOverlay.classList.contains('active')) {
+                    shopOverlay.classList.remove('active');
+                }
+                if (e.key === 'Escape' && upgradeOverlay.classList.contains('active')) {
+                    upgradeOverlay.classList.remove('active');
+                    sim.paused = false;
+                }
+            });
+
+            goRetryBtn.addEventListener('click', startSimulation);
+            goMenuBtn.addEventListener('click', goToMenu);
+
+            // ── INIT ──
+            resizeCanvas();
+            initStarsAndNebulas();
+            applyShipStats(equippedShip);
+            resetSim();
+            updateMenuStats();
+            loadShop();
+            render();
+
+            console.log('✦ Flight Path Simulator v4.0 (Planetary Trek)');
+            console.log('  Best: ' + bestScore);
+            console.log('  Coins: ' + totalCoins);
+            console.log('  Ships: ' + unlockedShips.length);
+            console.log('  Sensitivity: ' + sensitivity.toFixed(1) + '×');
+
+        })();
+    </script>
+
+</body>
+</html>
