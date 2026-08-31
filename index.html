@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
+        /* ── RESET & BASE ── */
         *,
         *::before,
         *::after {
@@ -942,7 +943,7 @@
                 <div class="stat-item"><div class="stat-val" id="menuSessions">1</div><div class="stat-lbl">Level</div></div>
             </div>
             <div class="missions-list" id="missionsList"></div>
-            <div class="footer-note">Mouse / touch / arrows to navigate · R reset · Esc pause</div>
+            <div class="footer-note">Mouse / touch / arrows · Space to fire · R reset · Esc pause</div>
         </div>
     </div>
 
@@ -1267,7 +1268,9 @@
                     try { this.hum.g.gain.setTargetAtTime(0, this.ctx.currentTime, 0.15);
                         const h = this.hum;
                         setTimeout(() => { try { h.o.stop(); } catch (e) {} }, 500); } catch (e) {}
-                    this.hum = null; }
+                    this.hum = null; },
+                shoot() { this.tone(1500, 0.06, 'square', 0.08);
+                    this.tone(800, 0.08, 'sine', 0.10, 0, 0.02); }
             };
 
             let W = 0,
@@ -1353,6 +1356,8 @@
                 pups: [],
                 parts: [],
                 texts: [],
+                bullets: [],
+                fireCooldown: 0,
                 dist: 0,
                 segStart: 0,
                 goal: 500,
@@ -1434,6 +1439,10 @@
                     e.preventDefault(); }
                 if (k === 'ArrowDown' || k === 's' || k === 'S') { keys.d = true;
                     e.preventDefault(); }
+                if (k === ' ') {
+                    e.preventDefault();
+                    fireBullet();
+                }
                 if (k === 'Escape') {
                     if (sim.state === 'playing') pauseGame();
                     else if (sim.state === 'paused') resumeGame();
@@ -1935,6 +1944,69 @@
                 }
             }
 
+            function updateBullets(sdt) {
+                if (sim.fireCooldown > 0) sim.fireCooldown -= sdt;
+                const rk = sim.rocket;
+                for (let i = sim.bullets.length - 1; i >= 0; i--) {
+                    const b = sim.bullets[i];
+                    b.x += b.vx * sdt;
+                    b.y += b.vy * sdt;
+                    b.life -= sdt;
+                    if (b.life <= 0) { sim.bullets.splice(i, 1); continue; }
+                    let hit = false;
+                    for (let j = sim.hazards.length - 1; j >= 0; j--) {
+                        const h = sim.hazards[j];
+                        if (h.type !== 'ast') continue;
+                        const d = Math.hypot(b.x - h.x, b.y - h.y);
+                        if (d < b.r + h.r) {
+                            // hit an asteroid
+                            if (h.r <= 15) {
+                                // break it
+                                burst(h.x, h.y, '255,200,120', 14, 280);
+                                sim.hazards.splice(j, 1);
+                                totalCoins += 1;
+                                sim.runCoins += 1;
+                                pushText(h.x, h.y - 20, '+1 data', '#ffd700');
+                                // add a small flash
+                                sim.flash = 0.15;
+                                sim.flashC = '255,240,200';
+                                Sfx.shoot(); // reuse shoot sound for break
+                            } else {
+                                // large asteroid: just remove bullet
+                            }
+                            hit = true;
+                            break;
+                        }
+                    }
+                    if (hit) sim.bullets.splice(i, 1);
+                }
+            }
+
+            function fireBullet() {
+                if (sim.state !== 'playing' || sim.fireCooldown > 0) return;
+                const rk = sim.rocket;
+                const dx = rk.tx - rk.x,
+                    dy = rk.ty - rk.y;
+                const len = Math.hypot(dx, dy) || 1;
+                const speed = 600;
+                const vx = (dx / len) * speed;
+                const vy = (dy / len) * speed;
+                const tipX = rk.x + Math.cos(rk.tilt) * 20;
+                const tipY = rk.y + Math.sin(rk.tilt) * 20;
+                sim.bullets.push({
+                    x: tipX,
+                    y: tipY,
+                    vx: vx,
+                    vy: vy,
+                    life: 2.0,
+                    r: 3
+                });
+                sim.fireCooldown = 0.25;
+                Sfx.shoot();
+                // small muzzle flash
+                burst(tipX, tipY, '255,255,200', 6, 120);
+            }
+
             function updateGame(sdt, rdt) {
                 const zone = zoneOf(sim.zone);
                 const segProg = Math.min(1, (sim.dist - sim.segStart) / sim.goal);
@@ -1964,6 +2036,7 @@
                 updateBolts(sdt);
                 updateCoins(sdt);
                 updatePups(sdt);
+                updateBullets(sdt);
                 updateParts(sdt);
                 updateTexts(rdt);
                 Sfx.humSet(sim.ts);
@@ -1984,6 +2057,7 @@
                 sim.bolts = [];
                 sim.pups = [];
                 sim.coins = [];
+                sim.bullets = [];
                 sim.meteorQ = null;
                 sim.rad = 0;
                 saveProgress();
@@ -2100,6 +2174,8 @@
                 sim.pups = [];
                 sim.parts = [];
                 sim.texts = [];
+                sim.bullets = [];
+                sim.fireCooldown = 0;
                 sim.flow = 0;
                 sim.flowT = 0;
                 sim.maxFlow = 0;
@@ -2586,6 +2662,20 @@
                 }
             }
 
+            function drawBullets() {
+                for (const b of sim.bullets) {
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'lighter';
+                    ctx.fillStyle = '#fff';
+                    ctx.shadowColor = '#6fcbff';
+                    ctx.shadowBlur = 18;
+                    ctx.beginPath();
+                    ctx.arc(b.x, b.y, b.r, 0, 7);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
             function flamePath(hw, y0, len) {
                 ctx.beginPath();
                 ctx.moveTo(-hw, y0);
@@ -2756,6 +2846,7 @@
                 drawHazards();
                 drawCoins();
                 drawPups();
+                drawBullets();
                 if (['playing', 'warp', 'choose', 'paused'].includes(sim.state)) drawRocket();
                 drawParticles();
                 drawTexts();
