@@ -1029,88 +1029,72 @@
             margin-top: 4px;
         }
 
-        /* ─── TECH TREE ──────────────────────────────────────────────────────────── */
-        .tech-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin: 12px 0 16px;
-            text-align: left;
-        }
-        .tech-card {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 14px;
-            padding: 12px 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            transition: all .2s ease;
-        }
-        .tech-card .tech-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .tech-card .tech-name {
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 600;
-            font-size: 14px;
-            color: #fff;
-        }
-        .tech-card .tech-level {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.4);
-            background: rgba(255,255,255,0.04);
-            padding: 0 8px;
-            border-radius: 10px;
-        }
-        .tech-card .tech-desc {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.4);
-        }
-        .tech-card .tech-stat {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.6);
-            font-variant-numeric: tabular-nums;
-        }
-        .tech-card .tech-cost {
-            font-size: 11px;
-            color: #ffd700;
-        }
-        .tech-card .tech-btn {
-            margin-top: 6px;
-            padding: 4px 12px;
-            border-radius: 8px;
-            border: none;
-            background: linear-gradient(135deg, #2a6df4, #1a4fc3);
-            color: #fff;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all .2s ease;
-            font-family: inherit;
-            align-self: flex-start;
-        }
-        .tech-card .tech-btn:hover:not(:disabled) {
-            transform: scale(1.04);
-        }
-        .tech-card .tech-btn:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
-        .tech-card .tech-btn.maxed {
-            background: rgba(255,255,255,0.06);
-            color: rgba(255,255,255,0.3);
-            cursor: default;
-        }
-        .tech-card.maxed {
-            border-color: rgba(255,215,0,0.15);
-        }
-
         @media (max-width:500px) {
-            .tech-grid {
-                grid-template-columns: 1fr;
+            .menu-card {
+                padding: 26px 18px 22px
+            }
+            .menu-card .logo h1 {
+                font-size: 20px
+            }
+            .action-row .play-btn {
+                font-size: 14px;
+                padding: 12px 12px
+            }
+            .action-row .config-btn {
+                flex: 0 0 48px
+            }
+            .hud-item {
+                font-size: 10px;
+                padding: 2px 8px
+            }
+            #hud {
+                padding: 10px 10px
+            }
+            .modal-card {
+                padding: 20px 14px 22px;
+                max-width: 95vw
+            }
+            .upgrade-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 6px
+            }
+            .shop-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 6px
+            }
+            #progressContainer {
+                width: 50vw;
+                top: 6px
+            }
+            .go-card {
+                padding: 24px 18px 22px
+            }
+            .go-btn {
+                padding: 9px 14px;
+                font-size: 12px
+            }
+            .custom-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px
+            }
+            .custom-grid .custom-item input[type="color"] {
+                height: 28px
+            }
+            .difficulty-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 6px
+            }
+            .difficulty-btn {
+                font-size: 12px;
+                padding: 10px 6px
+            }
+            .achievement-toast {
+                top: 100px;
+                padding: 12px 18px;
+                max-width: 95vw;
+            }
+            .achievement-toast .ach-title {
+                font-size: 15px;
             }
         }
     </style>
@@ -1194,16 +1178,6 @@
             <div class="modal-coin-balance"><span data-icon="coin" data-size="16"></span><span id="shopCoins">0</span> Data Points</div>
             <div class="shop-grid" id="shopGrid"></div>
             <button class="modal-close" id="shopCloseBtn">Close</button>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="techTreeOverlay">
-        <div class="modal-card" style="max-width:640px;">
-            <h2><span class="h-icon" data-icon="rocket" data-size="20" style="color:#a78bfa"></span>Tech Tree — <span id="techShipName">Vestal</span></h2>
-            <div class="modal-sub">Permanent upgrades for this vessel</div>
-            <div class="modal-coin-balance"><span data-icon="coin" data-size="16"></span><span id="techCoins">0</span> Data Points</div>
-            <div class="tech-grid" id="techGrid"></div>
-            <button class="modal-close" id="techCloseBtn">Close</button>
         </div>
     </div>
 
@@ -1397,12 +1371,7 @@
                 achievementToast = $('achievementToast'),
                 achTitle = $('achTitle'),
                 achDesc = $('achDesc'),
-                achReward = $('achReward'),
-                techTreeOverlay = $('techTreeOverlay'),
-                techGrid = $('techGrid'),
-                techShipName = $('techShipName'),
-                techCoins = $('techCoins'),
-                techCloseBtn = $('techCloseBtn');
+                achReward = $('achReward');
 
             const store = {
                 get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } },
@@ -1613,122 +1582,32 @@
             if (!Array.isArray(unlockedShips) || !unlockedShips.length) unlockedShips = [0];
             let dailyMissions = parseJSON(store.get('fps_daily_missions', '{}'), {});
 
-            // ─── SHIP UPGRADES (Tech Tree) ──────────────────────────────────────
-            let shipUpgrades = parseJSON(store.get('ship_upgrades', '{}'), {});
-            // Ensure each ship has an entry
-            const SHIP_UPGRADE_DEFS = {
-                scout: [
-                    { id: 'speed_boost', name: 'Speed Boost', desc: 'Increase max speed', maxLevel: 5, baseCost: 20,
-                        costMult: 1.4, icon: 'rocket',
-                        getStat: (level) => ({ label: 'Speed', value: (1 + level * 0.04).toFixed(2) + 'x' }) },
-                    { id: 'handling', name: 'Handling', desc: 'Improve turning rate', maxLevel: 4, baseCost: 15,
-                        costMult: 1.3, icon: 'bolt',
-                        getStat: (level) => ({ label: 'Turn rate', value: (1 + level * 0.05).toFixed(2) + 'x' }) },
-                    { id: 'range', name: 'Scan Range', desc: 'Wider collection radius', maxLevel: 3, baseCost: 25,
-                        costMult: 1.5, icon: 'coin',
-                        getStat: (level) => ({ label: 'Range', value: (110 + level * 20) + 'px' }) }
-                ],
-                cleaner: [
-                    { id: 'magnet_boost', name: 'Magnet Strength', desc: 'Increase auto‑magnet range', maxLevel: 4,
-                        baseCost: 20, costMult: 1.3, icon: 'coin',
-                        getStat: (level) => ({ label: 'Magnet', value: (60 + level * 15) + 'px' }) },
-                    { id: 'coin_mult', name: 'Data Multiplier', desc: 'Bonus data per pickup', maxLevel: 3,
-                        baseCost: 30, costMult: 1.5, icon: 'star',
-                        getStat: (level) => ({ label: 'Bonus', value: '+' + (level * 0.5).toFixed(1) + ' per coin' }) },
-                    { id: 'clean_speed', name: 'Efficiency', desc: 'Slightly faster', maxLevel: 3, baseCost: 18,
-                        costMult: 1.4, icon: 'rocket',
-                        getStat: (level) => ({ label: 'Speed', value: (1 + level * 0.03).toFixed(2) + 'x' }) }
-                ],
-                tank: [
-                    { id: 'armor', name: 'Armor Plating', desc: '+1 max integrity', maxLevel: 3, baseCost: 35,
-                        costMult: 1.6, icon: 'shield',
-                        getStat: (level) => ({ label: 'Integrity', value: '+' + level }) },
-                    { id: 'thrust', name: 'Thrusters', desc: 'Reduce speed penalty', maxLevel: 4, baseCost: 20,
-                        costMult: 1.3, icon: 'rocket',
-                        getStat: (level) => ({ label: 'Speed', value: (0.85 + level * 0.03).toFixed(2) + 'x' }) },
-                    { id: 'regen', name: 'Shield Regen', desc: 'Regenerate integrity over time (future)', maxLevel: 2,
-                        baseCost: 40, costMult: 1.5, icon: 'bolt',
-                        getStat: (level) => ({ label: 'Regen', value: level > 0 ? 'active' : 'inactive' }) }
-                ],
-                stealth: [
-                    { id: 'stealth_speed', name: 'Stealth Drive', desc: 'Increase speed bonus', maxLevel: 4,
-                        baseCost: 22, costMult: 1.3, icon: 'rocket',
-                        getStat: (level) => ({ label: 'Speed', value: (1.30 + level * 0.04).toFixed(2) + 'x' }) },
-                    { id: 'slim_hitbox', name: 'Slim Profile', desc: 'Reduce hitbox size', maxLevel: 3, baseCost: 18,
-                        costMult: 1.4, icon: 'bolt',
-                        getStat: (level) => ({ label: 'Hitbox', value: (9 - level * 0.5).toFixed(1) + 'px' }) },
-                    { id: 'cloak', name: 'Cloak (future)', desc: 'Temporary invisibility', maxLevel: 2, baseCost: 50,
-                        costMult: 1.6, icon: 'alien',
-                        getStat: (level) => ({ label: 'Cloak', value: level > 0 ? 'unlocked' : 'locked' }) }
-                ],
-                nexus: [
-                    { id: 'nexus_speed', name: 'Nexus Drive', desc: 'Boost speed', maxLevel: 4, baseCost: 25,
-                        costMult: 1.3, icon: 'rocket',
-                        getStat: (level) => ({ label: 'Speed', value: (1.20 + level * 0.035).toFixed(2) + 'x' }) },
-                    { id: 'nexus_shield', name: 'Shield Amplifier', desc: '+1 integrity', maxLevel: 2, baseCost: 40,
-                        costMult: 1.5, icon: 'shield',
-                        getStat: (level) => ({ label: 'Integrity', value: '+' + level }) },
-                    { id: 'glow_boost', name: 'Aura Intensity', desc: 'Increase aura brightness', maxLevel: 3,
-                        baseCost: 15, costMult: 1.3, icon: 'aura',
-                        getStat: (level) => ({ label: 'Aura', value: (0.5 + level * 0.12).toFixed(2) + 'x' }) }
-                ],
-                vestal: [
-                    { id: 'missile_cooldown', name: 'Missile Reload', desc: 'Reduce missile cooldown', maxLevel: 5,
-                        baseCost: 30, costMult: 1.4, icon: 'bolt',
-                        getStat: (level) => ({ label: 'Cooldown', value: (2.5 - level * 0.1).toFixed(1) + 's' }) },
-                    { id: 'missile_speed', name: 'Missile Velocity', desc: 'Increase missile speed', maxLevel: 5,
-                        baseCost: 25, costMult: 1.3, icon: 'rocket',
-                        getStat: (level) => ({ label: 'Speed', value: (400 + level * 20) + 'px/s' }) },
-                    { id: 'blast_radius', name: 'Blast Radius', desc: 'Increase explosion radius', maxLevel: 4,
-                        baseCost: 40, costMult: 1.5, icon: 'boom',
-                        getStat: (level) => ({ label: 'Radius', value: (130 + level * 15) + 'px' }) },
-                    { id: 'auto_aim_range', name: 'Targeting Range', desc: 'Search farther for targets', maxLevel: 3,
-                        baseCost: 20, costMult: 1.2, icon: 'alien',
-                        getStat: (level) => ({ label: 'Range', value: (9999 + level * 100) + 'px' }) }
-                ]
-            };
+            loadAchievements();
 
-            function getShipUpgrades(shipId) {
-                return SHIP_UPGRADE_DEFS[shipId] || [];
-            }
+            function getExpMult() { return 1 + Math.min(0.6, totalFlown / 9000); }
 
-            function getUpgradeLevel(shipId, upgradeId) {
-                if (!shipUpgrades[shipId]) shipUpgrades[shipId] = {};
-                return shipUpgrades[shipId][upgradeId] || 0;
-            }
-
-            function setUpgradeLevel(shipId, upgradeId, level) {
-                if (!shipUpgrades[shipId]) shipUpgrades[shipId] = {};
-                shipUpgrades[shipId][upgradeId] = level;
-                store.set('ship_upgrades', JSON.stringify(shipUpgrades));
-            }
-
-            function getUpgradeCost(upgradeDef, level) {
-                if (level >= upgradeDef.maxLevel) return Infinity;
-                return Math.floor(upgradeDef.baseCost * Math.pow(upgradeDef.costMult, level));
-            }
-
-            function applyShipUpgrades() {
-                const ship = SHIPS[equippedShip];
-                if (!ship) return;
-                const shipId = ship.id;
-                const upgs = getShipUpgrades(shipId);
-                // Apply to sim or ship properties
-                if (shipId === 'vestal') {
-                    const cdLvl = getUpgradeLevel('vestal', 'missile_cooldown');
-                    sim.vestalCooldown = Math.max(0.5, 2.5 - cdLvl * 0.1);
-                    const spdLvl = getUpgradeLevel('vestal', 'missile_speed');
-                    sim.vestalMissileSpeed = 400 + spdLvl * 20;
-                    const radLvl = getUpgradeLevel('vestal', 'blast_radius');
-                    sim.vestalBlastRadius = 130 + radLvl * 15;
-                    const rangeLvl = getUpgradeLevel('vestal', 'auto_aim_range');
-                    sim.vestalTargetRange = 9999 + rangeLvl * 100; // effectively unlimited
-                }
-                // For other ships, we can apply later if needed.
-                // For now, we'll handle in ship-specific logic.
-                // For example, we can adjust speed, magnet, etc.
-                // We'll integrate later.
-            }
+            const ZONES = [
+                { name: 'Earth', goal: 500, speed: 1.00, astInt: 1.35, hue: 205, kind: 'earth', hazards: ['ast'] },
+                { name: 'Mars', goal: 650, speed: 1.22, astInt: 1.12, hue: 14, kind: 'rocky', hazards: ['ast', 'meteor'],
+                    hint: 'meteor activity detected' },
+                { name: 'Jupiter', goal: 800, speed: 1.45, astInt: 0.98, hue: 27, kind: 'gas', hazards: ['ast', 'rad'],
+                    hint: 'radiation zones' },
+                { name: 'Saturn', goal: 1000, speed: 1.68, astInt: 0.90, hue: 45, kind: 'gas', ring: true,
+                    hazards: ['ast', 'ring'], hint: 'ring debris crossing' },
+                { name: 'Uranus', goal: 1200, speed: 1.92, astInt: 0.82, hue: 185, kind: 'ice', hazards: ['ast', 'ice'],
+                    hint: 'ice shards detected' },
+                { name: 'Neptune', goal: 1400, speed: 2.18, astInt: 0.75, hue: 222, kind: 'ice',
+                    hazards: ['ast', 'bolt'], hint: 'storm cells' },
+                { name: 'Pluto', goal: 1600, speed: 2.45, astInt: 0.68, hue: 0, kind: 'rocky', gray: true,
+                    hazards: ['ast', 'ice', 'meteor'], hint: 'high debris density' },
+                { name: 'Oort Cloud', goal: 1800, speed: 2.75, astInt: 0.62, hue: 262, kind: 'cloud',
+                    hazards: ['ast', 'comet'], hint: 'long-period comets' },
+                { name: 'Alpha Centauri', goal: 2000, speed: 3.05, astInt: 0.56, hue: 46, kind: 'star',
+                    hazards: ['ast', 'meteor', 'bolt', 'comet'], hint: 'full hazard spectrum' },
+                { name: 'Deep Space', goal: 2000, speed: 3.40, astInt: 0.52, hue: 285, kind: 'cloud', endless: true,
+                    hazards: ['ast', 'meteor', 'bolt', 'comet', 'rad', 'ring', 'ice'], hint: 'frontier zone' }
+            ];
+            const zoneOf = i => ZONES[Math.max(0, Math.min(i, ZONES.length - 1))];
 
             // ─── SHIPS ─────────────────────────────────────────────────────────────
             const SHIPS = [
@@ -1749,7 +1628,6 @@
                     icon: 'rocket', vestal: true, missileCooldown: 3.0 }
             ];
 
-            // Override vestal cooldown with upgrade later
             const UPGRADE_POOL = [
                 { id: 'shield', name: 'Integrity Cell', desc: '+1 max integrity', icon: 'shield',
                     avail: () => 1 + sim.up.shields + (SHIPS[equippedShip].shieldBonus || 0) < 4 },
@@ -1978,7 +1856,7 @@
                 missiles: [],
                 missileCooldown: 0,
                 autoMissileCooldown: 0,
-                autoMissileTimer: 2.5,
+                autoMissileTimer: 2.5, // start ready
                 fireCooldown: 0,
                 dist: 0,
                 segStart: 0,
@@ -2022,85 +1900,24 @@
                 diffAstMult: 1,
                 diffHazardMult: 1,
                 diffExtraLives: 0,
-                diffCoinBonus: 0,
-                // Vestal upgrade stats
-                vestalCooldown: 2.5,
-                vestalMissileSpeed: 400,
-                vestalBlastRadius: 130,
-                vestalTargetRange: 9999
+                diffCoinBonus: 0
             };
 
             function recalcStats() {
                 const ship = SHIPS[equippedShip] || SHIPS[0];
-                let speedMult = ship.speedMult || 1;
-                // Apply ship upgrades if any
-                const shipId = ship.id;
-                if (shipId === 'scout') {
-                    const lvl = getUpgradeLevel('scout', 'speed_boost');
-                    speedMult *= (1 + lvl * 0.04);
-                    // handling: we'll apply to sensitivity or turn rate later (not used directly)
-                    const rangeLvl = getUpgradeLevel('scout', 'range');
-                    // magnet range is not used by scout; we'll ignore.
-                }
-                if (shipId === 'cleaner') {
-                    const spd = getUpgradeLevel('cleaner', 'clean_speed');
-                    speedMult *= (1 + spd * 0.03);
-                    // magnet boost handled in cleaner logic
-                }
-                if (shipId === 'tank') {
-                    const spd = getUpgradeLevel('tank', 'thrust');
-                    speedMult = 0.85 + spd * 0.03;
-                    const armor = getUpgradeLevel('tank', 'armor');
-                    // armor adds to shieldBonus
-                }
-                if (shipId === 'stealth') {
-                    const spd = getUpgradeLevel('stealth', 'stealth_speed');
-                    speedMult = 1.30 + spd * 0.04;
-                    const slim = getUpgradeLevel('stealth', 'slim_hitbox');
-                    // hitbox reduction applied later in shipHitR
-                }
-                if (shipId === 'nexus') {
-                    const spd = getUpgradeLevel('nexus', 'nexus_speed');
-                    speedMult = 1.20 + spd * 0.035;
-                    const shd = getUpgradeLevel('nexus', 'nexus_shield');
-                    // shield bonus added later
-                }
-                // Vestal handled separately in applyShipUpgrades
-
-                sim.speedFactor = speedMult * (1 + 0.06 * sim.up.speed) * sim.diffSpeedMult;
-                let shieldBonus = (ship.shieldBonus || 0);
-                if (shipId === 'tank') shieldBonus += getUpgradeLevel('tank', 'armor');
-                if (shipId === 'nexus') shieldBonus += getUpgradeLevel('nexus', 'nexus_shield');
-                sim.maxLives = Math.min(4, 1 + sim.up.shields + shieldBonus) + sim.diffExtraLives;
+                sim.speedFactor = (ship.speedMult || 1) * (1 + 0.06 * sim.up.speed) * sim.diffSpeedMult;
+                sim.maxLives = Math.min(4, 1 + sim.up.shields + (ship.shieldBonus || 0)) + sim.diffExtraLives;
                 sim.magnetRange = 110 * (1 + 0.5 * sim.up.magnet);
-                if (shipId === 'cleaner') {
-                    const magLvl = getUpgradeLevel('cleaner', 'magnet_boost');
-                    sim.magnetRange = Math.max(sim.magnetRange, 60 + magLvl * 15);
-                }
                 sim.distMult = sim.up.mult;
-                // Apply vestal upgrades
-                applyShipUpgrades();
             }
 
-            function shipHitR() {
-                let base = (SHIPS[equippedShip] || SHIPS[0]).hitR || 11;
-                const shipId = (SHIPS[equippedShip] || SHIPS[0]).id;
-                if (shipId === 'stealth') {
-                    const slim = getUpgradeLevel('stealth', 'slim_hitbox');
-                    base = Math.max(5, 9 - slim * 0.5);
-                }
-                return base;
-            }
+            function shipHitR() { return (SHIPS[equippedShip] || SHIPS[0]).hitR || 11; }
 
             function shipIsVestal() { return !!(SHIPS[equippedShip] || SHIPS[0]).vestal; }
 
             function shipIsCleaner() { return !!(SHIPS[equippedShip] || SHIPS[0]).cleaner; }
 
-            function getVestalCooldown() { return sim.vestalCooldown || 2.5; }
-
-            function getVestalMissileSpeed() { return sim.vestalMissileSpeed || 400; }
-
-            function getVestalBlastRadius() { return sim.vestalBlastRadius || 130; }
+            function shipMissileCooldown() { return (SHIPS[equippedShip] || SHIPS[0]).missileCooldown || 3.0; }
 
             function saveProgress() {
                 store.set('fps_coins', totalCoins);
@@ -2112,7 +1929,6 @@
                 store.set('fps_daily_missions', JSON.stringify(dailyMissions));
                 saveCustom();
                 saveAchievements();
-                store.set('ship_upgrades', JSON.stringify(shipUpgrades));
             }
 
             function slowmo(f, d) { sim.slowmoF = f;
@@ -2139,6 +1955,7 @@
                     e.preventDefault(); }
                 if (k === ' ') {
                     e.preventDefault();
+                    // Always fire bullet (manual missiles removed)
                     fireBullet();
                 }
                 if (k === 'Escape') {
@@ -2447,12 +2264,6 @@
 
             function collectCoin(c) {
                 let bonus = sim.diffCoinBonus || 0;
-                // Cleaner coin multiplier
-                if (shipIsCleaner()) {
-                    const multLvl = getUpgradeLevel('cleaner', 'coin_mult');
-                    bonus += multLvl * 0.5;
-                }
-                bonus = Math.floor(bonus);
                 totalCoins += 1 + bonus;
                 totalCoinsCollected += 1 + bonus;
                 sim.runCoins += 1 + bonus;
@@ -2544,6 +2355,7 @@
                 }
             }
 
+            // ─── FIXED: updateHazards — asteroid destroyed on collision even when invincible ───
             function updateHazards(sdt) {
                 const rk = sim.rocket,
                     hr = shipHitR();
@@ -2587,6 +2399,7 @@
                 }
             }
 
+            // ─── AUTO-MISSILE (from destroyed asteroids) ──────────────────────────
             function autoLaunchMissile(x, y) {
                 if (sim.autoMissileCooldown > 0) return;
                 let nearest = null,
@@ -2602,7 +2415,7 @@
                 const dx = nearest.x - x,
                     dy = nearest.y - y;
                 const len = Math.hypot(dx, dy) || 1;
-                const speed = getVestalMissileSpeed();
+                const speed = 400;
                 const vx = (dx / len) * speed;
                 const vy = (dy / len) * speed;
                 const angleOff = (Math.random() - 0.5) * 0.3;
@@ -2610,7 +2423,6 @@
                     sin = Math.sin(angleOff);
                 const finalVx = vx * cos - vy * sin;
                 const finalVy = vx * sin + vy * cos;
-                const radius = getVestalBlastRadius();
 
                 sim.missiles.push({
                     x: x + (dx / len) * 20,
@@ -2621,7 +2433,7 @@
                     targetX: nearest.x + (Math.random() - 0.5) * 40,
                     targetY: nearest.y + (Math.random() - 0.5) * 40,
                     exploded: false,
-                    radius: radius,
+                    radius: 130,
                     trail: []
                 });
                 sim.autoMissileCooldown = 0.3;
@@ -2658,6 +2470,7 @@
                 if (!inside) sim.rad = Math.max(0, sim.rad - sdt * 1.5);
             }
 
+            // ─── FIXED: updateAliens — laser hit effects only when not invincible ───
             function updateAliens(sdt) {
                 const rk = sim.rocket,
                     hr = shipHitR();
@@ -2705,6 +2518,10 @@
                 if (sim.aliens.length > 6) sim.aliens.splice(0, sim.aliens.length - 6);
             }
 
+            // Manual missile removed — now only used by auto systems.
+            // We'll keep the fireMissile function for internal use (autoLaunchMissile already uses direct creation).
+            // But we remove the manual trigger.
+
             function updateMissiles(sdt) {
                 if (sim.missileCooldown > 0) sim.missileCooldown -= sdt;
                 if (sim.autoMissileCooldown > 0) sim.autoMissileCooldown -= sdt;
@@ -2733,7 +2550,7 @@
                     if (distToTarget < 40) explode = true;
                     if (explode && !m.exploded) {
                         m.exploded = true;
-                        const blastRadius = m.radius || getVestalBlastRadius();
+                        const blastRadius = m.radius;
                         let destroyed = 0;
                         for (let j = sim.hazards.length - 1; j >= 0; j--) {
                             const h = sim.hazards[j];
@@ -2848,8 +2665,7 @@
                 const rk = sim.rocket;
                 let attractR = sim.magnetT > 0 ? sim.magnetRange : 36;
                 if (shipIsCleaner()) {
-                    const magLvl = getUpgradeLevel('cleaner', 'magnet_boost');
-                    attractR = Math.max(attractR, 60 + magLvl * 15);
+                    attractR = Math.max(attractR, 60 + 20 * sim.up.magnet);
                 }
                 for (let i = sim.coins.length - 1; i >= 0; i--) {
                     const c = sim.coins[i];
@@ -2878,31 +2694,32 @@
                 }
             }
 
+            // ─── AUTO MISSILE FIRING (Vestal) ─────────────────────────────────────
             function autoFireVestalMissile(sdt) {
                 if (!shipIsVestal() || sim.state !== 'playing') return;
                 sim.autoMissileTimer -= sdt;
                 if (sim.autoMissileTimer > 0) return;
+                // Find nearest asteroid
                 let nearest = null,
                     minD = Infinity;
                 const rk = sim.rocket;
-                const maxRange = sim.vestalTargetRange || 9999;
                 for (const h of sim.hazards) {
                     if (h.type === 'ast') {
                         const d = Math.hypot(h.x - rk.x, h.y - rk.y);
-                        if (d < minD && d < maxRange) { minD = d;
+                        if (d < minD) { minD = d;
                             nearest = h; }
                     }
                 }
                 if (nearest) {
+                    // Fire missile towards nearest
                     const dx = nearest.x - rk.x;
                     const dy = nearest.y - rk.y;
                     const len = Math.hypot(dx, dy) || 1;
-                    const speed = getVestalMissileSpeed();
+                    const speed = 400;
                     const vx = (dx / len) * speed;
                     const vy = (dy / len) * speed;
                     const tipX = rk.x + Math.cos(rk.tilt) * 28;
                     const tipY = rk.y + Math.sin(rk.tilt) * 28;
-                    const radius = getVestalBlastRadius();
                     sim.missiles.push({
                         x: tipX,
                         y: tipY,
@@ -2912,13 +2729,13 @@
                         targetX: nearest.x,
                         targetY: nearest.y,
                         exploded: false,
-                        radius: radius,
+                        radius: 130,
                         trail: []
                     });
                     Sfx.missileLaunch();
                     burst(tipX, tipY, '255,200,100', 8, 180);
                 }
-                sim.autoMissileTimer = getVestalCooldown();
+                sim.autoMissileTimer = 2.5; // reset
             }
 
             function updateGame(sdt, rdt) {
@@ -2959,6 +2776,7 @@
                 updateParts(sdt);
                 updateTexts(rdt);
                 Sfx.humSet(sim.ts);
+                // Vestal auto-fire
                 autoFireVestalMissile(sdt);
                 if (sim.dist - sim.segStart >= sim.goal) startWarp();
             }
@@ -3101,7 +2919,7 @@
                 sim.missiles = [];
                 sim.missileCooldown = 0;
                 sim.autoMissileCooldown = 0;
-                sim.autoMissileTimer = getVestalCooldown(); // start with upgraded cooldown
+                sim.autoMissileTimer = 2.5; // ready to fire
                 sim.fireCooldown = 0;
                 sim.flow = 0;
                 sim.flowT = 0;
@@ -3213,8 +3031,6 @@
                 pauseOverlay.classList.remove('active');
                 sim.state = 'playing';
             }
-
-            // ─── DRAW FUNCTIONS ────────────────────────────────────────────────────
 
             function drawAliens() {
                 for (const a of sim.aliens) {
@@ -3424,6 +3240,16 @@
                 let r = 12 + t * t * 110;
                 if (sim.state === 'warp') r += sim.warpK * sim.warpK * 12;
                 drawPlanetBody(W / 2, 46, Math.min(r, W * 1.5), nz, Math.min(1, t + 0.25));
+            }
+
+            function rrect(x, y, w, h, r) {
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.arcTo(x + w, y, x + w, y + h, r);
+                ctx.arcTo(x + w, y + h, x, y + h, r);
+                ctx.arcTo(x, y + h, x, y, r);
+                ctx.arcTo(x, y, x + w, y, r);
+                ctx.closePath();
             }
 
             function drawClouds() {
@@ -3716,12 +3542,7 @@
                 const hull = custom.hull || ship.hull || '#c9d4e2';
                 const accent = custom.accent || ship.accent || '#6fcbff';
                 const auraCol = custom.aura || '#6fcbff';
-                let auraInt = custom.auraIntensity || 0.5;
-                // Nexus aura boost from upgrades
-                if (ship.id === 'nexus') {
-                    const glowLvl = getUpgradeLevel('nexus', 'glow_boost');
-                    auraInt = Math.min(1, 0.5 + glowLvl * 0.12);
-                }
+                const auraInt = custom.auraIntensity || 0.5;
                 const style = custom.bodyStyle || 0;
 
                 ctx.save();
@@ -3941,10 +3762,8 @@
                 ctx.font = '500 14px Inter,sans-serif';
                 ctx.textAlign = 'center';
                 let ves = '';
-                if (shipIsVestal()) {
-                    const cd = getVestalCooldown();
-                    ves = ' · Auto-missile every ' + cd.toFixed(1) + 's (targets nearest asteroid)';
-                } else if (shipIsCleaner()) ves = ' · Auto-magnet collects data';
+                if (shipIsVestal()) ves = ' · Auto-missile every 2.5s (targets nearest asteroid)';
+                else if (shipIsCleaner()) ves = ' · Auto-magnet collects data';
                 ctx.fillText('Navigate with mouse, touch or arrows — graze hazards to build Sync' + ves, W / 2, H * 0.42);
                 ctx.restore();
             }
@@ -4094,7 +3913,6 @@
                     updateMenuStats(); }
             }
 
-            // ─── RENDER SHOP WITH TECH TREE BUTTON ──────────────────────────────
             function renderShop() {
                 shopCoinsSpan.textContent = totalCoins;
                 let html = '';
@@ -4104,13 +3922,11 @@
                     let status, cls, btn;
                     if (owned && eq) { status = 'Equipped';
                         cls = 'equipped';
-                        btn = '<button class="shop-btn" disabled>Equipped</button>' +
-                            '<button class="shop-btn primary" data-act="tech" data-idx="' + i +
-                            '" style="margin-top:4px;">Upgrade</button>';
-                    } else if (owned) { status = 'Owned';
+                        btn = '<button class="shop-btn" disabled>Equipped</button>'; } else if (owned) { status =
+                            'Owned';
                         cls = 'owned';
                         btn = '<button class="shop-btn primary" data-act="equip" data-idx="' + i +
-                            '">Equip</button>'; } else { status = ship.cost + ' data';
+                        '">Equip</button>'; } else { status = ship.cost + ' data';
                         cls = 'locked';
                         btn = '<button class="shop-btn primary" data-act="buy" data-idx="' + i + '"' + (totalCoins <
                             ship.cost ? ' disabled' : '') + '>Buy</button>'; }
@@ -4128,67 +3944,6 @@
                 });
                 shopGrid.innerHTML = html;
             }
-
-            // ─── TECH TREE RENDER ─────────────────────────────────────────────────
-            function renderTechTree() {
-                const ship = SHIPS[equippedShip];
-                if (!ship) return;
-                techShipName.textContent = ship.name;
-                techCoins.textContent = totalCoins;
-                const shipId = ship.id;
-                const upgrades = getShipUpgrades(shipId);
-                if (!upgrades.length) {
-                    techGrid.innerHTML = '<div style="color:rgba(255,255,255,0.3);padding:20px;">No upgrades available for this vessel.</div>';
-                    return;
-                }
-                let html = '';
-                upgrades.forEach(def => {
-                    const level = getUpgradeLevel(shipId, def.id);
-                    const maxed = level >= def.maxLevel;
-                    const cost = getUpgradeCost(def, level);
-                    const canAfford = totalCoins >= cost && !maxed;
-                    const stat = def.getStat ? def.getStat(level) : null;
-                    html += '<div class="tech-card' + (maxed ? ' maxed' : '') + '">' +
-                        '<div class="tech-header">' +
-                        '<span class="tech-name">' + def.name + '</span>' +
-                        '<span class="tech-level">Lv ' + level + '/' + def.maxLevel + '</span>' +
-                        '</div>' +
-                        '<div class="tech-desc">' + def.desc + '</div>' +
-                        (stat ? '<div class="tech-stat">' + stat.label + ': ' + stat.value + '</div>' : '') +
-                        (maxed ? '<div class="tech-cost">MAXED</div>' :
-                            '<div class="tech-cost">Cost: ' + cost + ' data</div>') +
-                        '<button class="tech-btn" data-ship="' + shipId + '" data-upgrade="' + def.id + '"' +
-                        (maxed ? ' disabled class="maxed"' : (canAfford ? '' : ' disabled')) + '>' +
-                        (maxed ? 'MAXED' : 'Upgrade') +
-                        '</button>' +
-                        '</div>';
-                });
-                techGrid.innerHTML = html;
-            }
-
-            // ─── TECH TREE CLICK HANDLER ──────────────────────────────────────────
-            techGrid.addEventListener('click', (e) => {
-                const btn = e.target.closest('.tech-btn');
-                if (!btn || btn.disabled) return;
-                const shipId = btn.dataset.ship;
-                const upgradeId = btn.dataset.upgrade;
-                const def = getShipUpgrades(shipId).find(d => d.id === upgradeId);
-                if (!def) return;
-                const level = getUpgradeLevel(shipId, upgradeId);
-                if (level >= def.maxLevel) return;
-                const cost = getUpgradeCost(def, level);
-                if (totalCoins < cost) return;
-                totalCoins -= cost;
-                setUpgradeLevel(shipId, upgradeId, level + 1);
-                saveProgress();
-                recalcStats();
-                renderTechTree();
-                renderShop();
-                updateMenuStats();
-                showToast(def.name + ' upgraded to Lv ' + (level + 1));
-                // Re-apply upgrade effects (already done in recalcStats)
-            });
-
             shopGrid.addEventListener('click', e => {
                 const btn = e.target.closest('button[data-act]');
                 if (!btn || btn.disabled) return;
@@ -4205,26 +3960,15 @@
                         updateMenuStats();
                         showToast(ship.name + ' purchased & equipped');
                     }
-                } else if (btn.dataset.act === 'equip') {
+                } else {
                     if (unlockedShips.includes(idx)) {
                         equippedShip = idx;
                         recalcStats();
                         saveProgress();
                         renderShop();
-                        showToast('Equipped ' + ship.name);
-                    }
-                } else if (btn.dataset.act === 'tech') {
-                    // Open tech tree
-                    if (unlockedShips.includes(idx)) {
-                        equippedShip = idx; // ensure it's equipped
-                        recalcStats();
-                        saveProgress();
-                        renderTechTree();
-                        techTreeOverlay.classList.add('active');
                     }
                 }
             });
-
             upgradeGrid.addEventListener('click', e => {
                 const card = e.target.closest('.upgrade-card');
                 if (card) chooseUpgrade(card.dataset.id);
@@ -4308,7 +4052,6 @@
                 unlockedShips = [0];
                 dailyMissions = {};
                 custom = { ...CUSTOM_DEFAULTS };
-                shipUpgrades = {};
                 saveCustom();
                 store.set('fps_best', '0');
                 store.set('fps_coins', '0');
@@ -4317,7 +4060,6 @@
                 store.set('fps_equipped_ship', '0');
                 store.set('fps_unlocked_ships', '[0]');
                 store.set('fps_daily_missions', '{}');
-                store.set('ship_upgrades', '{}');
                 achProgress = {};
                 totalAsteroidsDestroyed = 0;
                 totalCoinsCollected = 0;
@@ -4336,7 +4078,6 @@
             shopBtn.addEventListener('click', () => { renderShop();
                 shopOverlay.classList.add('active'); });
             shopCloseBtn.addEventListener('click', () => shopOverlay.classList.remove('active'));
-            techCloseBtn.addEventListener('click', () => techTreeOverlay.classList.remove('active'));
             upgradeCloseBtn.addEventListener('click', () => {
                 if (sim.state === 'choose') { upgradeOverlay.classList.remove('active');
                     advanceZone(); }
