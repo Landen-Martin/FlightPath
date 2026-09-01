@@ -1623,7 +1623,7 @@
                 { id: 'nexus', name: 'Nexus', cost: 250, desc: '+20% speed · +1 integrity', speedMult: 1.20,
                     shieldBonus: 1, hull: '#d9d2f0', accent: '#c4a5ff', w: 13, hitR: 11, glow: true, icon: 'rocket' },
                 { id: 'vestal', name: 'Warship Vestal', cost: 350,
-                    desc: 'Launches missiles that destroy all asteroids in a blast radius · cooldown 3s', speedMult: 1.10,
+                    desc: 'Auto-fires missiles every 2.5s at the nearest asteroid · blast radius 130', speedMult: 1.10,
                     shieldBonus: 0, hull: '#2a3a4a', accent: '#ff6b4a', w: 14, hitR: 11,
                     icon: 'rocket', vestal: true, missileCooldown: 3.0 }
             ];
@@ -1856,6 +1856,7 @@
                 missiles: [],
                 missileCooldown: 0,
                 autoMissileCooldown: 0,
+                autoMissileTimer: 2.5, // start ready
                 fireCooldown: 0,
                 dist: 0,
                 segStart: 0,
@@ -1954,8 +1955,8 @@
                     e.preventDefault(); }
                 if (k === ' ') {
                     e.preventDefault();
-                    if (shipIsVestal()) fireMissile();
-                    else fireBullet();
+                    // Always fire bullet (manual missiles removed)
+                    fireBullet();
                 }
                 if (k === 'Escape') {
                     if (sim.state === 'playing') pauseGame();
@@ -2379,7 +2380,6 @@
                     }
                     const d = Math.hypot(h.x - rk.x, h.y - rk.y);
                     if (d < h.r + hr) {
-                        // Always destroy the asteroid on collision
                         totalAsteroidsDestroyed++;
                         checkAchievements();
                         burst(h.x, h.y, '200,190,170', 8, 240);
@@ -2399,6 +2399,7 @@
                 }
             }
 
+            // ─── AUTO-MISSILE (from destroyed asteroids) ──────────────────────────
             function autoLaunchMissile(x, y) {
                 if (sim.autoMissileCooldown > 0) return;
                 let nearest = null,
@@ -2517,34 +2518,9 @@
                 if (sim.aliens.length > 6) sim.aliens.splice(0, sim.aliens.length - 6);
             }
 
-            function fireMissile() {
-                if (sim.state !== 'playing' || sim.missileCooldown > 0) return;
-                if (!shipIsVestal()) return;
-                const rk = sim.rocket;
-                const dx = rk.tx - rk.x,
-                    dy = rk.ty - rk.y;
-                const len = Math.hypot(dx, dy) || 1;
-                const speed = 400;
-                const vx = (dx / len) * speed;
-                const vy = (dy / len) * speed;
-                const tipX = rk.x + Math.cos(rk.tilt) * 28;
-                const tipY = rk.y + Math.sin(rk.tilt) * 28;
-                sim.missiles.push({
-                    x: tipX,
-                    y: tipY,
-                    vx: vx,
-                    vy: vy,
-                    life: 2.0,
-                    targetX: rk.tx,
-                    targetY: rk.ty,
-                    exploded: false,
-                    radius: 130,
-                    trail: []
-                });
-                sim.missileCooldown = shipMissileCooldown();
-                Sfx.missileLaunch();
-                burst(tipX, tipY, '255,200,100', 8, 180);
-            }
+            // Manual missile removed — now only used by auto systems.
+            // We'll keep the fireMissile function for internal use (autoLaunchMissile already uses direct creation).
+            // But we remove the manual trigger.
 
             function updateMissiles(sdt) {
                 if (sim.missileCooldown > 0) sim.missileCooldown -= sdt;
@@ -2718,6 +2694,50 @@
                 }
             }
 
+            // ─── AUTO MISSILE FIRING (Vestal) ─────────────────────────────────────
+            function autoFireVestalMissile(sdt) {
+                if (!shipIsVestal() || sim.state !== 'playing') return;
+                sim.autoMissileTimer -= sdt;
+                if (sim.autoMissileTimer > 0) return;
+                // Find nearest asteroid
+                let nearest = null,
+                    minD = Infinity;
+                const rk = sim.rocket;
+                for (const h of sim.hazards) {
+                    if (h.type === 'ast') {
+                        const d = Math.hypot(h.x - rk.x, h.y - rk.y);
+                        if (d < minD) { minD = d;
+                            nearest = h; }
+                    }
+                }
+                if (nearest) {
+                    // Fire missile towards nearest
+                    const dx = nearest.x - rk.x;
+                    const dy = nearest.y - rk.y;
+                    const len = Math.hypot(dx, dy) || 1;
+                    const speed = 400;
+                    const vx = (dx / len) * speed;
+                    const vy = (dy / len) * speed;
+                    const tipX = rk.x + Math.cos(rk.tilt) * 28;
+                    const tipY = rk.y + Math.sin(rk.tilt) * 28;
+                    sim.missiles.push({
+                        x: tipX,
+                        y: tipY,
+                        vx: vx,
+                        vy: vy,
+                        life: 2.0,
+                        targetX: nearest.x,
+                        targetY: nearest.y,
+                        exploded: false,
+                        radius: 130,
+                        trail: []
+                    });
+                    Sfx.missileLaunch();
+                    burst(tipX, tipY, '255,200,100', 8, 180);
+                }
+                sim.autoMissileTimer = 2.5; // reset
+            }
+
             function updateGame(sdt, rdt) {
                 const zone = zoneOf(sim.zone);
                 const segProg = Math.min(1, (sim.dist - sim.segStart) / sim.goal);
@@ -2756,6 +2776,8 @@
                 updateParts(sdt);
                 updateTexts(rdt);
                 Sfx.humSet(sim.ts);
+                // Vestal auto-fire
+                autoFireVestalMissile(sdt);
                 if (sim.dist - sim.segStart >= sim.goal) startWarp();
             }
 
@@ -2897,6 +2919,7 @@
                 sim.missiles = [];
                 sim.missileCooldown = 0;
                 sim.autoMissileCooldown = 0;
+                sim.autoMissileTimer = 2.5; // ready to fire
                 sim.fireCooldown = 0;
                 sim.flow = 0;
                 sim.flowT = 0;
@@ -3739,7 +3762,7 @@
                 ctx.font = '500 14px Inter,sans-serif';
                 ctx.textAlign = 'center';
                 let ves = '';
-                if (shipIsVestal()) ves = ' · Missile: Space (blast) · Auto-chain on destroy';
+                if (shipIsVestal()) ves = ' · Auto-missile every 2.5s (targets nearest asteroid)';
                 else if (shipIsCleaner()) ves = ' · Auto-magnet collects data';
                 ctx.fillText('Navigate with mouse, touch or arrows — graze hazards to build Sync' + ves, W / 2, H * 0.42);
                 ctx.restore();
