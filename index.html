@@ -4,16 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Solar System Explorer</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
     <style>
-        /* ── RESET & BASE ── */
+        /* ─── RESET & BASE ─── */
         *,
         *::before,
         *::after {
             margin: 0;
             padding: 0;
-            box-sizing: border-box
+            box-sizing: border-box;
         }
         html,
         body {
@@ -26,7 +26,7 @@
             user-select: none;
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
-            touch-action: none
+            touch-action: none;
         }
         #simCanvas {
             position: fixed;
@@ -38,7 +38,7 @@
             background: #0a0e1a;
             z-index: 0;
             cursor: none;
-            touch-action: none
+            touch-action: none;
         }
         #menuOverlay {
             position: fixed;
@@ -49,13 +49,13 @@
             justify-content: center;
             background: rgba(10, 14, 26, 0.88);
             backdrop-filter: blur(14px);
-            transition: opacity .8s ease, visibility .8s ease;
-            overflow-y: auto
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+            overflow-y: auto;
         }
         #menuOverlay.hidden {
             opacity: 0;
             visibility: hidden;
-            pointer-events: none
+            pointer-events: none;
         }
         .menu-card {
             background: rgba(18, 24, 44, 0.92);
@@ -66,21 +66,21 @@
             width: 92%;
             box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
             text-align: center;
-            margin: auto
+            margin: auto;
         }
         .menu-card .logo {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 12px;
-            margin-bottom: 4px
+            margin-bottom: 4px;
         }
         .menu-card .logo h1 {
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 600;
             font-size: 26px;
-            letter-spacing: -.01em;
-            color: #e8f0ff
+            letter-spacing: -0.01em;
+            color: #e8f0ff;
         }
         .menu-card .subtitle {
             font-size: 13px;
@@ -88,7 +88,7 @@
             margin-bottom: 12px;
             max-width: 380px;
             margin-left: auto;
-            margin-right: auto
+            margin-right: auto;
         }
         .rank-chip {
             display: inline-flex;
@@ -100,17 +100,13 @@
             border: 1px solid rgba(111, 203, 255, 0.14);
             padding: 5px 16px;
             border-radius: 20px;
-            margin-bottom: 22px
-        }
-        .rank-chip svg {
-            display: block;
-            color: #6fcbff
+            margin-bottom: 22px;
         }
         .action-row {
             display: flex;
             gap: 12px;
             margin-bottom: 12px;
-            justify-content: center
+            justify-content: center;
         }
         .action-row .play-btn {
             flex: 1;
@@ -123,24 +119,20 @@
             font-weight: 600;
             color: #fff;
             cursor: pointer;
-            transition: all .25s ease;
-            letter-spacing: .02em;
+            transition: all 0.25s ease;
+            letter-spacing: 0.02em;
             box-shadow: 0 4px 32px rgba(42, 109, 244, 0.3);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px
+            gap: 10px;
         }
         .action-row .play-btn:hover {
             transform: translateY(-2px) scale(1.01);
-            box-shadow: 0 8px 48px rgba(42, 109, 244, 0.4)
+            box-shadow: 0 8px 48px rgba(42, 109, 244, 0.4);
         }
         .action-row .play-btn:active {
-            transform: translateY(0) scale(.98)
-        }
-        .action-row .play-btn .icon-slot {
-            display: inline-flex;
-            color: #fff
+            transform: translateY(0) scale(0.98);
         }
         .action-row .config-btn {
             flex: 0 0 56px;
@@ -150,19 +142,19 @@
             border-radius: 16px;
             color: rgba(255, 255, 255, 0.35);
             cursor: pointer;
-            transition: all .2s ease;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
-            justify-content: center
+            justify-content: center;
         }
         .action-row .config-btn:hover {
             background: rgba(255, 255, 255, 0.08);
-            color: #fff
+            color: #fff;
         }
         .shop-row {
             display: flex;
             gap: 8px;
-            margin-bottom: 20px
+            margin-bottom: 20px;
         }
         .shop-row .side-btn {
             flex: 1;
@@ -175,63 +167,63 @@
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
-            transition: all .2s ease;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px
+            gap: 8px;
         }
         .shop-row .side-btn:hover {
             background: rgba(255, 255, 255, 0.08);
-            color: #fff
+            color: #fff;
         }
         .stats-row {
             display: flex;
             justify-content: space-between;
             padding-top: 16px;
             border-top: 1px solid rgba(255, 255, 255, 0.04);
-            margin-bottom: 4px
+            margin-bottom: 4px;
         }
         .stats-row .stat-item .stat-val {
             font-size: 19px;
             font-weight: 600;
             color: #e8edf5;
-            font-variant-numeric: tabular-nums
+            font-variant-numeric: tabular-nums;
         }
         .stats-row .stat-item .stat-lbl {
             font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: .06em;
+            letter-spacing: 0.06em;
             color: rgba(255, 255, 255, 0.2);
-            margin-top: 3px
+            margin-top: 3px;
         }
         .footer-note {
             text-align: center;
             margin-top: 16px;
             font-size: 11px;
-            color: rgba(255, 255, 255, 0.08)
+            color: rgba(255, 255, 255, 0.08);
         }
         .missions-list {
             margin-top: 12px;
             border-top: 1px solid rgba(255, 255, 255, 0.04);
-            padding-top: 4px
+            padding-top: 4px;
         }
         .m-head {
             font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: .08em;
+            letter-spacing: 0.08em;
             color: rgba(255, 255, 255, 0.2);
             margin: 6px 0 2px;
-            text-align: left
+            text-align: left;
         }
         .mission-row {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 8px 0
+            padding: 8px 0;
         }
         .mission-row+.mission-row {
-            border-top: 1px solid rgba(255, 255, 255, 0.03)
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
         }
         .m-icon {
             width: 26px;
@@ -242,38 +234,38 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: rgba(255, 255, 255, 0.45)
+            color: rgba(255, 255, 255, 0.45);
         }
         .mission-row.done .m-icon {
             color: #ffd700;
-            background: rgba(255, 215, 0, 0.08)
+            background: rgba(255, 215, 0, 0.08);
         }
         .m-body {
             flex: 1;
-            min-width: 0
+            min-width: 0;
         }
         .m-name {
             font-size: 12px;
             color: rgba(255, 255, 255, 0.6);
-            text-align: left
+            text-align: left;
         }
         .mission-row.done .m-name {
-            color: rgba(255, 215, 0, 0.7)
+            color: rgba(255, 215, 0, 0.7);
         }
         .m-bar {
             height: 3px;
             background: rgba(255, 255, 255, 0.06);
             border-radius: 2px;
             margin-top: 4px;
-            overflow: hidden
+            overflow: hidden;
         }
         .m-fill {
             height: 100%;
             background: #6fcbff;
-            border-radius: 2px
+            border-radius: 2px;
         }
         .mission-row.done .m-fill {
-            background: #ffd700
+            background: #ffd700;
         }
         .m-prog {
             font-size: 10px;
@@ -281,7 +273,7 @@
             flex: none;
             width: 48px;
             text-align: right;
-            font-variant-numeric: tabular-nums
+            font-variant-numeric: tabular-nums;
         }
         #hud {
             position: fixed;
@@ -293,20 +285,20 @@
             justify-content: space-between;
             align-items: flex-start;
             z-index: 5;
-            pointer-events: none
+            pointer-events: none;
         }
         #hud.active {
-            display: flex
+            display: flex;
         }
         .hud-left,
         .hud-right {
             display: flex;
             flex-direction: column;
             gap: 4px;
-            align-items: flex-start
+            align-items: flex-start;
         }
         .hud-right {
-            align-items: flex-end
+            align-items: flex-end;
         }
         .hud-item {
             font-size: 12px;
@@ -321,40 +313,40 @@
             font-variant-numeric: tabular-nums;
             display: flex;
             align-items: center;
-            gap: 4px
+            gap: 4px;
         }
         .hud-item .hud-val {
             font-weight: 600;
-            color: #fff
+            color: #fff;
         }
         .hud-item .hud-label {
             font-weight: 400;
             color: rgba(255, 255, 255, 0.25);
             font-size: 9px;
             text-transform: uppercase;
-            letter-spacing: .04em;
-            display: inline-flex
+            letter-spacing: 0.04em;
+            display: inline-flex;
         }
         .hud-item.lives .hud-val {
-            color: #6fcbff
+            color: #6fcbff;
         }
         .hud-item.score .hud-val {
             color: #ffd93d;
-            font-size: 15px
+            font-size: 15px;
         }
         .hud-item.best .hud-val {
-            color: rgba(255, 255, 255, 0.35)
+            color: rgba(255, 255, 255, 0.35);
         }
         .hud-item.combo .hud-val {
-            color: #6fcbff
+            color: #6fcbff;
         }
         .hud-item.coins .hud-val {
-            color: #ffd700
+            color: #ffd700;
         }
         .hud-item.powerup-indicator {
             color: #a78bfa;
             border-color: rgba(167, 139, 250, 0.15);
-            background: rgba(167, 139, 250, 0.06)
+            background: rgba(167, 139, 250, 0.06);
         }
         #progressContainer {
             position: fixed;
@@ -366,22 +358,22 @@
             display: none;
             width: 320px;
             max-width: 56vw;
-            text-align: center
+            text-align: center;
         }
         #progressContainer.active {
-            display: block
+            display: block;
         }
         #progressPlanet {
             font-family: 'Space Grotesk', sans-serif;
             font-size: 11px;
             font-weight: 600;
             color: rgba(255, 255, 255, 0.5);
-            letter-spacing: .06em;
+            letter-spacing: 0.06em;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
-            margin-bottom: 4px
+            margin-bottom: 4px;
         }
         #progressPlanet span {
-            color: #ffd93d
+            color: #ffd93d;
         }
         #progressBarBg {
             width: 100%;
@@ -389,13 +381,13 @@
             background: rgba(255, 255, 255, 0.06);
             border-radius: 4px;
             overflow: hidden;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5)
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
         #progressBarFill {
             height: 100%;
             width: 0%;
             background: linear-gradient(90deg, #6fcbff, #a78bfa);
-            border-radius: 4px
+            border-radius: 4px;
         }
         #progressLabel {
             text-align: center;
@@ -403,9 +395,9 @@
             color: rgba(255, 255, 255, 0.2);
             margin-top: 3px;
             font-weight: 500;
-            letter-spacing: .04em;
+            letter-spacing: 0.04em;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
-            font-variant-numeric: tabular-nums
+            font-variant-numeric: tabular-nums;
         }
         .modal-overlay {
             position: fixed;
@@ -418,13 +410,13 @@
             backdrop-filter: blur(10px);
             pointer-events: none;
             opacity: 0;
-            transition: opacity .4s ease;
-            overflow-y: auto
+            transition: opacity 0.4s ease;
+            overflow-y: auto;
         }
         .modal-overlay.active {
             display: flex;
             opacity: 1;
-            pointer-events: auto
+            pointer-events: auto;
         }
         .modal-card {
             background: rgba(18, 24, 44, 0.95);
@@ -437,7 +429,7 @@
             overflow-y: auto;
             box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
             text-align: center;
-            margin: auto
+            margin: auto;
         }
         .modal-card h2 {
             font-family: 'Space Grotesk', sans-serif;
@@ -447,22 +439,22 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px
+            gap: 10px;
         }
         .modal-card .modal-sub {
             color: rgba(255, 255, 255, 0.3);
             font-size: 13px;
-            margin-bottom: 18px
+            margin-bottom: 18px;
         }
         .h-icon {
             display: inline-flex;
-            color: #ffd700
+            color: #ffd700;
         }
         .upgrade-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 10px;
-            margin: 14px 0 18px
+            margin: 14px 0 18px;
         }
         .upgrade-card {
             background: rgba(255, 255, 255, 0.02);
@@ -470,43 +462,43 @@
             border-radius: 16px;
             padding: 14px 10px;
             cursor: pointer;
-            transition: all .2s ease;
-            text-align: center
+            transition: all 0.2s ease;
+            text-align: center;
         }
         .upgrade-card:hover {
             background: rgba(255, 255, 255, 0.07);
             border-color: rgba(255, 255, 255, 0.14);
-            transform: translateY(-2px)
+            transform: translateY(-2px);
         }
         .upgrade-card .icon {
             display: flex;
             justify-content: center;
-            margin-bottom: 4px
+            margin-bottom: 4px;
         }
         .upgrade-card .name {
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 600;
             font-size: 14px;
             color: #fff;
-            display: block
+            display: block;
         }
         .upgrade-card .desc {
             font-size: 11px;
             color: rgba(255, 255, 255, 0.35);
             margin-top: 2px;
-            display: block
+            display: block;
         }
         .upgrade-card .lvl {
             font-size: 9px;
             color: rgba(255, 255, 255, 0.25);
             margin-top: 4px;
-            display: block
+            display: block;
         }
         .shop-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 10px;
-            margin: 10px 0 14px
+            margin: 10px 0 14px;
         }
         .shop-item {
             background: rgba(255, 255, 255, 0.02);
@@ -514,23 +506,23 @@
             border-radius: 16px;
             padding: 12px 10px;
             text-align: center;
-            transition: all .2s ease
+            transition: all 0.2s ease;
         }
         .shop-item .ship-icon {
             display: flex;
-            justify-content: center
+            justify-content: center;
         }
         .shop-item .ship-name {
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 600;
             font-size: 13px;
             color: #fff;
-            margin-top: 3px
+            margin-top: 3px;
         }
         .shop-item .ship-stats {
             font-size: 10px;
             color: rgba(255, 255, 255, 0.3);
-            margin: 3px 0 6px
+            margin: 3px 0 6px;
         }
         .shop-item .ship-status {
             font-size: 11px;
@@ -538,18 +530,18 @@
             padding: 3px 10px;
             border-radius: 20px;
             background: rgba(255, 255, 255, 0.05);
-            display: inline-block
+            display: inline-block;
         }
         .shop-item .ship-status.equipped {
             background: rgba(111, 203, 255, 0.15);
-            color: #6fcbff
+            color: #6fcbff;
         }
         .shop-item .ship-status.owned {
             background: rgba(167, 139, 250, 0.1);
-            color: #a78bfa
+            color: #a78bfa;
         }
         .shop-item .ship-status.locked {
-            color: #ff6b6b
+            color: #ff6b6b;
         }
         .shop-btn {
             background: rgba(255, 255, 255, 0.04);
@@ -560,24 +552,24 @@
             font-size: 11px;
             font-weight: 500;
             cursor: pointer;
-            transition: all .2s ease;
+            transition: all 0.2s ease;
             font-family: inherit;
-            margin-top: 5px
+            margin-top: 5px;
         }
         .shop-btn:hover {
-            background: rgba(255, 255, 255, 0.1)
+            background: rgba(255, 255, 255, 0.1);
         }
         .shop-btn.primary {
             background: linear-gradient(135deg, #2a6df4, #1a4fc3);
             border: none;
-            color: #fff
+            color: #fff;
         }
         .shop-btn.primary:hover {
-            transform: scale(1.04)
+            transform: scale(1.04);
         }
         .shop-btn:disabled {
-            opacity: .3;
-            cursor: not-allowed
+            opacity: 0.3;
+            cursor: not-allowed;
         }
         .modal-close {
             margin-top: 14px;
@@ -590,12 +582,12 @@
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
-            transition: all .2s ease;
-            font-family: inherit
+            transition: all 0.2s ease;
+            font-family: inherit;
         }
         .modal-close:hover {
             background: rgba(255, 255, 255, 0.06);
-            color: #fff
+            color: #fff;
         }
         .modal-coin-balance {
             display: flex;
@@ -609,7 +601,7 @@
             background: rgba(255, 215, 0, 0.03);
             border-radius: 10px;
             border: 1px solid rgba(255, 215, 0, 0.05);
-            font-variant-numeric: tabular-nums
+            font-variant-numeric: tabular-nums;
         }
         #gameOverOverlay {
             position: fixed;
@@ -622,12 +614,12 @@
             backdrop-filter: blur(8px);
             pointer-events: none;
             opacity: 0;
-            transition: opacity .5s ease
+            transition: opacity 0.5s ease;
         }
         #gameOverOverlay.active {
             display: flex;
             opacity: 1;
-            pointer-events: auto
+            pointer-events: auto;
         }
         .go-card {
             background: rgba(18, 24, 44, 0.95);
@@ -637,54 +629,54 @@
             max-width: 380px;
             width: 90%;
             text-align: center;
-            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8)
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
         }
         .go-card .go-icon {
             display: flex;
             justify-content: center;
-            margin-bottom: 4px
+            margin-bottom: 4px;
         }
         .go-card h2 {
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 600;
             font-size: 24px;
             color: #f0f5ff;
-            margin-bottom: 2px
+            margin-bottom: 2px;
         }
         .go-card .go-sub {
             color: rgba(255, 255, 255, 0.3);
             font-size: 14px;
-            margin-bottom: 14px
+            margin-bottom: 14px;
         }
         .go-card .go-sub span {
-            color: rgba(255, 255, 255, 0.55)
+            color: rgba(255, 255, 255, 0.55);
         }
         .go-card .go-score {
             font-family: 'Space Grotesk', sans-serif;
             font-size: 40px;
             font-weight: 700;
             color: #ffd93d;
-            letter-spacing: -.02em;
-            font-variant-numeric: tabular-nums
+            letter-spacing: -0.02em;
+            font-variant-numeric: tabular-nums;
         }
         .go-card .go-coins {
             font-size: 12px;
             color: #ffd700;
-            margin-top: 2px
+            margin-top: 2px;
         }
         .go-card .go-best {
             font-size: 14px;
             color: rgba(255, 255, 255, 0.3);
             margin-top: 4px;
-            margin-bottom: 20px
+            margin-bottom: 20px;
         }
         .go-card .go-best span {
-            color: rgba(255, 255, 255, 0.5)
+            color: rgba(255, 255, 255, 0.5);
         }
         .go-btn-row {
             display: flex;
             gap: 10px;
-            justify-content: center
+            justify-content: center;
         }
         .go-btn {
             padding: 10px 22px;
@@ -694,24 +686,24 @@
             font-weight: 600;
             border: none;
             cursor: pointer;
-            transition: all .2s ease
+            transition: all 0.2s ease;
         }
         .go-btn.primary {
             background: linear-gradient(135deg, #2a6df4, #1a4fc3);
             color: #fff;
-            box-shadow: 0 4px 24px rgba(42, 109, 244, 0.2)
+            box-shadow: 0 4px 24px rgba(42, 109, 244, 0.2);
         }
         .go-btn.primary:hover {
-            transform: translateY(-2px)
+            transform: translateY(-2px);
         }
         .go-btn.secondary {
             background: rgba(255, 255, 255, 0.04);
             color: rgba(255, 255, 255, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.06)
+            border: 1px solid rgba(255, 255, 255, 0.06);
         }
         .go-btn.secondary:hover {
             background: rgba(255, 255, 255, 0.08);
-            color: #fff
+            color: #fff;
         }
         .config-card {
             background: rgba(18, 24, 44, 0.95);
@@ -721,7 +713,7 @@
             max-width: 400px;
             width: 90%;
             box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
-            margin: auto
+            margin: auto;
         }
         .config-card h3 {
             font-family: 'Space Grotesk', sans-serif;
@@ -730,26 +722,26 @@
             margin-bottom: 4px;
             display: flex;
             align-items: center;
-            gap: 10px
+            gap: 10px;
         }
         .config-card .config-sub {
             color: rgba(255, 255, 255, 0.3);
             font-size: 13px;
-            margin-bottom: 18px
+            margin-bottom: 18px;
         }
         .config-card .config-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 12px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04)
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
         }
         .config-card .config-item:last-of-type {
-            border-bottom: none
+            border-bottom: none;
         }
         .config-card .config-item .label {
             color: rgba(255, 255, 255, 0.55);
-            font-size: 14px
+            font-size: 14px;
         }
         .config-btn-sm {
             background: rgba(255, 255, 255, 0.04);
@@ -760,17 +752,17 @@
             font-size: 12px;
             font-weight: 500;
             cursor: pointer;
-            transition: all .2s ease;
+            transition: all 0.2s ease;
             font-family: inherit;
-            min-width: 68px
+            min-width: 68px;
         }
         .config-btn-sm:hover {
-            background: rgba(255, 255, 255, 0.1)
+            background: rgba(255, 255, 255, 0.1);
         }
         .config-btn-sm.danger:hover {
             background: rgba(255, 80, 80, 0.12);
             border-color: rgba(255, 80, 80, 0.15);
-            color: #ff6b6b
+            color: #ff6b6b;
         }
         .config-close {
             margin-top: 16px;
@@ -783,12 +775,12 @@
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
-            transition: all .2s ease;
-            font-family: inherit
+            transition: all 0.2s ease;
+            font-family: inherit;
         }
         .config-close:hover {
             background: rgba(255, 255, 255, 0.06);
-            color: #fff
+            color: #fff;
         }
         #configOverlay,
         #pauseOverlay {
@@ -802,13 +794,13 @@
             backdrop-filter: blur(8px);
             pointer-events: none;
             opacity: 0;
-            transition: opacity .3s ease
+            transition: opacity 0.3s ease;
         }
         #configOverlay.active,
         #pauseOverlay.active {
             display: flex;
             opacity: 1;
-            pointer-events: auto
+            pointer-events: auto;
         }
         #pauseBtn {
             position: fixed;
@@ -826,11 +818,11 @@
             cursor: pointer;
             z-index: 7;
             pointer-events: auto;
-            backdrop-filter: blur(6px)
+            backdrop-filter: blur(6px);
         }
         #pauseBtn:hover {
             background: rgba(255, 255, 255, 0.12);
-            color: #fff
+            color: #fff;
         }
         .mission-toast {
             position: fixed;
@@ -847,19 +839,18 @@
             pointer-events: none;
             opacity: 0;
             transform: translateY(-10px);
-            transition: all .3s ease;
-            max-width: 300px
+            transition: all 0.3s ease;
+            max-width: 300px;
         }
         .mission-toast.show {
             opacity: 1;
-            transform: translateY(0)
+            transform: translateY(0);
         }
-
         .difficulty-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
-            margin: 14px 0 18px
+            margin: 14px 0 18px;
         }
         .difficulty-btn {
             padding: 12px 8px;
@@ -871,50 +862,49 @@
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: all .2s ease;
-            text-align: center
+            transition: all 0.2s ease;
+            text-align: center;
         }
         .difficulty-btn:hover {
             background: rgba(255, 255, 255, 0.08);
-            color: #fff
+            color: #fff;
         }
         .difficulty-btn.active {
             background: rgba(111, 203, 255, 0.12);
             border-color: #6fcbff;
-            color: #6fcbff
+            color: #6fcbff;
         }
         .difficulty-btn .diff-label {
             display: block;
             font-size: 11px;
             font-weight: 400;
             color: rgba(255, 255, 255, 0.25);
-            margin-top: 2px
+            margin-top: 2px;
         }
         .difficulty-btn.active .diff-label {
-            color: rgba(111, 203, 255, 0.5)
+            color: rgba(111, 203, 255, 0.5);
         }
-
         .custom-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px 18px;
             margin: 12px 0 14px;
-            text-align: left
+            text-align: left;
         }
         .custom-grid .custom-item {
             display: flex;
             flex-direction: column;
-            gap: 4px
+            gap: 4px;
         }
         .custom-grid .custom-item label {
             font-size: 11px;
             font-weight: 500;
             color: rgba(255, 255, 255, 0.5);
             text-transform: uppercase;
-            letter-spacing: .05em;
+            letter-spacing: 0.05em;
             display: flex;
             align-items: center;
-            gap: 6px
+            gap: 6px;
         }
         .custom-grid .custom-item input[type="color"] {
             width: 100%;
@@ -923,7 +913,7 @@
             border-radius: 8px;
             background: transparent;
             padding: 2px;
-            cursor: pointer
+            cursor: pointer;
         }
         .custom-grid .custom-item input[type="range"] {
             width: 100%;
@@ -932,7 +922,7 @@
             height: 4px;
             border-radius: 2px;
             -webkit-appearance: none;
-            appearance: none
+            appearance: none;
         }
         .custom-grid .custom-item input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
@@ -941,19 +931,19 @@
             border-radius: 50%;
             background: #6fcbff;
             cursor: pointer;
-            border: 2px solid #0a0e1a
+            border: 2px solid #0a0e1a;
         }
         .custom-grid .custom-item .range-val {
             font-size: 11px;
             color: rgba(255, 255, 255, 0.3);
             text-align: right;
-            font-variant-numeric: tabular-nums
+            font-variant-numeric: tabular-nums;
         }
         .style-selector {
             display: flex;
             gap: 6px;
             flex-wrap: wrap;
-            margin-top: 2px
+            margin-top: 2px;
         }
         .style-btn {
             padding: 4px 12px;
@@ -964,17 +954,17 @@
             font-size: 11px;
             font-weight: 500;
             cursor: pointer;
-            transition: all .2s ease;
-            font-family: inherit
+            transition: all 0.2s ease;
+            font-family: inherit;
         }
         .style-btn:hover {
             background: rgba(255, 255, 255, 0.08);
-            color: #fff
+            color: #fff;
         }
         .style-btn.active {
             background: rgba(111, 203, 255, 0.12);
             border-color: #6fcbff;
-            color: #6fcbff
+            color: #6fcbff;
         }
         .custom-preview {
             width: 100%;
@@ -987,9 +977,8 @@
             align-items: center;
             justify-content: center;
             position: relative;
-            overflow: hidden
+            overflow: hidden;
         }
-
         .achievement-toast {
             position: fixed;
             top: 120px;
@@ -1028,8 +1017,6 @@
             color: #6fcbff;
             margin-top: 4px;
         }
-
-        /* Boss health bar */
         #bossHealthContainer {
             position: fixed;
             top: 56px;
@@ -1040,10 +1027,10 @@
             display: none;
             width: 300px;
             max-width: 60vw;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0, 0, 0, 0.6);
             border-radius: 12px;
             padding: 4px 8px;
-            border: 1px solid rgba(255,80,80,0.4);
+            border: 1px solid rgba(255, 80, 80, 0.4);
             backdrop-filter: blur(4px);
         }
         #bossHealthContainer.active {
@@ -1055,76 +1042,75 @@
             border-radius: 8px;
             width: 100%;
             transition: width 0.15s ease;
-            box-shadow: 0 0 16px rgba(255,0,0,0.3);
+            box-shadow: 0 0 16px rgba(255, 0, 0, 0.3);
         }
         #bossHealthLabel {
             text-align: center;
             font-size: 10px;
-            color: rgba(255,255,255,0.6);
+            color: rgba(255, 255, 255, 0.6);
             margin-top: 2px;
             font-weight: 600;
             letter-spacing: 0.04em;
-            text-shadow: 0 0 8px rgba(0,0,0,0.8);
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
         }
-
         @media (max-width:500px) {
             .menu-card {
-                padding: 26px 18px 22px
+                padding: 26px 18px 22px;
             }
             .menu-card .logo h1 {
-                font-size: 20px
+                font-size: 20px;
             }
             .action-row .play-btn {
                 font-size: 14px;
-                padding: 12px 12px
+                padding: 12px 12px;
             }
             .action-row .config-btn {
-                flex: 0 0 48px
+                flex: 0 0 48px;
             }
             .hud-item {
                 font-size: 10px;
-                padding: 2px 8px
+                padding: 2px 8px;
             }
             #hud {
-                padding: 10px 10px
+                padding: 10px 10px;
             }
             .modal-card {
                 padding: 20px 14px 22px;
-                max-width: 95vw
+                max-width: 95vw;
             }
             .upgrade-grid {
                 grid-template-columns: 1fr 1fr;
-                gap: 6px
+                gap: 6px;
             }
             .shop-grid {
                 grid-template-columns: 1fr 1fr;
-                gap: 6px
+                gap: 6px;
             }
             #progressContainer {
                 width: 50vw;
-                top: 6px
+                top: 6px;
             }
             .go-card {
-                padding: 24px 18px 22px
+                padding: 24px 18px 22px;
             }
             .go-btn {
                 padding: 9px 14px;
-                font-size: 12px
+                font-size: 12px;
             }
             .custom-grid {
                 grid-template-columns: 1fr 1fr;
-                gap: 8px
+                gap: 8px;
             }
             .custom-grid .custom-item input[type="color"] {
-                height: 28px
+                height: 28px;
             }
             .difficulty-grid {
                 grid-template-columns: 1fr 1fr;
-                gap: 6px
+                gap: 6px;
             }
             .difficulty-btn {
                 font-size: 12px;
-                padding: 10px 6px
+                padding: 10px 6px;
             }
             .achievement-toast {
                 top: 100px;
@@ -1324,7 +1310,7 @@
         (function() {
             'use strict';
 
-            // ─── CUSTOM ICONS ──────────────────────────────────────────────────────
+            // ─── HELPERS ──────────────────────────────────────────────────────────
             function svgIcon(name, size) {
                 size = size || 24;
                 const M = {
@@ -1354,9 +1340,25 @@
                 return M[name] || '';
             }
 
+            function clampN(v, a, b) { return v < a ? a : (v > b ? b : v); }
+
+            function parseJSON(str, fb) { try { const v = JSON.parse(str); return (v === null || v === undefined) ? fb : v; } catch (e) { return fb; } }
+
+            function hexToRgb(hex) {
+                const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return r ? `${parseInt(r[1],16)},${parseInt(r[2],16)},${parseInt(r[3],16)}` : '255,150,60';
+            }
+
+            function getShip(idx) {
+                const s = SHIPS[idx];
+                return s || SHIPS[0];
+            }
+
+            // ─── DOM REFS ──────────────────────────────────────────────────────────
             const canvas = document.getElementById('simCanvas');
             const ctx = canvas.getContext('2d');
             const $ = id => document.getElementById(id);
+
             const menuOverlay = $('menuOverlay'),
                 playBtn = $('playBtn'),
                 configBtn = $('configBtn'),
@@ -1427,37 +1429,28 @@
                 bossHealthBar = $('bossHealthBar'),
                 bossHealthLabel = $('bossHealthLabel');
 
+            // ─── STORE ────────────────────────────────────────────────────────────
             const store = {
                 get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } },
                 set(k, v) { try { localStorage.setItem(k, String(v)); } catch (e) {} }
             };
 
-            function parseJSON(str, fb) { try { const v = JSON.parse(str); return v === null || v === undefined ? fb : v; } catch (
-                    e) { return fb; } }
-
-            // ─── DIFFICULTY SETTINGS ──────────────────────────────────────────────
+            // ─── DIFFICULTIES ──────────────────────────────────────────────────────
             const DIFFICULTIES = {
                 toy: { label: 'Toy', speedMult: 0.5, astMult: 0.4, hazardMult: 0.3, extraLives: 3, coinBonus: 2 },
                 easy: { label: 'Easy', speedMult: 0.7, astMult: 0.6, hazardMult: 0.6, extraLives: 1, coinBonus: 1 },
                 normal: { label: 'Normal', speedMult: 1.0, astMult: 1.0, hazardMult: 1.0, extraLives: 0, coinBonus: 0 },
                 hard: { label: 'Hard', speedMult: 1.25, astMult: 1.3, hazardMult: 1.2, extraLives: 0, coinBonus: 0 },
                 extreme: { label: 'Extreme', speedMult: 1.5, astMult: 1.6, hazardMult: 1.5, extraLives: 0, coinBonus: 0 },
-                impossible: { label: 'Impossible', speedMult: 2.0, astMult: 2.0, hazardMult: 1.8, extraLives: 0,
-                    coinBonus: 0 }
+                impossible: { label: 'Impossible', speedMult: 2.0, astMult: 2.0, hazardMult: 1.8, extraLives: 0, coinBonus: 0 }
             };
 
             let currentDifficulty = 'normal';
             let selectedDifficulty = 'normal';
 
-            // ─── CUSTOMIZATION STATE ──────────────────────────────────────────────
-            const CUSTOM_DEFAULTS = {
-                hull: '#c9d4e2',
-                accent: '#6fcbff',
-                trail: '#ff9640',
-                aura: '#6fcbff',
-                auraIntensity: 0.5,
-                bodyStyle: 0
-            };
+            // ─── CUSTOMIZATION ────────────────────────────────────────────────────
+            const CUSTOM_DEFAULTS = { hull: '#c9d4e2', accent: '#6fcbff', trail: '#ff9640', aura: '#6fcbff', auraIntensity: 0.5,
+                bodyStyle: 0 };
 
             let custom = {
                 hull: store.get('custom_hull', CUSTOM_DEFAULTS.hull),
@@ -1477,57 +1470,24 @@
                 store.set('custom_bodyStyle', String(custom.bodyStyle));
             }
 
-            function loadCustomToUI() {
-                hullColor.value = custom.hull;
-                accentColor.value = custom.accent;
-                trailColor.value = custom.trail;
-                auraColor.value = custom.aura;
-                auraIntensity.value = Math.round(custom.auraIntensity * 100);
-                auraIntensityVal.textContent = Math.round(custom.auraIntensity * 100) + '%';
-                styleBtns.forEach(b => {
-                    b.classList.toggle('active', parseInt(b.dataset.style) === custom.bodyStyle);
-                });
-                updatePreview();
-            }
-
-            function updatePreview() {
-                const h = custom.hull,
-                    a = custom.accent,
-                    t = custom.trail,
-                    au = custom.aura;
-                const style = custom.bodyStyle;
-                let shape = '';
-                switch (style) {
-                    case 0:
-                        shape = 'polygon(50% 0%, 85% 35%, 90% 65%, 70% 85%, 30% 85%, 10% 65%, 15% 35%)';
-                        break;
-                    case 1:
-                        shape = 'polygon(50% 0%, 75% 30%, 95% 50%, 80% 80%, 50% 95%, 20% 80%, 5% 50%, 25% 30%)';
-                        break;
-                    case 2:
-                        shape = 'polygon(50% 0%, 80% 15%, 95% 45%, 85% 75%, 55% 90%, 45% 90%, 15% 75%, 5% 45%, 20% 15%)';
-                        break;
-                    case 3:
-                        shape = 'polygon(50% 0%, 75% 30%, 80% 60%, 70% 85%, 30% 85%, 20% 60%, 25% 30%)';
-                        break;
-                    default:
-                        shape = 'polygon(50% 0%, 85% 35%, 90% 65%, 70% 85%, 30% 85%, 10% 65%, 15% 35%)';
-                }
-                customPreview.innerHTML =
-                    `<svg width="60" height="60" viewBox="0 0 60 60">
-                        <defs>
-                            <radialGradient id="previewAura" cx="50%" cy="50%" r="50%">
-                                <stop offset="0%" stop-color="${au}" stop-opacity="${0.3 + 0.5 * custom.auraIntensity}"/>
-                                <stop offset="100%" stop-color="${au}" stop-opacity="0"/>
-                            </radialGradient>
-                        </defs>
-                        <circle cx="30" cy="30" r="28" fill="url(#previewAura)"/>
-                        <polygon points="${shape}" fill="${h}" stroke="${a}" stroke-width="1.5"/>
-                        <circle cx="30" cy="26" r="4" fill="${a}" opacity="0.6"/>
-                        <rect x="24" y="38" width="12" height="4" rx="1" fill="${t}" opacity="0.7"/>
-                        <rect x="26" y="42" width="8" height="3" rx="1" fill="${t}" opacity="0.4"/>
-                    </svg>`;
-            }
+            // ─── SHIPS ────────────────────────────────────────────────────────────
+            const SHIPS = [
+                { id: 'scout', name: 'Scout', cost: 0, desc: 'Balanced platform', speedMult: 1.00, shieldBonus: 0,
+                    hull: '#c9d4e2', accent: '#6fcbff', w: 12, hitR: 11, icon: 'rocket' },
+                { id: 'cleaner', name: 'Cleaner', cost: 50, desc: 'Auto-magnet · collects data from afar',
+                    speedMult: 1.00, shieldBonus: 0, hull: '#b8d4e8', accent: '#7ddf9a', w: 11, hitR: 10,
+                    icon: 'rocket', cleaner: true },
+                { id: 'tank', name: 'Tank', cost: 100, desc: '+1 integrity · −15% speed', speedMult: 0.85,
+                    shieldBonus: 1, hull: '#cbd8c6', accent: '#7ddc9a', w: 15, hitR: 12, icon: 'shield' },
+                { id: 'stealth', name: 'Stealth', cost: 150, desc: '+30% speed · slim profile', speedMult: 1.30,
+                    shieldBonus: 0, hull: '#596073', accent: '#a78bfa', w: 9, hitR: 9, icon: 'rocket' },
+                { id: 'nexus', name: 'Nexus', cost: 250, desc: '+20% speed · +1 integrity', speedMult: 1.20,
+                    shieldBonus: 1, hull: '#d9d2f0', accent: '#c4a5ff', w: 13, hitR: 11, glow: true, icon: 'rocket' },
+                { id: 'vestal', name: 'Warship Vestal', cost: 350,
+                    desc: 'Auto-fires missiles every 2.5s at the nearest asteroid · blast radius 130', speedMult: 1.10,
+                    shieldBonus: 0, hull: '#2a3a4a', accent: '#ff6b4a', w: 14, hitR: 11, icon: 'rocket', vestal: true,
+                    missileCooldown: 3.0 }
+            ];
 
             // ─── ACHIEVEMENTS ──────────────────────────────────────────────────────
             const ACHIEVEMENTS = [
@@ -1554,6 +1514,18 @@
                     reward: 200 }
             ];
 
+            // ─── PERSISTENT STATE ──────────────────────────────────────────────────
+            let sessionCount = parseInt(store.get('fps_sessions', '0')) || 0;
+            let bestScore = parseInt(store.get('fps_best', '0')) || 0;
+            let sensitivity = parseFloat(store.get('fps_sensitivity', '1.0')) || 1.0;
+            let muted = store.get('fps_muted', '0') === '1';
+            let totalCoins = parseInt(store.get('fps_coins', '0')) || 0;
+            let totalFlown = parseInt(store.get('fps_total_dist', '0')) || 0;
+            let equippedShip = Math.min(parseInt(store.get('fps_equipped_ship', '0')) || 0, SHIPS.length - 1);
+            let unlockedShips = parseJSON(store.get('fps_unlocked_ships', '[0]'), [0]);
+            if (!Array.isArray(unlockedShips) || !unlockedShips.length) unlockedShips = [0];
+            let dailyMissions = parseJSON(store.get('fps_daily_missions', '{}'), {});
+
             let achProgress = {};
             let totalAsteroidsDestroyed = 0;
             let totalCoinsCollected = 0;
@@ -1571,9 +1543,7 @@
                 maxComboEver = saved.maxComboEver || 0;
                 bossDefeatedCount = saved.bossDefeatedCount || 0;
                 joblessUnlocked = saved.joblessUnlocked || false;
-                ACHIEVEMENTS.forEach(a => {
-                    if (!(a.id in achProgress)) achProgress[a.id] = 0;
-                });
+                ACHIEVEMENTS.forEach(a => { if (!(a.id in achProgress)) achProgress[a.id] = 0; });
             }
 
             function saveAchievements() {
@@ -1588,35 +1558,6 @@
                 }));
             }
 
-            function checkAchievements() {
-                let unlocked = [];
-                ACHIEVEMENTS.forEach(a => {
-                    if (achProgress[a.id] >= a.target) return;
-                    let completed = false;
-                    if (a.id.startsWith('destroy_')) {
-                        if (totalAsteroidsDestroyed >= a.target) completed = true;
-                    } else if (a.id.startsWith('coins_')) {
-                        if (totalCoinsCollected >= a.target) completed = true;
-                    } else if (a.id.startsWith('dist_')) {
-                        if (maxDistanceEver >= a.target) completed = true;
-                    } else if (a.id.startsWith('combo_')) {
-                        if (maxComboEver >= a.target) completed = true;
-                    } else if (a.id === 'boss_defeated') {
-                        if (bossDefeatedCount >= a.target) completed = true;
-                    } else if (a.id === 'jobless') {
-                        if (joblessUnlocked) completed = true;
-                    }
-                    if (completed) {
-                        achProgress[a.id] = a.target;
-                        unlocked.push(a);
-                        totalCoins += a.reward;
-                        saveAchievements();
-                        showAchievement(a);
-                    }
-                });
-                if (unlocked.length) updateMenuStats();
-            }
-
             let achToastTimeout = null;
 
             function showAchievement(ach) {
@@ -1629,30 +1570,33 @@
                 sim.shake = 12;
                 Sfx.tone(1200, 0.3, 'square', 0.2, 0);
                 Sfx.tone(1600, 0.3, 'square', 0.15, 0, 0.1);
-
                 clearTimeout(achToastTimeout);
-                achToastTimeout = setTimeout(() => {
-                    achievementToast.classList.remove('show');
-                }, 3500);
+                achToastTimeout = setTimeout(() => achievementToast.classList.remove('show'), 3500);
             }
 
-            // ─── STORE ─────────────────────────────────────────────────────────────
-            let sessionCount = parseInt(store.get('fps_sessions', '0')) || 0;
-            let bestScore = parseInt(store.get('fps_best', '0')) || 0;
-            let sensitivity = parseFloat(store.get('fps_sensitivity', '1.0')) || 1.0;
-            let muted = store.get('fps_muted', '0') === '1';
-            let totalCoins = parseInt(store.get('fps_coins', '0')) || 0;
-            let totalFlown = parseInt(store.get('fps_total_dist', '0')) || 0;
-            let equippedShip = Math.min(parseInt(store.get('fps_equipped_ship', '0')) || 0, 5);
-            let unlockedShips = parseJSON(store.get('fps_unlocked_ships', '[0]'), [0]);
-            if (!Array.isArray(unlockedShips) || !unlockedShips.length) unlockedShips = [0];
-            let dailyMissions = parseJSON(store.get('fps_daily_missions', '{}'), {});
+            function checkAchievements() {
+                let unlocked = [];
+                ACHIEVEMENTS.forEach(a => {
+                    if (achProgress[a.id] >= a.target) return;
+                    let done = false;
+                    if (a.id.startsWith('destroy_')) { if (totalAsteroidsDestroyed >= a.target) done = true; } else if (a
+                        .id.startsWith('coins_')) { if (totalCoinsCollected >= a.target) done = true; } else if (a.id
+                        .startsWith('dist_')) { if (maxDistanceEver >= a.target) done = true; } else if (a.id
+                        .startsWith('combo_')) { if (maxComboEver >= a.target) done = true; } else if (a.id ===
+                        'boss_defeated') { if (bossDefeatedCount >= a.target) done = true; } else if (a.id ===
+                        'jobless') { if (joblessUnlocked) done = true; }
+                    if (done) {
+                        achProgress[a.id] = a.target;
+                        unlocked.push(a);
+                        totalCoins += a.reward;
+                        saveAchievements();
+                        showAchievement(a);
+                    }
+                });
+                if (unlocked.length) updateMenuStats();
+            }
 
-            loadAchievements();
-
-            function getExpMult() { return 1 + Math.min(0.6, totalFlown / 9000); }
-
-            // ─── ZONES & DEEPSPACE ──────────────────────────────────────────────────
+            // ─── ZONES ─────────────────────────────────────────────────────────────
             const BASE_ZONES = [
                 { name: 'Earth', goal: 500, speed: 1.00, astInt: 1.35, hue: 205, kind: 'earth', hazards: ['ast'] },
                 { name: 'Mars', goal: 650, speed: 1.22, astInt: 1.12, hue: 14, kind: 'rocky', hazards: ['ast', 'meteor'],
@@ -1673,7 +1617,6 @@
                     hazards: ['ast', 'meteor', 'comet'], hint: 'stellar flares' }
             ];
 
-            // Deepspace generator
             function getZone(index) {
                 if (index < BASE_ZONES.length) return BASE_ZONES[index];
                 const level = index - BASE_ZONES.length + 1;
@@ -1681,66 +1624,14 @@
                 const speed = Math.min(6.0, 3.4 + 0.08 * (level - 1));
                 const astInt = Math.max(0.15, 0.52 - 0.015 * (level - 1));
                 const hue = (285 + level * 12) % 360;
-                return {
-                    name: 'Deepspace ' + level,
-                    goal: goal,
-                    speed: speed,
-                    astInt: astInt,
-                    hue: hue,
-                    kind: 'deep',
-                    hazards: ['ast', 'meteor', 'comet', 'rad', 'ring', 'ice'],
-                    endless: true,
-                    hint: 'deep space frontier'
-                };
+                return { name: 'Deepspace ' + level, goal: goal, speed: speed, astInt: astInt, hue: hue, kind: 'deep',
+                    hazards: ['ast', 'meteor', 'comet', 'rad', 'ring', 'ice'], endless: true,
+                hint: 'deep space frontier' };
             }
 
             function zoneOf(i) { return getZone(i); }
 
-            // ─── SHIPS ─────────────────────────────────────────────────────────────
-            const SHIPS = [
-                { id: 'scout', name: 'Scout', cost: 0, desc: 'Balanced platform', speedMult: 1.00, shieldBonus: 0,
-                    hull: '#c9d4e2', accent: '#6fcbff', w: 12, hitR: 11, icon: 'rocket' },
-                { id: 'cleaner', name: 'Cleaner', cost: 50, desc: 'Auto-magnet · collects data from afar',
-                    speedMult: 1.00, shieldBonus: 0, hull: '#b8d4e8', accent: '#7ddf9a', w: 11, hitR: 10,
-                    icon: 'rocket', cleaner: true },
-                { id: 'tank', name: 'Tank', cost: 100, desc: '+1 integrity · −15% speed', speedMult: 0.85,
-                    shieldBonus: 1, hull: '#cbd8c6', accent: '#7ddc9a', w: 15, hitR: 12, icon: 'shield' },
-                { id: 'stealth', name: 'Stealth', cost: 150, desc: '+30% speed · slim profile', speedMult: 1.30,
-                    shieldBonus: 0, hull: '#596073', accent: '#a78bfa', w: 9, hitR: 9, icon: 'rocket' },
-                { id: 'nexus', name: 'Nexus', cost: 250, desc: '+20% speed · +1 integrity', speedMult: 1.20,
-                    shieldBonus: 1, hull: '#d9d2f0', accent: '#c4a5ff', w: 13, hitR: 11, glow: true, icon: 'rocket' },
-                { id: 'vestal', name: 'Warship Vestal', cost: 350,
-                    desc: 'Auto-fires missiles every 2.5s at the nearest asteroid · blast radius 130', speedMult: 1.10,
-                    shieldBonus: 0, hull: '#2a3a4a', accent: '#ff6b4a', w: 14, hitR: 11,
-                    icon: 'rocket', vestal: true, missileCooldown: 3.0 }
-            ];
-
-            const UPGRADE_POOL = [
-                { id: 'shield', name: 'Integrity Cell', desc: '+1 max integrity', icon: 'shield',
-                    avail: () => 1 + sim.up.shields + (SHIPS[equippedShip].shieldBonus || 0) < 4 },
-                { id: 'speed', name: 'Agility', desc: '+6% speed & control', icon: 'rocket',
-                avail: () => sim.up.speed < 6 },
-                { id: 'magnet', name: 'Magnet Range', desc: '+50% collection radius', icon: 'coin',
-                    avail: () => sim.up.magnet < 4 },
-                { id: 'multiplier', name: 'Warp Multiplier', desc: '+0.2× range rate', icon: 'star',
-                    avail: () => sim.up.mult < 2 },
-                { id: 'slow', name: 'Slow Field', desc: 'Near misses dilate time', icon: 'bolt',
-                    avail: () => !sim.up.slow },
-                { id: 'refill', name: 'Field Repair', desc: 'Integrity + 15 data points', icon: 'shield',
-                    avail: () => true }
-            ];
-            const MISSION_POOL = [
-                { id: 'coins25', name: 'Collect 25 data points', goal: 25, key: 'coins', reward: 20, icon: 'coin' },
-                { id: 'near15', name: 'Graze 15 hazards', goal: 15, key: 'near', reward: 20, icon: 'comet' },
-                { id: 'reachJup', name: 'Reach Jupiter', goal: 2, key: 'reach', reward: 25, icon: 'planet' },
-                { id: 'reachSat', name: 'Reach Saturn', goal: 3, key: 'reach', reward: 30, icon: 'planet' },
-                { id: 'dist600', name: 'Travel 600 in one run', goal: 600, key: 'runDist', reward: 30, icon: 'rocket' },
-                { id: 'flow6', name: 'Reach Sync ×6', goal: 6, key: 'flow', reward: 20, icon: 'bolt' },
-                { id: 'coins50', name: 'Collect 50 data points', goal: 50, key: 'coins', reward: 35, icon: 'coin' },
-                { id: 'pups3', name: 'Grab 3 power-ups', goal: 3, key: 'pups', reward: 15, icon: 'star' },
-                { id: 'bosskill', name: 'Defeat the Alien Warship', goal: 1, key: 'bosskill', reward: 40, icon: 'boss' }
-            ];
-
+            // ─── SOUND ─────────────────────────────────────────────────────────────
             const Sfx = {
                 ctx: null,
                 master: null,
@@ -1864,14 +1755,13 @@
                     [523, 659, 784, 1046].forEach((f, i) => this.tone(f, 0.3, 'sine', 0.08, 0, i * 0.12)); }
             };
 
+            // ─── CANVAS SETUP ─────────────────────────────────────────────────────
             let W = 0,
                 H = 0,
                 vigCanvas = null;
             let stars = [],
                 nebulas = [];
             const SPEEDF = [0.12, 0.30, 0.60];
-
-            function clampN(v, a, b) { return v < a ? a : (v > b ? b : v); }
 
             function initStarsAndNebulas() {
                 const count = Math.min(1200, Math.floor((W * H) / 1800));
@@ -1891,14 +1781,9 @@
                 }
                 nebulas = [];
                 for (let i = 0; i < 5; i++) {
-                    nebulas.push({
-                        x: Math.random() * W,
-                        y: Math.random() * H,
-                        r: Math.random() * 380 + 240,
-                        ho: (Math.random() - 0.5) * 130,
-                        ph: Math.random() * 6.28,
-                        alpha: 0.04 + Math.random() * 0.06
-                    });
+                    nebulas.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 380 + 240,
+                        ho: (Math.random() - 0.5) * 130, ph: Math.random() * 6.28, alpha: 0.04 + Math.random() *
+                            0.06 });
                 }
             }
 
@@ -1941,6 +1826,7 @@
             }
             window.addEventListener('resize', resizeCanvas);
 
+            // ─── SIM STATE ────────────────────────────────────────────────────────
             const sim = {
                 state: 'menu',
                 time: 0,
@@ -2008,21 +1894,23 @@
                 isDeepspace: false
             };
 
+            // ─── HELPERS: SHIP ──────────────────────────────────────────────────────
+            function shipHitR() { return (getShip(equippedShip).hitR || 11); }
+
+            function shipIsVestal() { return !!getShip(equippedShip).vestal; }
+
+            function shipIsCleaner() { return !!getShip(equippedShip).cleaner; }
+
+            function shipMissileCooldown() { return getShip(equippedShip).missileCooldown || 3.0; }
+
+            // ─── RECALC ────────────────────────────────────────────────────────────
             function recalcStats() {
-                const ship = SHIPS[equippedShip] || SHIPS[0];
+                const ship = getShip(equippedShip);
                 sim.speedFactor = (ship.speedMult || 1) * (1 + 0.06 * sim.up.speed) * sim.diffSpeedMult;
                 sim.maxLives = Math.min(4, 1 + sim.up.shields + (ship.shieldBonus || 0)) + sim.diffExtraLives;
                 sim.magnetRange = 110 * (1 + 0.5 * sim.up.magnet);
                 sim.distMult = sim.up.mult;
             }
-
-            function shipHitR() { return (SHIPS[equippedShip] || SHIPS[0]).hitR || 11; }
-
-            function shipIsVestal() { return !!(SHIPS[equippedShip] || SHIPS[0]).vestal; }
-
-            function shipIsCleaner() { return !!(SHIPS[equippedShip] || SHIPS[0]).cleaner; }
-
-            function shipMissileCooldown() { return (SHIPS[equippedShip] || SHIPS[0]).missileCooldown || 3.0; }
 
             function saveProgress() {
                 store.set('fps_coins', totalCoins);
@@ -2036,18 +1924,20 @@
                 saveAchievements();
             }
 
-            function slowmo(f, d) { sim.slowmoF = f;
-                sim.slowmoT = Math.max(sim.slowmoT, d); }
+            function getExpMult() { return 1 + Math.min(0.6, totalFlown / 9000); }
 
+            // ─── KEYS ──────────────────────────────────────────────────────────────
             const keys = { l: false, r: false, u: false, d: false };
 
             function setTarget(x, y) {
                 sim.rocket.tx = clampN(x, 22, W - 22);
                 sim.rocket.ty = clampN(y - 36, H * 0.3, H - 90);
             }
+
             canvas.addEventListener('pointermove', e => { if (sim.state === 'playing') setTarget(e.clientX, e.clientY); });
             canvas.addEventListener('pointerdown', e => { Sfx.init();
                 Sfx.resume(); if (sim.state === 'playing') setTarget(e.clientX, e.clientY); });
+
             window.addEventListener('keydown', e => {
                 const k = e.key;
                 if (k === 'ArrowLeft' || k === 'a' || k === 'A') { keys.l = true;
@@ -2058,10 +1948,8 @@
                     e.preventDefault(); }
                 if (k === 'ArrowDown' || k === 's' || k === 'S') { keys.d = true;
                     e.preventDefault(); }
-                if (k === ' ') {
-                    e.preventDefault();
-                    fireBullet();
-                }
+                if (k === ' ') { e.preventDefault();
+                    fireBullet(); }
                 if (k === 'Escape') {
                     if (sim.state === 'playing') pauseGame();
                     else if (sim.state === 'paused') resumeGame();
@@ -2083,6 +1971,7 @@
             document.addEventListener('visibilitychange', () => { if (document.hidden && sim.state === 'playing')
                     pauseGame(); });
 
+            // ─── ROCK VERTICES ────────────────────────────────────────────────────
             function rockVerts(r) {
                 const vs = [],
                     n = 8;
@@ -2090,6 +1979,7 @@
                 return vs;
             }
 
+            // ─── SPAWNERS ──────────────────────────────────────────────────────────
             function spawnAsteroid(b, e, r) {
                 const rad = 12 + Math.random() * 22;
                 const x = 30 + Math.random() * (W - 60);
@@ -2123,6 +2013,7 @@
                     });
                 }
             }
+
             const SPECIAL = {
                 meteor: { iv: 7, spawn(b) {
                         const fromLeft = Math.random() < 0.5;
@@ -2249,6 +2140,7 @@
                     sim.pupT = 12 + Math.random() * 7; }
             }
 
+            // ─── PARTICLES & TEXT ─────────────────────────────────────────────────
             function burst(x, y, color, n, speed) {
                 if (sim.parts.length > 520) sim.parts.splice(0, sim.parts.length - 520);
                 for (let i = 0; i < n; i++) {
@@ -2295,6 +2187,7 @@
                 }
             }
 
+            // ─── DAMAGE / DEATH ────────────────────────────────────────────────────
             const NEARMISSABLE = { ast: 1, shard: 1, ring: 1, meteor: 1, comet: 1 };
 
             function damage() {
@@ -2347,8 +2240,12 @@
                     '#6fcbff');
             }
 
+            function slowmo(f, d) { sim.slowmoF = f;
+                sim.slowmoT = Math.max(sim.slowmoT, d); }
+
+            // ─── COLLECTIBLES ──────────────────────────────────────────────────────
             function collectCoin(c) {
-                let bonus = sim.diffCoinBonus || 0;
+                const bonus = sim.diffCoinBonus || 0;
                 totalCoins += 1 + bonus;
                 totalCoinsCollected += 1 + bonus;
                 sim.runCoins += 1 + bonus;
@@ -2381,6 +2278,7 @@
                     '167,139,250'), 10, 220);
             }
 
+            // ─── ROCKET MOVEMENT ──────────────────────────────────────────────────
             function moveRocket(sdt) {
                 const rk = sim.rocket;
                 const ks = 760 * sdt;
@@ -2418,12 +2316,7 @@
                 }
             }
 
-            function hexToRgb(hex) {
-                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-                return result ? `${parseInt(result[1],16)},${parseInt(result[2],16)},${parseInt(result[3],16)}` :
-                    '255,150,60';
-            }
-
+            // ─── STARS / NEBULAS ──────────────────────────────────────────────────
             function updateStars(dt, scroll) {
                 for (const s of stars) {
                     s.y += scroll * SPEEDF[s.layer - 1] * dt;
@@ -2433,7 +2326,6 @@
             }
 
             function updateNebulas(dt, scroll) {
-                // For deepspace, reduce nebula opacity
                 const alphaMult = sim.isDeepspace ? 0.2 : 1.0;
                 for (const n of nebulas) {
                     n.y += scroll * 0.04 * dt;
@@ -2442,8 +2334,7 @@
                 }
             }
 
-            // ─── BOSS FUNCTIONS ──────────────────────────────────────────────────
-
+            // ─── BOSS ──────────────────────────────────────────────────────────────
             function spawnBoss() {
                 if (sim.boss) return;
                 const x = W / 2 + (Math.random() - 0.5) * 300;
@@ -2479,48 +2370,33 @@
             }
 
             function updateBossHealthBar() {
-                if (!sim.boss) {
-                    bossHealthContainer.classList.remove('active');
-                    return;
-                }
+                if (!sim.boss) { bossHealthContainer.classList.remove('active'); return; }
                 const pct = Math.max(0, (sim.boss.hp / sim.boss.maxHp) * 100);
                 bossHealthBar.style.width = pct + '%';
                 bossHealthLabel.textContent = 'ALIEN WARSHIP [' + Math.floor(sim.boss.hp) + '/' + sim.boss.maxHp + ']';
-                if (pct < 30) {
-                    bossHealthBar.style.background = '#ff6b6b';
-                } else if (pct < 60) {
-                    bossHealthBar.style.background = '#ffa94d';
-                } else {
-                    bossHealthBar.style.background = '#ff3b3b';
-                }
+                bossHealthBar.style.background = pct < 30 ? '#ff6b6b' : pct < 60 ? '#ffa94d' : '#ff3b3b';
             }
 
             function updateBoss(sdt) {
                 if (!sim.boss || sim.boss.state === 'dying') return;
-
                 const boss = sim.boss;
                 if (boss.state === 'entering') {
                     boss.timer += sdt;
                     boss.y += (100 - boss.y) * 0.06;
-                    if (boss.timer > 1.0) {
-                        boss.state = 'fighting';
+                    if (boss.timer > 1.0) { boss.state = 'fighting';
                         boss.timer = 0;
                         boss.phase = 0;
                         boss.shootTimer = 1.5 + Math.random() * 1.5;
-                        boss.moveTimer = 0;
-                    }
+                        boss.moveTimer = 0; }
                     updateBossHealthBar();
                     return;
                 }
-
                 boss.timer += sdt;
                 boss.moveTimer += sdt;
-
                 boss.x += Math.sin(boss.timer * 0.6 + boss.phase) * 60 * sdt;
                 boss.y += Math.cos(boss.timer * 0.4 + boss.phase * 1.2) * 40 * sdt;
                 boss.x = clampN(boss.x, 60, W - 60);
                 boss.y = clampN(boss.y, 60, H * 0.4);
-
                 boss.shootTimer -= sdt;
                 if (boss.shootTimer <= 0) {
                     const angleStep = 0.7 + 0.1 * (sim.zone / 10);
@@ -2540,10 +2416,8 @@
                         });
                     }
                     Sfx.bossShoot();
-                    boss.shootTimer = 1.8 - Math.min(0.8, sim.zone * 0.03);
-                    if (boss.shootTimer < 0.4) boss.shootTimer = 0.4;
+                    boss.shootTimer = Math.max(0.4, 1.8 - Math.min(0.8, sim.zone * 0.03));
                 }
-
                 if (Math.random() < sdt * (0.15 + sim.zone * 0.005)) {
                     const side = Math.random() < 0.5 ? -1 : 1;
                     const x = side < 0 ? -30 : W + 30;
@@ -2562,7 +2436,6 @@
                         nm: false
                     });
                 }
-
                 updateBossHealthBar();
             }
 
@@ -2584,14 +2457,13 @@
                             burst(b.x, b.y, '255,100,100', 10, 200);
                         }
                         sim.bossBullets.splice(i, 1);
-                        continue;
                     }
                 }
             }
 
-            function bossHit(damage) {
+            function bossHit(damageAmt) {
                 if (!sim.boss || sim.boss.state !== 'fighting') return;
-                sim.boss.hp -= damage;
+                sim.boss.hp -= damageAmt;
                 Sfx.bossHit();
                 sim.shake = Math.max(sim.shake, 6);
                 burst(sim.boss.x, sim.boss.y, '255,200,100', 6, 180);
@@ -2616,18 +2488,15 @@
                     checkAchievements();
                     saveProgress();
                     setTimeout(() => {
-                        if (sim.boss) {
-                            sim.boss = null;
+                        if (sim.boss) { sim.boss = null;
                             bossHealthContainer.classList.remove('active');
-                            sim.bossSpawnDist = sim.dist + 800 + Math.random() * 400;
-                        }
+                            sim.bossSpawnDist = sim.dist + 800 + Math.random() * 400; }
                     }, 2000);
                     sim.bossDefeated = true;
                 }
             }
 
-            // ─── UPDATE HAZARDS (with boss collision) ────────────────────────────
-
+            // ─── HAZARDS ──────────────────────────────────────────────────────────
             function updateHazards(sdt) {
                 const rk = sim.rocket,
                     hr = shipHitR();
@@ -2658,9 +2527,7 @@
                         burst(h.x, h.y, '255,160,80', 6, 200);
                         sim.hazards.splice(i, 1);
                         autoLaunchMissile(h.x, h.y);
-                        if (sim.invincible <= 0 && sim.state === 'playing') {
-                            damage();
-                        }
+                        if (sim.invincible <= 0 && sim.state === 'playing') damage();
                         continue;
                     } else if (!h.nm && NEARMISSABLE[h.type]) {
                         const win = h.type === 'comet' ? 48 : (h.type === 'ast' ? 36 : 30);
@@ -2685,6 +2552,7 @@
                 }
             }
 
+            // ─── MISSILES ──────────────────────────────────────────────────────────
             function autoLaunchMissile(x, y) {
                 if (sim.autoMissileCooldown > 0) return;
                 let nearest = null,
@@ -2708,7 +2576,6 @@
                     sin = Math.sin(angleOff);
                 const finalVx = vx * cos - vy * sin;
                 const finalVy = vx * sin + vy * cos;
-
                 sim.missiles.push({
                     x: x + (dx / len) * 20,
                     y: y + (dy / len) * 20,
@@ -2724,35 +2591,6 @@
                 sim.autoMissileCooldown = 0.3;
                 Sfx.missileLaunch();
                 burst(x, y, '255,200,100', 4, 100);
-            }
-
-            function updateClouds(sdt) {
-                let inside = false;
-                for (let i = sim.clouds.length - 1; i >= 0; i--) {
-                    const c = sim.clouds[i];
-                    c.t += sdt;
-                    c.y += c.vy * sdt;
-                    c.x += Math.sin(c.t * 0.6 + c.seed) * 26 * sdt;
-                    const d = Math.hypot(c.x - sim.rocket.x, c.y - sim.rocket.y);
-                    if (d < c.r * 0.78 && sim.state === 'playing') {
-                        inside = true;
-                        sim.rad += sdt * 1.05;
-                        sim.radTickT -= sdt;
-                        if (sim.radTickT <= 0) { Sfx.tick();
-                            sim.radTickT = 0.28; }
-                        if (sim.rad >= 1) {
-                            burst(c.x, c.y, '140,255,168', 14, 260);
-                            sim.clouds.splice(i, 1);
-                            sim.rad = 0;
-                            if (sim.invincible <= 0 && sim.state === 'playing') {
-                                damage();
-                            }
-                            continue;
-                        }
-                    }
-                    if (c.y > H + 220) sim.clouds.splice(i, 1);
-                }
-                if (!inside) sim.rad = Math.max(0, sim.rad - sdt * 1.5);
             }
 
             function updateMissiles(sdt) {
@@ -2779,33 +2617,27 @@
                     let explode = false;
                     if (m.life <= 0) explode = true;
                     if (m.x < -50 || m.x > W + 50 || m.y < -50 || m.y > H + 50) explode = true;
-                    const distToTarget = Math.hypot(m.x - m.targetX, m.y - m.targetY);
-                    if (distToTarget < 40) explode = true;
+                    if (Math.hypot(m.x - m.targetX, m.y - m.targetY) < 40) explode = true;
                     if (explode && !m.exploded) {
                         m.exploded = true;
                         const blastRadius = m.radius;
                         let destroyed = 0;
                         for (let j = sim.hazards.length - 1; j >= 0; j--) {
                             const h = sim.hazards[j];
-                            if (h.type === 'ast') {
-                                const d = Math.hypot(m.x - h.x, m.y - h.y);
-                                if (d < blastRadius) {
-                                    burst(h.x, h.y, '255,200,120', 16, 300);
-                                    totalCoins += 1 + sim.diffCoinBonus;
-                                    totalCoinsCollected += 1 + sim.diffCoinBonus;
-                                    sim.runCoins += 1 + sim.diffCoinBonus;
-                                    totalAsteroidsDestroyed++;
-                                    destroyed++;
-                                    sim.hazards.splice(j, 1);
-                                    autoLaunchMissile(h.x, h.y);
-                                }
+                            if (h.type === 'ast' && Math.hypot(m.x - h.x, m.y - h.y) < blastRadius) {
+                                burst(h.x, h.y, '255,200,120', 16, 300);
+                                totalCoins += 1 + sim.diffCoinBonus;
+                                totalCoinsCollected += 1 + sim.diffCoinBonus;
+                                sim.runCoins += 1 + sim.diffCoinBonus;
+                                totalAsteroidsDestroyed++;
+                                destroyed++;
+                                sim.hazards.splice(j, 1);
+                                autoLaunchMissile(h.x, h.y);
                             }
                         }
-                        if (sim.boss && sim.boss.state === 'fighting') {
-                            const db = Math.hypot(m.x - sim.boss.x, m.y - sim.boss.y);
-                            if (db < blastRadius + 40) {
-                                bossHit(15 + sim.zone * 2);
-                            }
+                        if (sim.boss && sim.boss.state === 'fighting' && Math.hypot(m.x - sim.boss.x, m.y - sim.boss
+                                .y) < blastRadius + 40) {
+                            bossHit(15 + sim.zone * 2);
                         }
                         if (destroyed > 0) {
                             pushText(m.x, m.y - 40, '+' + destroyed + ' data', '#ffd700');
@@ -2835,109 +2667,7 @@
                             burst(m.x, m.y, '180,180,200', 8, 120);
                         }
                         sim.missiles.splice(i, 1);
-                        continue;
                     }
-                }
-            }
-
-            function fireBullet() {
-                if (sim.state !== 'playing' || sim.fireCooldown > 0) return;
-                const rk = sim.rocket;
-                const dx = rk.tx - rk.x,
-                    dy = rk.ty - rk.y;
-                const len = Math.hypot(dx, dy) || 1;
-                const speed = 600;
-                const vx = (dx / len) * speed;
-                const vy = (dy / len) * speed;
-                const tipX = rk.x + Math.cos(rk.tilt) * 20;
-                const tipY = rk.y + Math.sin(rk.tilt) * 20;
-                sim.bullets.push({
-                    x: tipX,
-                    y: tipY,
-                    vx: vx,
-                    vy: vy,
-                    life: 2.0,
-                    r: 3
-                });
-                sim.fireCooldown = 0.25;
-                Sfx.shoot();
-                burst(tipX, tipY, '255,255,200', 6, 120);
-            }
-
-            function updateBullets(sdt) {
-                if (sim.fireCooldown > 0) sim.fireCooldown -= sdt;
-                for (let i = sim.bullets.length - 1; i >= 0; i--) {
-                    const b = sim.bullets[i];
-                    b.x += b.vx * sdt;
-                    b.y += b.vy * sdt;
-                    b.life -= sdt;
-                    if (b.life <= 0) { sim.bullets.splice(i, 1); continue; }
-                    let hit = false;
-                    for (let j = sim.hazards.length - 1; j >= 0; j--) {
-                        const h = sim.hazards[j];
-                        if (h.type !== 'ast') continue;
-                        const d = Math.hypot(b.x - h.x, b.y - h.y);
-                        if (d < b.r + h.r) {
-                            if (h.r <= 15) {
-                                burst(h.x, h.y, '255,200,120', 14, 280);
-                                sim.hazards.splice(j, 1);
-                                totalCoins += 1 + sim.diffCoinBonus;
-                                totalCoinsCollected += 1 + sim.diffCoinBonus;
-                                sim.runCoins += 1 + sim.diffCoinBonus;
-                                totalAsteroidsDestroyed++;
-                                pushText(h.x, h.y - 20, '+1 data', '#ffd700');
-                                sim.flash = 0.15;
-                                sim.flashC = '255,240,200';
-                                Sfx.shoot();
-                                autoLaunchMissile(h.x, h.y);
-                                checkAchievements();
-                            }
-                            hit = true;
-                            break;
-                        }
-                    }
-                    if (!hit && sim.boss && sim.boss.state === 'fighting') {
-                        const db = Math.hypot(b.x - sim.boss.x, b.y - sim.boss.y);
-                        if (db < b.r + 25) {
-                            bossHit(5 + sim.up.shields * 2);
-                            hit = true;
-                            burst(b.x, b.y, '255,200,100', 8, 150);
-                        }
-                    }
-                    if (hit) sim.bullets.splice(i, 1);
-                }
-            }
-
-            function updateCoins(sdt) {
-                const rk = sim.rocket;
-                let attractR = sim.magnetT > 0 ? sim.magnetRange : 36;
-                if (shipIsCleaner()) {
-                    attractR = Math.max(attractR, 60 + 20 * sim.up.magnet);
-                }
-                for (let i = sim.coins.length - 1; i >= 0; i--) {
-                    const c = sim.coins[i];
-                    c.y += c.vy * sdt;
-                    c.x += Math.sin((c.phase += sdt * 3)) * 14 * sdt;
-                    const dx = rk.x - c.x,
-                        dy = rk.y - c.y,
-                        d = Math.hypot(dx, dy) || 1;
-                    if (d < attractR) {
-                        c.x += dx / d * 760 * sdt;
-                        c.y += dy / d * 760 * sdt;
-                    }
-                    if (d < 24 + shipHitR()) { collectCoin(c);
-                        sim.coins.splice(i, 1); } else if (c.y > H + 60) sim.coins.splice(i, 1);
-                }
-            }
-
-            function updatePups(sdt) {
-                const rk = sim.rocket;
-                for (let i = sim.pups.length - 1; i >= 0; i--) {
-                    const p = sim.pups[i];
-                    p.y += p.vy * sdt;
-                    p.t += sdt;
-                    if (Math.hypot(p.x - rk.x, p.y - rk.y) < 32) { applyPup(p);
-                        sim.pups.splice(i, 1); } else if (p.y > H + 60) sim.pups.splice(i, 1);
                 }
             }
 
@@ -2956,14 +2686,14 @@
                     }
                 }
                 if (nearest) {
-                    const dx = nearest.x - rk.x;
-                    const dy = nearest.y - rk.y;
+                    const dx = nearest.x - rk.x,
+                        dy = nearest.y - rk.y;
                     const len = Math.hypot(dx, dy) || 1;
                     const speed = 400;
-                    const vx = (dx / len) * speed;
-                    const vy = (dy / len) * speed;
-                    const tipX = rk.x + Math.cos(rk.tilt) * 28;
-                    const tipY = rk.y + Math.sin(rk.tilt) * 28;
+                    const vx = (dx / len) * speed,
+                        vy = (dy / len) * speed;
+                    const tipX = rk.x + Math.cos(rk.tilt) * 28,
+                        tipY = rk.y + Math.sin(rk.tilt) * 28;
                     sim.missiles.push({
                         x: tipX,
                         y: tipY,
@@ -2982,71 +2712,123 @@
                 sim.autoMissileTimer = 2.5;
             }
 
-            // ─── MAIN GAME UPDATE ──────────────────────────────────────────────────
-
-            function updateGame(sdt, rdt) {
-                const zone = zoneOf(sim.zone);
-                const segProg = Math.min(1, (sim.dist - sim.segStart) / sim.goal);
-                const ramp = 1 + 0.22 * segProg;
-                const expM = getExpMult();
-                sim.scroll = 200 * zone.speed * sim.speedFactor;
-                const hzBase = 200 * zone.speed * sim.diffSpeedMult;
-                sim.time += sdt;
-                if (sim.invincible > 0) sim.invincible -= rdt;
-                if (sim.magnetT > 0) sim.magnetT -= rdt;
-                if (sim.pupSlowT > 0) sim.pupSlowT -= rdt;
-                if (sim.slowmoT > 0) sim.slowmoT -= rdt;
-                if (sim.hintT > 0) sim.hintT -= rdt;
-                if (sim.flowT > 0) sim.flowT -= rdt;
-                else if (sim.flow > 0) { sim.flow--;
-                    sim.flowT = 0.7; }
-                if (sim.coinStreakT > 0) sim.coinStreakT -= rdt;
-                else sim.coinStreak = 0;
-                const flowMult = 1 + Math.min(0.5, sim.flow * 0.05);
-                sim.dist += sim.scroll * 0.08 * flowMult * sim.distMult * sdt;
-                if (sim.dist > maxDistanceEver) {
-                    maxDistanceEver = Math.floor(sim.dist);
-                    checkAchievements();
-                }
-                moveRocket(sdt);
-                updateStars(sdt, sim.scroll);
-                updateNebulas(sdt, sim.scroll);
-                spawnLogic(sdt, zone, ramp, expM, hzBase);
-                updateHazards(sdt);
-                updateClouds(sdt);
-                updateCoins(sdt);
-                updatePups(sdt);
-                updateBullets(sdt);
-                updateMissiles(sdt);
-                updateBoss(sdt);
-                updateBossBullets(sdt);
-                updateParts(sdt);
-                updateTexts(rdt);
-                Sfx.humSet(sim.ts);
-                autoFireVestalMissile(sdt);
-
-                // Check deepspace and jobless achievement
-                const isDeep = sim.zone >= BASE_ZONES.length;
-                if (isDeep && !sim.isDeepspace) {
-                    sim.isDeepspace = true;
-                    // Jobless: reached deepspace on impossible
-                    if (currentDifficulty === 'impossible' && !joblessUnlocked) {
-                        joblessUnlocked = true;
-                        saveAchievements();
-                        checkAchievements();
-                        showToast('🏆 Jobless: Reached Deepspace on Impossible!');
-                    }
-                }
-
-                if (!sim.boss && !sim.bossDefeated && sim.dist >= sim.bossSpawnDist && sim.state === 'playing') {
-                    spawnBoss();
-                }
-
-                if (sim.dist - sim.segStart >= sim.goal) startWarp();
+            // ─── BULLETS ──────────────────────────────────────────────────────────
+            function fireBullet() {
+                if (sim.state !== 'playing' || sim.fireCooldown > 0) return;
+                const rk = sim.rocket;
+                const dx = rk.tx - rk.x,
+                    dy = rk.ty - rk.y;
+                const len = Math.hypot(dx, dy) || 1;
+                const speed = 600;
+                const vx = (dx / len) * speed,
+                    vy = (dy / len) * speed;
+                const tipX = rk.x + Math.cos(rk.tilt) * 20,
+                    tipY = rk.y + Math.sin(rk.tilt) * 20;
+                sim.bullets.push({ x: tipX, y: tipY, vx: vx, vy: vy, life: 2.0, r: 3 });
+                sim.fireCooldown = 0.25;
+                Sfx.shoot();
+                burst(tipX, tipY, '255,255,200', 6, 120);
             }
 
-            // ─── WARP, DYING, etc ──────────────────────────────────────────────────
+            function updateBullets(sdt) {
+                if (sim.fireCooldown > 0) sim.fireCooldown -= sdt;
+                for (let i = sim.bullets.length - 1; i >= 0; i--) {
+                    const b = sim.bullets[i];
+                    b.x += b.vx * sdt;
+                    b.y += b.vy * sdt;
+                    b.life -= sdt;
+                    if (b.life <= 0) { sim.bullets.splice(i, 1); continue; }
+                    let hit = false;
+                    for (let j = sim.hazards.length - 1; j >= 0; j--) {
+                        const h = sim.hazards[j];
+                        if (h.type !== 'ast') continue;
+                        if (Math.hypot(b.x - h.x, b.y - h.y) < b.r + h.r) {
+                            // Destroy any asteroid hit by bullet (size no longer matters)
+                            burst(h.x, h.y, '255,200,120', 14, 280);
+                            sim.hazards.splice(j, 1);
+                            const bonus = sim.diffCoinBonus || 0;
+                            totalCoins += 1 + bonus;
+                            totalCoinsCollected += 1 + bonus;
+                            sim.runCoins += 1 + bonus;
+                            totalAsteroidsDestroyed++;
+                            pushText(h.x, h.y - 20, '+1 data', '#ffd700');
+                            sim.flash = 0.15;
+                            sim.flashC = '255,240,200';
+                            Sfx.shoot();
+                            autoLaunchMissile(h.x, h.y);
+                            checkAchievements();
+                            hit = true;
+                            break;
+                        }
+                    }
+                    if (!hit && sim.boss && sim.boss.state === 'fighting' && Math.hypot(b.x - sim.boss.x, b.y - sim
+                            .boss.y) < b.r + 25) {
+                        bossHit(5 + sim.up.shields * 2);
+                        hit = true;
+                        burst(b.x, b.y, '255,200,100', 8, 150);
+                    }
+                    if (hit) sim.bullets.splice(i, 1);
+                }
+            }
 
+            // ─── CLOUDS ────────────────────────────────────────────────────────────
+            function updateClouds(sdt) {
+                let inside = false;
+                for (let i = sim.clouds.length - 1; i >= 0; i--) {
+                    const c = sim.clouds[i];
+                    c.t += sdt;
+                    c.y += c.vy * sdt;
+                    c.x += Math.sin(c.t * 0.6 + c.seed) * 26 * sdt;
+                    const d = Math.hypot(c.x - sim.rocket.x, c.y - sim.rocket.y);
+                    if (d < c.r * 0.78 && sim.state === 'playing') {
+                        inside = true;
+                        sim.rad += sdt * 1.05;
+                        sim.radTickT -= sdt;
+                        if (sim.radTickT <= 0) { Sfx.tick();
+                            sim.radTickT = 0.28; }
+                        if (sim.rad >= 1) {
+                            burst(c.x, c.y, '140,255,168', 14, 260);
+                            sim.clouds.splice(i, 1);
+                            sim.rad = 0;
+                            if (sim.invincible <= 0 && sim.state === 'playing') damage();
+                        }
+                    }
+                    if (c.y > H + 220) sim.clouds.splice(i, 1);
+                }
+                if (!inside) sim.rad = Math.max(0, sim.rad - sdt * 1.5);
+            }
+
+            // ─── COLLECTIBLES UPDATE ──────────────────────────────────────────────
+            function updateCoins(sdt) {
+                const rk = sim.rocket;
+                let attractR = sim.magnetT > 0 ? sim.magnetRange : 36;
+                if (shipIsCleaner()) attractR = Math.max(attractR, 60 + 20 * sim.up.magnet);
+                for (let i = sim.coins.length - 1; i >= 0; i--) {
+                    const c = sim.coins[i];
+                    c.y += c.vy * sdt;
+                    c.x += Math.sin((c.phase += sdt * 3)) * 14 * sdt;
+                    const dx = rk.x - c.x,
+                        dy = rk.y - c.y,
+                        d = Math.hypot(dx, dy) || 1;
+                    if (d < attractR) { c.x += dx / d * 760 * sdt;
+                        c.y += dy / d * 760 * sdt; }
+                    if (d < 24 + shipHitR()) { collectCoin(c);
+                        sim.coins.splice(i, 1); } else if (c.y > H + 60) sim.coins.splice(i, 1);
+                }
+            }
+
+            function updatePups(sdt) {
+                const rk = sim.rocket;
+                for (let i = sim.pups.length - 1; i >= 0; i--) {
+                    const p = sim.pups[i];
+                    p.y += p.vy * sdt;
+                    p.t += sdt;
+                    if (Math.hypot(p.x - rk.x, p.y - rk.y) < 32) { applyPup(p);
+                        sim.pups.splice(i, 1); } else if (p.y > H + 60) sim.pups.splice(i, 1);
+                }
+            }
+
+            // ─── WARP ──────────────────────────────────────────────────────────────
             function startWarp() {
                 if (sim.state !== 'playing') return;
                 sim.state = 'warp';
@@ -3065,12 +2847,10 @@
                 sim.bossBullets = [];
                 sim.meteorQ = null;
                 sim.rad = 0;
-                if (sim.boss) {
-                    sim.boss = null;
+                if (sim.boss) { sim.boss = null;
                     bossHealthContainer.classList.remove('active');
                     sim.bossDefeated = false;
-                    sim.bossSpawnDist = sim.dist + 800 + Math.random() * 400;
-                }
+                    sim.bossSpawnDist = sim.dist + 800 + Math.random() * 400; }
                 saveProgress();
             }
 
@@ -3093,6 +2873,7 @@
                     sim.state = 'choose'; }
             }
 
+            // ─── DYING ─────────────────────────────────────────────────────────────
             function updateDying(rdt) {
                 sim.dyingT += rdt;
                 sim.time += rdt * 0.3;
@@ -3102,8 +2883,7 @@
                 if (sim.dyingT > 1.35) showGameOver();
             }
 
-            // ─── UPGRADES ───────────────────────────────────────────────────────────
-
+            // ─── UPGRADES ──────────────────────────────────────────────────────────
             function upgradeLevel(id) {
                 if (id === 'shield') return sim.up.shields;
                 if (id === 'speed') return sim.up.speed;
@@ -3111,6 +2891,21 @@
                 if (id === 'multiplier') return Math.round((sim.up.mult - 1) / 0.2);
                 return 0;
             }
+
+            const UPGRADE_POOL = [
+                { id: 'shield', name: 'Integrity Cell', desc: '+1 max integrity', icon: 'shield',
+                    avail: () => 1 + sim.up.shields + (getShip(equippedShip).shieldBonus || 0) < 4 },
+                { id: 'speed', name: 'Agility', desc: '+6% speed & control', icon: 'rocket',
+                avail: () => sim.up.speed < 6 },
+                { id: 'magnet', name: 'Magnet Range', desc: '+50% collection radius', icon: 'coin',
+                    avail: () => sim.up.magnet < 4 },
+                { id: 'multiplier', name: 'Warp Multiplier', desc: '+0.2× range rate', icon: 'star',
+                    avail: () => sim.up.mult < 2 },
+                { id: 'slow', name: 'Slow Field', desc: 'Near misses dilate time', icon: 'bolt',
+                    avail: () => !sim.up.slow },
+                { id: 'refill', name: 'Field Repair', desc: 'Integrity + 15 data points', icon: 'shield',
+                    avail: () => true }
+            ];
 
             function openUpgrades() {
                 Sfx.arrive();
@@ -3169,7 +2964,6 @@
                 checkAchievements();
                 sim.bossSpawnDist = sim.dist + 800 + Math.random() * 400;
                 sim.bossDefeated = false;
-                // Check if deepspace and impossible for jobless
                 if (sim.zone >= BASE_ZONES.length && currentDifficulty === 'impossible' && !joblessUnlocked) {
                     joblessUnlocked = true;
                     saveAchievements();
@@ -3185,8 +2979,7 @@
                 advanceZone();
             }
 
-            // ─── RESET AND START ───────────────────────────────────────────────────
-
+            // ─── RESET / START ─────────────────────────────────────────────────────
             function resetRun() {
                 sim.state = 'playing';
                 sim.zone = 0;
@@ -3326,99 +3119,144 @@
                 sim.state = 'playing';
             }
 
-            // ─── DRAW FUNCTIONS ────────────────────────────────────────────────────
+            // ─── MISSION SYSTEM ────────────────────────────────────────────────────
+            const MISSION_POOL = [
+                { id: 'coins25', name: 'Collect 25 data points', goal: 25, key: 'coins', reward: 20, icon: 'coin' },
+                { id: 'near15', name: 'Graze 15 hazards', goal: 15, key: 'near', reward: 20, icon: 'comet' },
+                { id: 'reachJup', name: 'Reach Jupiter', goal: 2, key: 'reach', reward: 25, icon: 'planet' },
+                { id: 'reachSat', name: 'Reach Saturn', goal: 3, key: 'reach', reward: 30, icon: 'planet' },
+                { id: 'dist600', name: 'Travel 600 in one run', goal: 600, key: 'runDist', reward: 30, icon: 'rocket' },
+                { id: 'flow6', name: 'Reach Sync ×6', goal: 6, key: 'flow', reward: 20, icon: 'bolt' },
+                { id: 'coins50', name: 'Collect 50 data points', goal: 50, key: 'coins', reward: 35, icon: 'coin' },
+                { id: 'pups3', name: 'Grab 3 power-ups', goal: 3, key: 'pups', reward: 15, icon: 'star' },
+                { id: 'bosskill', name: 'Defeat the Alien Warship', goal: 1, key: 'bosskill', reward: 40, icon: 'boss' }
+            ];
 
-            function drawBoss() {
-                if (!sim.boss || sim.boss.state === 'dying') return;
-                const b = sim.boss;
-                const pulse = 0.5 + 0.5 * Math.sin(sim.time * 3);
-                ctx.save();
-                ctx.translate(b.x, b.y);
-                const g = ctx.createRadialGradient(0, 0, 10, 0, 0, 70);
-                g.addColorStop(0, 'rgba(255,80,80,0.3)');
-                g.addColorStop(1, 'rgba(255,80,80,0)');
-                ctx.fillStyle = g;
-                ctx.beginPath();
-                ctx.arc(0, 0, 70, 0, 7);
-                ctx.fill();
-                ctx.fillStyle = '#cc3333';
-                ctx.beginPath();
-                ctx.ellipse(0, 0, 45, 25, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#ff5555';
-                ctx.beginPath();
-                ctx.ellipse(0, -6, 28, 15, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#ff8888';
-                ctx.beginPath();
-                ctx.ellipse(0, -12, 16, 10, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#ffcccc';
-                ctx.beginPath();
-                ctx.ellipse(0, -16, 8, 5, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#ffdddd';
-                ctx.beginPath();
-                ctx.arc(-3, -18, 2, 0, 7);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(3, -18, 2, 0, 7);
-                ctx.fill();
-                ctx.fillStyle = '#aa2222';
-                ctx.fillRect(-34, -2, 14, 4);
-                ctx.fillRect(20, -2, 14, 4);
-                ctx.fillStyle = '#ff6666';
-                ctx.fillRect(-36, -1, 6, 2);
-                ctx.fillRect(30, -1, 6, 2);
-                ctx.strokeStyle = '#cc3333';
-                ctx.lineWidth = 3;
-                for (let i = -2; i <= 2; i++) {
-                    const ang = Math.PI / 2 + i * 0.3 + Math.sin(sim.time * 2 + i) * 0.15;
-                    ctx.beginPath();
-                    ctx.moveTo(i * 12, 22);
-                    ctx.quadraticCurveTo(i * 20, 30 + 8 * Math.sin(sim.time * 1.5 + i), i * 16, 38);
-                    ctx.stroke();
+            function todayKey() { return new Date().toISOString().slice(0, 10); }
+
+            function initDailyMissions() {
+                const today = todayKey();
+                if (!dailyMissions || dailyMissions.date !== today || !Array.isArray(dailyMissions.list)) {
+                    let seed = 0;
+                    for (const ch of today) seed += ch.charCodeAt(0);
+                    const arr = MISSION_POOL.map((m, i) => ({ m: m, r: Math.sin(seed * 9.7 + i * 13.3) * 0.5 + 0.5 }));
+                    arr.sort((a, b) => a.r - b.r);
+                    dailyMissions = {
+                        date: today,
+                        list: arr.slice(0, 3).map(o => ({ id: o.m.id, name: o.m.name, goal: o.m.goal, key: o.m.key,
+                            reward: o.m.reward, icon: o.m.icon, prog: 0, done: false }))
+                    };
+                    store.set('fps_daily_missions', JSON.stringify(dailyMissions));
                 }
-                ctx.strokeStyle = 'rgba(255,80,80,0.5)';
-                ctx.lineWidth = 2;
-                ctx.setLineDash([4, 6]);
-                ctx.beginPath();
-                ctx.arc(0, 0, 55, 0, 7);
-                ctx.stroke();
-                ctx.setLineDash([]);
-                if (b.hp / b.maxHp < 0.3) {
-                    ctx.strokeStyle = 'rgba(255,0,0,' + (0.3 + 0.3 * pulse) + ')';
-                    ctx.lineWidth = 3;
-                    ctx.beginPath();
-                    ctx.arc(0, 0, 60 + 4 * pulse, 0, 7);
-                    ctx.stroke();
-                }
-                ctx.restore();
+                renderMissions();
             }
 
-            function drawBossBullets() {
-                for (const b of sim.bossBullets) {
-                    ctx.save();
-                    ctx.shadowColor = '#ff4444';
-                    ctx.shadowBlur = 16;
-                    ctx.fillStyle = '#ff4444';
-                    ctx.beginPath();
-                    ctx.arc(b.x, b.y, b.r, 0, 7);
-                    ctx.fill();
-                    ctx.fillStyle = '#ffaa44';
-                    ctx.beginPath();
-                    ctx.arc(b.x - 1.5, b.y - 1.5, b.r * 0.6, 0, 7);
-                    ctx.fill();
-                    ctx.restore();
-                }
+            function renderMissions() {
+                if (!dailyMissions || !Array.isArray(dailyMissions.list)) return;
+                let html = '<div class="m-head">Research objectives</div>';
+                dailyMissions.list.forEach(m => {
+                    const pct = Math.min(100, m.prog / m.goal * 100);
+                    html += '<div class="mission-row' + (m.done ? ' done' : '') + '">' +
+                        '<div class="m-icon">' + (m.done ? svgIcon('check', 14) : svgIcon(m.icon, 14)) + '</div>' +
+                        '<div class="m-body"><div class="m-name">' + m.name + '</div>' +
+                        '<div class="m-bar"><div class="m-fill" style="width:' + pct + '%"></div></div></div>' +
+                        '<div class="m-prog">' + (m.done ? 'done' : Math.floor(m.prog) + '/' + m.goal) + '</div>' +
+                        '</div>';
+                });
+                missionsList.innerHTML = html;
             }
 
-            // ─── DRAW STARS, NEBULAS, etc ─────────────────────────────────────────
+            function missionEvent(key, val, isMax) {
+                if (!dailyMissions || !Array.isArray(dailyMissions.list)) return;
+                let changed = false;
+                for (const m of dailyMissions.list) {
+                    if (m.done || m.key !== key) continue;
+                    if (isMax) m.prog = Math.max(m.prog, val);
+                    else m.prog += val;
+                    if (m.prog >= m.goal) {
+                        m.done = true;
+                        m.prog = m.goal;
+                        totalCoins += m.reward;
+                        showToast('Complete · ' + m.name + ' · +' + m.reward + ' data points');
+                        changed = true;
+                    } else changed = true;
+                }
+                if (changed) { saveProgress();
+                    renderMissions();
+                    updateMenuStats(); }
+            }
 
+            let toastTO = null;
+
+            function showToast(msg) {
+                missionToast.textContent = msg;
+                missionToast.classList.add('show');
+                clearTimeout(toastTO);
+                toastTO = setTimeout(() => missionToast.classList.remove('show'), 3400);
+            }
+
+            // ─── UPDATE LOOP ──────────────────────────────────────────────────────
+            function updateGame(sdt, rdt) {
+                const zone = zoneOf(sim.zone);
+                const segProg = Math.min(1, (sim.dist - sim.segStart) / sim.goal);
+                const ramp = 1 + 0.22 * segProg;
+                const expM = getExpMult();
+                sim.scroll = 200 * zone.speed * sim.speedFactor;
+                const hzBase = 200 * zone.speed * sim.diffSpeedMult;
+                sim.time += sdt;
+                if (sim.invincible > 0) sim.invincible -= rdt;
+                if (sim.magnetT > 0) sim.magnetT -= rdt;
+                if (sim.pupSlowT > 0) sim.pupSlowT -= rdt;
+                if (sim.slowmoT > 0) sim.slowmoT -= rdt;
+                if (sim.hintT > 0) sim.hintT -= rdt;
+                if (sim.flowT > 0) sim.flowT -= rdt;
+                else if (sim.flow > 0) { sim.flow--;
+                    sim.flowT = 0.7; }
+                if (sim.coinStreakT > 0) sim.coinStreakT -= rdt;
+                else sim.coinStreak = 0;
+                const flowMult = 1 + Math.min(0.5, sim.flow * 0.05);
+                sim.dist += sim.scroll * 0.08 * flowMult * sim.distMult * sdt;
+                if (sim.dist > maxDistanceEver) { maxDistanceEver = Math.floor(sim.dist);
+                    checkAchievements(); }
+                moveRocket(sdt);
+                updateStars(sdt, sim.scroll);
+                updateNebulas(sdt, sim.scroll);
+                spawnLogic(sdt, zone, ramp, expM, hzBase);
+                updateHazards(sdt);
+                updateClouds(sdt);
+                updateCoins(sdt);
+                updatePups(sdt);
+                updateBullets(sdt);
+                updateMissiles(sdt);
+                updateBoss(sdt);
+                updateBossBullets(sdt);
+                updateParts(sdt);
+                updateTexts(rdt);
+                Sfx.humSet(sim.ts);
+                autoFireVestalMissile(sdt);
+
+                const isDeep = sim.zone >= BASE_ZONES.length;
+                if (isDeep && !sim.isDeepspace) {
+                    sim.isDeepspace = true;
+                    if (currentDifficulty === 'impossible' && !joblessUnlocked) {
+                        joblessUnlocked = true;
+                        saveAchievements();
+                        checkAchievements();
+                        showToast('🏆 Jobless: Reached Deepspace on Impossible!');
+                    }
+                }
+
+                if (!sim.boss && !sim.bossDefeated && sim.dist >= sim.bossSpawnDist && sim.state === 'playing') {
+                    spawnBoss();
+                }
+
+                if (sim.dist - sim.segStart >= sim.goal) startWarp();
+            }
+
+            // ─── DRAW ──────────────────────────────────────────────────────────────
             function drawStars() {
                 const wk = sim.state === 'warp' ? Math.min(sim.warpK, 22) : 1;
-                // For deepspace, we want a plain starfield without warp lines
-                const drawLines = (sim.state !== 'warp' || sim.isDeepspace) ? false : true;
+                const drawLines = (sim.state === 'warp' && !sim.isDeepspace);
                 for (const s of stars) {
                     const a = s.b * (0.65 + 0.35 * Math.sin(sim.time * s.tw + s.ph));
                     if (wk > 1.4 && drawLines) {
@@ -3439,10 +3277,7 @@
             }
 
             function drawNebulas() {
-                if (sim.isDeepspace) {
-                    // In deepspace, no nebulas – plain starfield
-                    return;
-                }
+                if (sim.isDeepspace) return;
                 const hue = zoneOf(sim.zone).hue;
                 for (const n of nebulas) {
                     const h = hue + n.ho;
@@ -3839,17 +3674,14 @@
 
             function drawRocket() {
                 const rk = sim.rocket,
-                    ship = SHIPS[equippedShip] || SHIPS[0];
+                    ship = getShip(equippedShip);
                 const hull = custom.hull || ship.hull || '#c9d4e2';
                 const accent = custom.accent || ship.accent || '#6fcbff';
                 const auraCol = custom.aura || '#6fcbff';
                 const auraInt = custom.auraIntensity || 0.5;
-                const style = custom.bodyStyle || 0;
-
                 ctx.save();
                 ctx.translate(rk.x, rk.y);
                 ctx.rotate(rk.tilt);
-
                 if (auraInt > 0.01) {
                     ctx.globalCompositeOperation = 'lighter';
                     const grad = ctx.createRadialGradient(0, -2, 4, 0, -2, 50 + 30 * auraInt);
@@ -3869,7 +3701,6 @@
                     ctx.stroke();
                     ctx.setLineDash([]);
                 }
-
                 if (ship.glow) {
                     ctx.globalCompositeOperation = 'lighter';
                     const g = ctx.createRadialGradient(0, -2, 4, 0, -2, 34);
@@ -3881,7 +3712,6 @@
                     ctx.fill();
                     ctx.globalCompositeOperation = 'source-over';
                 }
-
                 const th = sim.state === 'playing' ? 1 : 0.4;
                 const L = (20 + Math.sin(sim.time * 30) * 4 + Math.random() * 4) * th;
                 ctx.globalCompositeOperation = 'lighter';
@@ -3891,9 +3721,7 @@
                 ctx.fillStyle = 'rgba(255,230,120,0.9)';
                 flamePath(ship.w * 0.3, 13, 8 + L * 0.55);
                 ctx.globalCompositeOperation = 'source-over';
-
                 const w = ship.w;
-
                 if (ship.vestal) {
                     ctx.fillStyle = hull;
                     ctx.beginPath();
@@ -4005,6 +3833,91 @@
                 ctx.restore();
             }
 
+            function drawBoss() {
+                if (!sim.boss || sim.boss.state === 'dying') return;
+                const b = sim.boss;
+                const pulse = 0.5 + 0.5 * Math.sin(sim.time * 3);
+                ctx.save();
+                ctx.translate(b.x, b.y);
+                const g = ctx.createRadialGradient(0, 0, 10, 0, 0, 70);
+                g.addColorStop(0, 'rgba(255,80,80,0.3)');
+                g.addColorStop(1, 'rgba(255,80,80,0)');
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.arc(0, 0, 70, 0, 7);
+                ctx.fill();
+                ctx.fillStyle = '#cc3333';
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 45, 25, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ff5555';
+                ctx.beginPath();
+                ctx.ellipse(0, -6, 28, 15, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ff8888';
+                ctx.beginPath();
+                ctx.ellipse(0, -12, 16, 10, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ffcccc';
+                ctx.beginPath();
+                ctx.ellipse(0, -16, 8, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ffdddd';
+                ctx.beginPath();
+                ctx.arc(-3, -18, 2, 0, 7);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(3, -18, 2, 0, 7);
+                ctx.fill();
+                ctx.fillStyle = '#aa2222';
+                ctx.fillRect(-34, -2, 14, 4);
+                ctx.fillRect(20, -2, 14, 4);
+                ctx.fillStyle = '#ff6666';
+                ctx.fillRect(-36, -1, 6, 2);
+                ctx.fillRect(30, -1, 6, 2);
+                ctx.strokeStyle = '#cc3333';
+                ctx.lineWidth = 3;
+                for (let i = -2; i <= 2; i++) {
+                    const ang = Math.PI / 2 + i * 0.3 + Math.sin(sim.time * 2 + i) * 0.15;
+                    ctx.beginPath();
+                    ctx.moveTo(i * 12, 22);
+                    ctx.quadraticCurveTo(i * 20, 30 + 8 * Math.sin(sim.time * 1.5 + i), i * 16, 38);
+                    ctx.stroke();
+                }
+                ctx.strokeStyle = 'rgba(255,80,80,0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 6]);
+                ctx.beginPath();
+                ctx.arc(0, 0, 55, 0, 7);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                if (b.hp / b.maxHp < 0.3) {
+                    ctx.strokeStyle = 'rgba(255,0,0,' + (0.3 + 0.3 * pulse) + ')';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 60 + 4 * pulse, 0, 7);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            function drawBossBullets() {
+                for (const b of sim.bossBullets) {
+                    ctx.save();
+                    ctx.shadowColor = '#ff4444';
+                    ctx.shadowBlur = 16;
+                    ctx.fillStyle = '#ff4444';
+                    ctx.beginPath();
+                    ctx.arc(b.x, b.y, b.r, 0, 7);
+                    ctx.fill();
+                    ctx.fillStyle = '#ffaa44';
+                    ctx.beginPath();
+                    ctx.arc(b.x - 1.5, b.y - 1.5, b.r * 0.6, 0, 7);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
             function drawParticles() {
                 for (const p of sim.parts) {
                     if (p.type !== 'puff') continue;
@@ -4069,6 +3982,7 @@
                 ctx.restore();
             }
 
+            // ─── RENDER ────────────────────────────────────────────────────────────
             function render() {
                 ctx.fillStyle = '#0a0e1a';
                 ctx.fillRect(0, 0, W, H);
@@ -4100,8 +4014,7 @@
                 if (vigCanvas) ctx.drawImage(vigCanvas, 0, 0, W, H);
             }
 
-            // ─── HUD, MENU, MISSION, SHOP ─────────────────────────────────────────
-
+            // ─── HUD ──────────────────────────────────────────────────────────────
             const hudCache = {};
 
             function setT(el, key, v) { if (hudCache[key] !== v) { hudCache[key] = v;
@@ -4157,72 +4070,8 @@
                 rankChip.innerHTML = svgIcon('rank', 13) + '<span>Level ' + rank + ' · speed +' + Math
                     .round((em - 1) * 100) + '%</span>';
             }
-            let toastTO = null;
 
-            function showToast(msg) {
-                missionToast.textContent = msg;
-                missionToast.classList.add('show');
-                clearTimeout(toastTO);
-                toastTO = setTimeout(() => missionToast.classList.remove('show'), 3400);
-            }
-
-            function todayKey() { return new Date().toISOString().slice(0, 10); }
-
-            function initDailyMissions() {
-                const today = todayKey();
-                if (!dailyMissions || dailyMissions.date !== today || !Array.isArray(dailyMissions.list)) {
-                    let seed = 0;
-                    for (const ch of today) seed += ch.charCodeAt(0);
-                    const arr = MISSION_POOL.map((m, i) => ({ m: m, r: Math.sin(seed * 9.7 + i * 13.3) * 0.5 + 0.5 }));
-                    arr.sort((a, b) => a.r - b.r);
-                    dailyMissions = {
-                        date: today,
-                        list: arr.slice(0, 3).map(o => {
-                            const m = o.m;
-                            return { id: m.id, name: m.name, goal: m.goal, key: m.key, reward: m.reward,
-                                icon: m.icon, prog: 0, done: false };
-                        })
-                    };
-                    store.set('fps_daily_missions', JSON.stringify(dailyMissions));
-                }
-                renderMissions();
-            }
-
-            function renderMissions() {
-                if (!dailyMissions || !Array.isArray(dailyMissions.list)) return;
-                let html = '<div class="m-head">Research objectives</div>';
-                dailyMissions.list.forEach(m => {
-                    const pct = Math.min(100, m.prog / m.goal * 100);
-                    html += '<div class="mission-row' + (m.done ? ' done' : '') + '">' +
-                        '<div class="m-icon">' + (m.done ? svgIcon('check', 14) : svgIcon(m.icon, 14)) + '</div>' +
-                        '<div class="m-body"><div class="m-name">' + m.name + '</div>' +
-                        '<div class="m-bar"><div class="m-fill" style="width:' + pct + '%"></div></div></div>' +
-                        '<div class="m-prog">' + (m.done ? 'done' : Math.floor(m.prog) + '/' + m.goal) + '</div>' +
-                        '</div>';
-                });
-                missionsList.innerHTML = html;
-            }
-
-            function missionEvent(key, val, isMax) {
-                if (!dailyMissions || !Array.isArray(dailyMissions.list)) return;
-                let changed = false;
-                for (const m of dailyMissions.list) {
-                    if (m.done || m.key !== key) continue;
-                    if (isMax) m.prog = Math.max(m.prog, val);
-                    else m.prog += val;
-                    if (m.prog >= m.goal) {
-                        m.done = true;
-                        m.prog = m.goal;
-                        totalCoins += m.reward;
-                        showToast('Complete · ' + m.name + ' · +' + m.reward + ' data points');
-                        changed = true;
-                    } else changed = true;
-                }
-                if (changed) { saveProgress();
-                    renderMissions();
-                    updateMenuStats(); }
-            }
-
+            // ─── SHOP ──────────────────────────────────────────────────────────────
             function renderShop() {
                 shopCoinsSpan.textContent = totalCoins;
                 let html = '';
@@ -4254,11 +4103,70 @@
                 });
                 shopGrid.innerHTML = html;
             }
+
+            // ─── CUSTOM UI ─────────────────────────────────────────────────────────
+            function loadCustomToUI() {
+                hullColor.value = custom.hull;
+                accentColor.value = custom.accent;
+                trailColor.value = custom.trail;
+                auraColor.value = custom.aura;
+                auraIntensity.value = Math.round(custom.auraIntensity * 100);
+                auraIntensityVal.textContent = Math.round(custom.auraIntensity * 100) + '%';
+                styleBtns.forEach(b => b.classList.toggle('active', parseInt(b.dataset.style) === custom.bodyStyle));
+                updatePreview();
+            }
+
+            function updatePreview() {
+                const h = custom.hull,
+                    a = custom.accent,
+                    t = custom.trail,
+                    au = custom.aura;
+                const style = custom.bodyStyle;
+                let shape = '';
+                switch (style) {
+                    case 0:
+                        shape = 'polygon(50% 0%, 85% 35%, 90% 65%, 70% 85%, 30% 85%, 10% 65%, 15% 35%)';
+                        break;
+                    case 1:
+                        shape = 'polygon(50% 0%, 75% 30%, 95% 50%, 80% 80%, 50% 95%, 20% 80%, 5% 50%, 25% 30%)';
+                        break;
+                    case 2:
+                        shape = 'polygon(50% 0%, 80% 15%, 95% 45%, 85% 75%, 55% 90%, 45% 90%, 15% 75%, 5% 45%, 20% 15%)';
+                        break;
+                    case 3:
+                        shape = 'polygon(50% 0%, 75% 30%, 80% 60%, 70% 85%, 30% 85%, 20% 60%, 25% 30%)';
+                        break;
+                    default:
+                        shape = 'polygon(50% 0%, 85% 35%, 90% 65%, 70% 85%, 30% 85%, 10% 65%, 15% 35%)';
+                }
+                customPreview.innerHTML =
+                    `<svg width="60" height="60" viewBox="0 0 60 60">
+                        <defs>
+                            <radialGradient id="previewAura" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="${au}" stop-opacity="${0.3 + 0.5 * custom.auraIntensity}"/>
+                                <stop offset="100%" stop-color="${au}" stop-opacity="0"/>
+                            </radialGradient>
+                        </defs>
+                        <circle cx="30" cy="30" r="28" fill="url(#previewAura)"/>
+                        <polygon points="${shape}" fill="${h}" stroke="${a}" stroke-width="1.5"/>
+                        <circle cx="30" cy="26" r="4" fill="${a}" opacity="0.6"/>
+                        <rect x="24" y="38" width="12" height="4" rx="1" fill="${t}" opacity="0.7"/>
+                        <rect x="26" y="42" width="8" height="3" rx="1" fill="${t}" opacity="0.4"/>
+                    </svg>`;
+            }
+
+            function updateSensitivityDisplay() { sensToggle.textContent = sensitivity.toFixed(1) + '×'; }
+
+            function updateMuteDisplay() { muteToggle.textContent = muted ? 'Off' : 'On'; }
+
+            // ─── EVENT BINDINGS ────────────────────────────────────────────────────
+            // Shop
             shopGrid.addEventListener('click', e => {
                 const btn = e.target.closest('button[data-act]');
                 if (!btn || btn.disabled) return;
                 const idx = parseInt(btn.dataset.idx, 10);
                 const ship = SHIPS[idx];
+                if (!ship) return;
                 if (btn.dataset.act === 'buy') {
                     if (totalCoins >= ship.cost && !unlockedShips.includes(idx)) {
                         totalCoins -= ship.cost;
@@ -4270,20 +4178,21 @@
                         updateMenuStats();
                         showToast(ship.name + ' purchased & equipped');
                     }
-                } else {
-                    if (unlockedShips.includes(idx)) {
-                        equippedShip = idx;
-                        recalcStats();
-                        saveProgress();
-                        renderShop();
-                    }
+                } else if (btn.dataset.act === 'equip' && unlockedShips.includes(idx)) {
+                    equippedShip = idx;
+                    recalcStats();
+                    saveProgress();
+                    renderShop();
                 }
             });
+
+            // Upgrades
             upgradeGrid.addEventListener('click', e => {
                 const card = e.target.closest('.upgrade-card');
                 if (card) chooseUpgrade(card.dataset.id);
             });
 
+            // Difficulty
             diffBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
                     diffBtns.forEach(b => b.classList.remove('active'));
@@ -4291,10 +4200,9 @@
                     selectedDifficulty = btn.dataset.diff;
                 });
             });
-            diffConfirm.addEventListener('click', () => {
-                startRun();
-            });
+            diffConfirm.addEventListener('click', startRun);
 
+            // Custom
             customBtn.addEventListener('click', () => { loadCustomToUI();
                 customOverlay.classList.add('active'); });
             customCloseBtn.addEventListener('click', () => {
@@ -4309,7 +4217,6 @@
                 customOverlay.classList.remove('active');
                 showToast('Customization applied!');
             });
-
             [hullColor, accentColor, trailColor, auraColor].forEach(el => {
                 el.addEventListener('input', () => {
                     custom.hull = hullColor.value;
@@ -4333,11 +4240,8 @@
                 });
             });
 
+            // Settings
             const SENS_STEPS = [0.6, 0.8, 1.0, 1.3, 1.6];
-
-            function updateSensitivityDisplay() { sensToggle.textContent = sensitivity.toFixed(1) + '×'; }
-
-            function updateMuteDisplay() { muteToggle.textContent = muted ? 'Off' : 'On'; }
             sensToggle.addEventListener('click', () => {
                 let i = 0;
                 for (let k = 0; k < SENS_STEPS.length; k++)
@@ -4385,6 +4289,8 @@
                 loadCustomToUI();
                 showToast('All data & customizations reset');
             });
+
+            // Overlays
             configBtn.addEventListener('click', () => configOverlay.classList.add('active'));
             configCloseBtn.addEventListener('click', () => configOverlay.classList.remove('active'));
             shopBtn.addEventListener('click', () => { renderShop();
@@ -4394,20 +4300,20 @@
                 if (sim.state === 'choose') { upgradeOverlay.classList.remove('active');
                     advanceZone(); }
             });
-            playBtn.addEventListener('click', () => {
-                difficultyOverlay.classList.add('active');
-            });
+            playBtn.addEventListener('click', () => difficultyOverlay.classList.add('active'));
             goRetryBtn.addEventListener('click', startRun);
             goMenuBtn.addEventListener('click', quitToMenu);
             pauseBtn.addEventListener('click', pauseGame);
             pauseResumeBtn.addEventListener('click', resumeGame);
             pauseQuitBtn.addEventListener('click', quitToMenu);
 
+            // ─── FRAME LOOP ──────────────────────────────────────────────────────
             function computeTargetTS() {
                 if (sim.slowmoT > 0) return sim.slowmoF;
                 if (sim.pupSlowT > 0) return 0.55;
                 return 1;
             }
+
             let lastT = performance.now();
 
             function frame(now) {
@@ -4443,9 +4349,13 @@
                 if (sim.state === 'playing' || sim.state === 'warp') updateHUD();
             }
 
+            // ─── INIT ──────────────────────────────────────────────────────────────
+            // Inject icons
             document.querySelectorAll('[data-icon]').forEach(el => {
                 el.innerHTML = svgIcon(el.dataset.icon, parseInt(el.dataset.size, 10) || 24);
             });
+
+            loadAchievements();
             initDailyMissions();
             recalcStats();
             resizeCanvas();
