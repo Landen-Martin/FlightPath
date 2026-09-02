@@ -2513,4 +2513,2479 @@
                     } },
                 ice: { iv: 4.5, spawn(b, e, r) {
                         for (let i = 0; i < 2; i++) {
-                           
+                            const rr = 8 + Math.random() * 3;
+                            sim.hazards.push({
+                                type: 'shard',
+                                x: 20 + Math.random() * (W - 40),
+                                y: -30 - i * 60,
+                                vx: (Math.random() < 0.5 ? -1 : 1) * (b * 0.28 + Math.random() * b * 0.22),
+                                vy: clampN(b * 1.5 * e * r, 230, 1250),
+                                r: rr,
+                                rot: Math.random() * 6,
+                                vr: (Math.random() - 0.5) * 3,
+                                nm: false
+                            });
+                        }
+                    } },
+                comet: { iv: 7.5, spawn(b) {
+                        const fromLeft = Math.random() < 0.5;
+                        sim.hazards.push({
+                            type: 'comet',
+                            x: fromLeft ? -60 : W + 60,
+                            y: Math.random() * H * 0.35,
+                            vx: (fromLeft ? 1 : -1) * (b * 1.7 + 150),
+                            vy: b * 1.9 + 160,
+                            r: 13,
+                            nm: false
+                        });
+                    } }
+            };
+
+            function spawnCoins(b) {
+                const cluster = Math.random() < 0.3 ? 3 : 1;
+                const bx = 50 + Math.random() * (W - 100);
+                for (let i = 0; i < cluster; i++)
+                    sim.coins.push({ x: clampN(bx + i * 36, 30, W - 30), y: -20 - i * 16, vy: b * 0.92,
+                        phase: Math.random() * 6 });
+            }
+
+            function spawnPup(b) {
+                const roll = Math.random(),
+                    low = sim.lives < sim.maxLives;
+                const type = roll < (low ? 0.45 : 0.15) ? 'shield' : (roll < 0.75 ? 'magnet' : 'slow');
+                sim.pups.push({ x: 50 + Math.random() * (W - 100), y: -30, vy: b * 0.5, type: type, t: Math.random() *
+                        6 });
+            }
+
+            function spawnLogic(sdt, zone, ramp, expM, hzBase) {
+                const hazardMult = sim.diffHazardMult;
+                if (sim.hazards.length < 42) {
+                    sim.astT -= sdt * expM * ramp * hazardMult;
+                    if (sim.astT <= 0) {
+                        spawnAsteroid(hzBase, expM, ramp);
+                        sim.astT = Math.max(0.3, zone.astInt / (0.55 + 0.45 * expM)) / hazardMult;
+                        if (Math.random() < 0.3) sim.astT *= 0.6;
+                    }
+                }
+                for (const h of zone.hazards) {
+                    if (h === 'ast') continue;
+                    if (sim.hT[h] === undefined) sim.hT[h] = 2.5 + Math.random() * 2.5;
+                    sim.hT[h] -= sdt * hazardMult;
+                    if (sim.hT[h] <= 0) {
+                        SPECIAL[h].spawn(hzBase, expM, ramp);
+                        sim.hT[h] = SPECIAL[h].iv * (0.7 + Math.random() * 0.6) / (0.7 + 0.3 * zone.speed) / hazardMult;
+                    }
+                }
+                if (sim.meteorQ) {
+                    const q = sim.meteorQ;
+                    q.t -= sdt * hazardMult;
+                    if (q.t <= 0) {
+                        sim.hazards.push({
+                            type: 'meteor',
+                            x: q.x0,
+                            y: q.y0,
+                            vx: q.vx,
+                            vy: q.vy,
+                            r: 8,
+                            rot: Math.random() * 6,
+                            vr: (Math.random() - 0.5) * 6,
+                            verts: rockVerts(8),
+                            nm: false
+                        });
+                        q.left--;
+                        q.t = 0.15;
+                        if (q.left <= 0) sim.meteorQ = null;
+                    }
+                }
+                sim.coinT -= sdt;
+                if (sim.coinT <= 0) { spawnCoins(hzBase);
+                    sim.coinT = 1.4 + Math.random() * 1.4; }
+                sim.pupT -= sdt;
+                if (sim.pupT <= 0) { spawnPup(hzBase);
+                    sim.pupT = 12 + Math.random() * 7; }
+            }
+
+            // ─── PARTICLES & TEXT ─────────────────────────────────────────────────
+            function burst(x, y, color, n, speed) {
+                if (sim.parts.length > 520) sim.parts.splice(0, sim.parts.length - 520);
+                for (let i = 0; i < n; i++) {
+                    const a = Math.random() * Math.PI * 2,
+                        sp = speed * (0.3 + Math.random() * 0.7);
+                    sim.parts.push({
+                        type: 'spark',
+                        x,
+                        y,
+                        vx: Math.cos(a) * sp,
+                        vy: Math.sin(a) * sp,
+                        life: 0.45 + Math.random() * 0.4,
+                        max: 0.85,
+                        size: 2 + Math.random() * 2.5,
+                        color: color
+                    });
+                }
+                sim.parts.push({ type: 'puff', x, y, vx: 0, vy: 0, life: 0.5, max: 0.5, size: 16 });
+            }
+
+            function pushText(x, y, str, color) {
+                if (sim.texts.length > 12) sim.texts.shift();
+                sim.texts.push({ x, y, str, color, life: 1.3, max: 1.3 });
+            }
+
+            function updateParts(dt) {
+                for (let i = sim.parts.length - 1; i >= 0; i--) {
+                    const p = sim.parts[i];
+                    p.x += p.vx * dt;
+                    p.y += p.vy * dt;
+                    p.vx -= p.vx * 2.2 * dt;
+                    p.vy -= p.vy * 2.2 * dt;
+                    p.life -= dt;
+                    if (p.life <= 0) sim.parts.splice(i, 1);
+                }
+            }
+
+            function updateTexts(dt) {
+                for (let i = sim.texts.length - 1; i >= 0; i--) {
+                    const t = sim.texts[i];
+                    t.y -= 42 * dt;
+                    t.life -= dt;
+                    if (t.life <= 0) sim.texts.splice(i, 1);
+                }
+            }
+
+            // ─── DAMAGE / DEATH ────────────────────────────────────────────────────
+            const NEARMISSABLE = { ast: 1, shard: 1, ring: 1, meteor: 1, comet: 1 };
+
+            function damage() {
+                if (sim.invincible > 0 || sim.state !== 'playing') return;
+                sim.lives--;
+                Sfx.hit();
+                sim.shake = 24;
+                sim.flash = 0.5;
+                sim.flashC = '255,80,80';
+                slowmo(0.3, 0.5);
+                burst(sim.rocket.x, sim.rocket.y, '255,154,90', 16, 320);
+                sim.flow = 0;
+                sim.flowT = 0;
+                sim.rad = 0;
+                if (sim.lives <= 0) die();
+                else {
+                    const bonus = sim.invincibleBonus || 0;
+                    sim.invincible = 2.2 + bonus;
+                }
+            }
+
+            function die() {
+                sim.state = 'dying';
+                sim.dyingT = 0;
+                burst(sim.rocket.x, sim.rocket.y, '255,90,70', 26, 430);
+                burst(sim.rocket.x, sim.rocket.y, '255,160,80', 18, 300);
+                sim.parts.push({ type: 'puff', x: sim.rocket.x, y: sim.rocket.y, vx: 0, vy: 0, life: 0.9, max: 0.9,
+                    size: 60 });
+                sim.shake = 34;
+                sim.flash = 0.7;
+                sim.flashC = '255,70,60';
+                Sfx.over();
+                Sfx.humStop();
+                slowmo(0.25, 0.9);
+            }
+
+            function nearMiss(h) {
+                sim.flow++;
+                sim.flowT = 3.5;
+                if (sim.flow > sim.maxFlow) sim.maxFlow = sim.flow;
+                if (sim.flow > maxComboEver) { maxComboEver = sim.flow;
+                    checkAchievements(); }
+                missionEvent('flow', sim.flow, true);
+                missionEvent('near', 1);
+                sim.dist += 3;
+                Sfx.near();
+                const hr = getShipHitR();
+                const a = Math.atan2(h.y - sim.rocket.y, h.x - sim.rocket.x);
+                burst(sim.rocket.x + Math.cos(a) * (hr + h.r + 12), sim.rocket.y + Math.sin(a) * (hr + h.r + 12),
+                    '190,232,255', 5, 170);
+                if (sim.up.slow) slowmo(0.45, 0.4);
+                if (sim.flow > 1 && sim.flow % 5 === 0) pushText(sim.rocket.x, sim.rocket.y - 42, 'SYNC ×' + sim.flow,
+                    '#6fcbff');
+            }
+
+            function slowmo(f, d) { sim.slowmoF = f;
+                sim.slowmoT = Math.max(sim.slowmoT, d); }
+
+            // ─── COLLECTIBLES ──────────────────────────────────────────────────────
+            function collectCoin(c) {
+                const bonus = sim.diffCoinBonus || 0;
+                const techBonus = sim.techCoinBonus || 0;
+                const total = 1 + bonus + techBonus;
+                totalCoins += total;
+                totalCoinsCollected += total;
+                sim.runCoins += total;
+                sim.dist += 2;
+                sim.coinStreak++;
+                sim.coinStreakT = 1.4;
+                Sfx.coin(sim.coinStreak);
+                burst(c.x, c.y, '255,210,74', 4, 150);
+                missionEvent('coins', total);
+                if (sim.runCoins % 25 === 0) saveProgress();
+                checkAchievements();
+            }
+
+            function applyPup(p) {
+                Sfx.power();
+                missionEvent('pups', 1);
+                if (p.type === 'shield') {
+                    if (sim.lives < sim.maxLives) { sim.lives++;
+                        pushText(p.x, p.y, '+1 INTEGRITY', '#6fcbff'); } else { totalCoins += 10;
+                        sim.runCoins += 10;
+                        pushText(p.x, p.y, '+10 DATA', '#ffd700'); }
+                } else if (p.type === 'magnet') {
+                    sim.magnetT = 8;
+                    pushText(p.x, p.y, 'MAGNET', '#ffd700');
+                } else {
+                    sim.pupSlowT = 5;
+                    pushText(p.x, p.y, 'TIME DILATION', '#a78bfa');
+                }
+                burst(p.x, p.y, p.type === 'shield' ? '111,203,255' : (p.type === 'magnet' ? '255,210,74' :
+                    '167,139,250'), 10, 220);
+            }
+
+            // ─── ROCKET MOVEMENT ──────────────────────────────────────────────────
+            function moveRocket(sdt) {
+                const rk = sim.rocket;
+                const ks = 760 * sdt;
+                if (keys.l) rk.tx -= ks;
+                if (keys.r) rk.tx += ks;
+                if (keys.u) rk.ty -= ks;
+                if (keys.d) rk.ty += ks;
+                rk.tx = clampN(rk.tx, 22, W - 22);
+                rk.ty = clampN(rk.ty, H * 0.3, H - 90);
+                const k = Math.min(1, (5 + 5 * sensitivity) * sdt);
+                const px = rk.x;
+                rk.x += (rk.tx - rk.x) * k;
+                rk.y += (rk.ty - rk.y) * Math.min(1, 6 * sdt);
+                if (sdt > 0.0001) {
+                    const vx = (rk.x - px) / sdt;
+                    rk.vxS += (vx - rk.vxS) * Math.min(1, 10 * sdt);
+                }
+                const tiltT = clampN(rk.vxS / 1500, -1, 1) * 0.5;
+                rk.tilt += (tiltT - rk.tilt) * Math.min(1, 12 * sdt);
+                if (sim.state === 'playing' && Math.random() < 0.9 && sim.parts.length < 520) {
+                    const tx = rk.x - Math.sin(rk.tilt) * 16,
+                        ty = rk.y + Math.cos(rk.tilt) * 16;
+                    const trailCol = custom.trail || '#ff9640';
+                    sim.parts.push({
+                        type: 'trail',
+                        x: tx + (Math.random() - 0.5) * 4,
+                        y: ty,
+                        vx: (Math.random() - 0.5) * 30,
+                        vy: 90 + Math.random() * 70,
+                        life: 0.42,
+                        max: 0.42,
+                        size: 3.4,
+                        color: hexToRgb(trailCol)
+                    });
+                }
+            }
+
+            // ─── STARS / NEBULAS ──────────────────────────────────────────────────
+            function updateStars(dt, scroll) {
+                for (const s of stars) {
+                    s.y += scroll * SPEEDF[s.layer - 1] * dt;
+                    if (s.y > H + 6) { s.y = -6;
+                        s.x = Math.random() * W; }
+                }
+            }
+
+            function updateNebulas(dt, scroll) {
+                const alphaMult = sim.isDeepspace ? 0.2 : 1.0;
+                for (const n of nebulas) {
+                    n.y += scroll * 0.04 * dt;
+                    if (n.y - n.r > H) { n.y = -n.r;
+                        n.x = Math.random() * W; }
+                }
+            }
+
+            // ─── BOSS ──────────────────────────────────────────────────────────────
+            function spawnBoss() {
+                if (sim.boss) return;
+                const x = W / 2 + (Math.random() - 0.5) * 300;
+                const y = 80 + Math.random() * 60;
+                const zoneMult = 1 + sim.zone * 0.15;
+                const hp = Math.round((60 + (sim.zone * 10) + 20 * (currentDifficulty === 'hard' ? 1 : 0) + 40 * (
+                    currentDifficulty === 'extreme' || currentDifficulty === 'impossible' ? 1 : 0)) * zoneMult);
+                sim.boss = {
+                    x: clampN(x, 60, W - 60),
+                    y: clampN(y, 60, H * 0.4),
+                    hp: hp,
+                    maxHp: hp,
+                    state: 'entering',
+                    timer: 0,
+                    phase: 0,
+                    shootTimer: 2.0 + Math.random(),
+                    moveTimer: 0,
+                    targetX: x,
+                    targetY: y,
+                    speed: 80 + 20 * (currentDifficulty === 'hard' ? 1 : 0) + 30 * (currentDifficulty === 'extreme' ||
+                        currentDifficulty === 'impossible' ? 1 : 0) + sim.zone * 2,
+                    entered: false,
+                    deathTimer: 0
+                };
+                sim.bossDefeated = false;
+                bossHealthContainer.classList.add('active');
+                updateBossHealthBar();
+                showToast('⚠️ ALIEN WARSHIP DETECTED!');
+                Sfx.bossShoot();
+                sim.flash = 0.3;
+                sim.flashC = '255,50,50';
+                sim.shake = 10;
+            }
+
+            function updateBossHealthBar() {
+                if (!sim.boss) { bossHealthContainer.classList.remove('active'); return; }
+                const pct = Math.max(0, (sim.boss.hp / sim.boss.maxHp) * 100);
+                bossHealthBar.style.width = pct + '%';
+                bossHealthLabel.textContent = 'ALIEN WARSHIP [' + Math.floor(sim.boss.hp) + '/' + sim.boss.maxHp + ']';
+                bossHealthBar.style.background = pct < 30 ? '#ff6b6b' : pct < 60 ? '#ffa94d' : '#ff3b3b';
+            }
+
+            function updateBoss(sdt) {
+                if (!sim.boss || sim.boss.state === 'dying') return;
+                const boss = sim.boss;
+                if (boss.state === 'entering') {
+                    boss.timer += sdt;
+                    boss.y += (100 - boss.y) * 0.06;
+                    if (boss.timer > 1.0) { boss.state = 'fighting';
+                        boss.timer = 0;
+                        boss.phase = 0;
+                        boss.shootTimer = 1.5 + Math.random() * 1.5;
+                        boss.moveTimer = 0; }
+                    updateBossHealthBar();
+                    return;
+                }
+                boss.timer += sdt;
+                boss.moveTimer += sdt;
+                boss.x += Math.sin(boss.timer * 0.6 + boss.phase) * 60 * sdt;
+                boss.y += Math.cos(boss.timer * 0.4 + boss.phase * 1.2) * 40 * sdt;
+                boss.x = clampN(boss.x, 60, W - 60);
+                boss.y = clampN(boss.y, 60, H * 0.4);
+                boss.shootTimer -= sdt;
+                if (boss.shootTimer <= 0) {
+                    const angleStep = 0.7 + 0.1 * (sim.zone / 10);
+                    const baseAngle = Math.atan2(sim.rocket.y - boss.y, sim.rocket.x - boss.x);
+                    for (let i = -2; i <= 2; i++) {
+                        const angle = baseAngle + i * angleStep * 0.3;
+                        const speed = 180 + 30 * (currentDifficulty === 'hard' ? 1 : 0) + 50 * (currentDifficulty ===
+                            'extreme' || currentDifficulty === 'impossible' ? 1 : 0) + sim.zone * 2;
+                        sim.bossBullets.push({
+                            x: boss.x,
+                            y: boss.y + 16,
+                            vx: Math.cos(angle) * speed,
+                            vy: Math.sin(angle) * speed,
+                            life: 4.0,
+                            r: 6,
+                            color: '#ff4444'
+                        });
+                    }
+                    Sfx.bossShoot();
+                    boss.shootTimer = Math.max(0.4, 1.8 - Math.min(0.8, sim.zone * 0.03));
+                }
+                if (Math.random() < sdt * (0.15 + sim.zone * 0.005)) {
+                    const side = Math.random() < 0.5 ? -1 : 1;
+                    const x = side < 0 ? -30 : W + 30;
+                    const y = 20 + Math.random() * H * 0.5;
+                    const r = 10 + Math.random() * 12;
+                    sim.hazards.push({
+                        type: 'ast',
+                        x: x,
+                        y: y,
+                        vx: -side * (100 + Math.random() * 100 + sim.zone * 5),
+                        vy: 60 + Math.random() * 120 + sim.zone * 2,
+                        r: r,
+                        rot: Math.random() * 6,
+                        vr: (Math.random() - 0.5) * 2,
+                        verts: rockVerts(r),
+                        nm: false
+                    });
+                }
+                updateBossHealthBar();
+            }
+
+            function updateBossBullets(sdt) {
+                for (let i = sim.bossBullets.length - 1; i >= 0; i--) {
+                    const b = sim.bossBullets[i];
+                    b.x += b.vx * sdt;
+                    b.y += b.vy * sdt;
+                    b.life -= sdt;
+                    if (b.life <= 0 || b.x < -50 || b.x > W + 50 || b.y < -50 || b.y > H + 50) {
+                        sim.bossBullets.splice(i, 1);
+                        continue;
+                    }
+                    const rk = sim.rocket;
+                    const d = Math.hypot(b.x - rk.x, b.y - rk.y);
+                    if (d < b.r + getShipHitR()) {
+                        if (sim.invincible <= 0 && sim.state === 'playing') {
+                            damage();
+                            burst(b.x, b.y, '255,100,100', 10, 200);
+                        }
+                        sim.bossBullets.splice(i, 1);
+                    }
+                }
+            }
+
+            function bossHit(damageAmt) {
+                if (!sim.boss || sim.boss.state !== 'fighting') return;
+                sim.boss.hp -= damageAmt;
+                Sfx.bossHit();
+                sim.shake = Math.max(sim.shake, 6);
+                burst(sim.boss.x, sim.boss.y, '255,200,100', 6, 180);
+                updateBossHealthBar();
+                if (sim.boss.hp <= 0) {
+                    sim.boss.state = 'dying';
+                    sim.boss.deathTimer = 0;
+                    Sfx.bossDie();
+                    for (let i = 0; i < 8; i++) {
+                        setTimeout(() => {
+                            burst(sim.boss.x + (Math.random() - 0.5) * 120, sim.boss.y + (Math.random() -
+                                0.5) * 80, '255,80,80', 20, 350);
+                        }, i * 150);
+                    }
+                    const drop = 30 + sim.zone * 5;
+                    totalCoins += drop;
+                    totalCoinsCollected += drop;
+                    sim.runCoins += drop;
+                    pushText(sim.boss.x, sim.boss.y - 40, 'BOSS DEFEATED +' + drop + ' DATA', '#ffd700');
+                    missionEvent('bosskill', 1, true);
+                    bossDefeatedCount++;
+                    checkAchievements();
+                    saveProgress();
+                    setTimeout(() => {
+                        if (sim.boss) { sim.boss = null;
+                            bossHealthContainer.classList.remove('active');
+                            sim.bossSpawnDist = sim.dist + 800 + Math.random() * 400; }
+                    }, 2000);
+                    sim.bossDefeated = true;
+                }
+            }
+
+            // ─── HAZARDS ──────────────────────────────────────────────────────────
+            function updateHazards(sdt) {
+                const rk = sim.rocket,
+                    hr = getShipHitR();
+                for (let i = sim.hazards.length - 1; i >= 0; i--) {
+                    const h = sim.hazards[i];
+                    h.x += h.vx * sdt;
+                    h.y += h.vy * sdt;
+                    if (h.vr !== undefined) h.rot += h.vr * sdt;
+                    if ((h.type === 'meteor' || h.type === 'comet') && Math.random() < sdt * 46 && sim.parts.length <
+                        520) {
+                        sim.parts.push({
+                            type: 'trail',
+                            x: h.x - h.vx * 0.02,
+                            y: h.y - h.vy * 0.02,
+                            vx: (Math.random() - 0.5) * 30,
+                            vy: (Math.random() - 0.5) * 30,
+                            life: 0.4,
+                            max: 0.4,
+                            size: h.type === 'comet' ? 4 : 2.6,
+                            color: h.type === 'comet' ? '170,220,255' : '255,160,70'
+                        });
+                    }
+                    const d = Math.hypot(h.x - rk.x, h.y - rk.y);
+                    if (d < h.r + hr) {
+                        totalAsteroidsDestroyed++;
+                        checkAchievements();
+                        burst(h.x, h.y, '200,190,170', 8, 240);
+                        burst(h.x, h.y, '255,160,80', 6, 200);
+                        sim.hazards.splice(i, 1);
+                        autoLaunchMissile(h.x, h.y);
+                        if (sim.invincible <= 0 && sim.state === 'playing') damage();
+                        continue;
+                    } else if (!h.nm && NEARMISSABLE[h.type]) {
+                        const win = h.type === 'comet' ? 48 : (h.type === 'ast' ? 36 : 30);
+                        if (d < h.r + hr + win) { h.nm = true;
+                            nearMiss(h); }
+                    }
+                    if (h.y > H + 180 || h.x < -280 || h.x > W + 280) sim.hazards.splice(i, 1);
+                }
+                if (sim.boss && sim.boss.state === 'fighting') {
+                    const db = Math.hypot(sim.boss.x - rk.x, sim.boss.y - rk.y);
+                    if (db < 40 + hr) {
+                        if (sim.invincible <= 0 && sim.state === 'playing') {
+                            damage();
+                            burst(sim.boss.x, sim.boss.y, '255,100,100', 16, 250);
+                            const ang = Math.atan2(sim.boss.y - rk.y, sim.boss.x - rk.x);
+                            sim.boss.x += Math.cos(ang) * 60;
+                            sim.boss.y += Math.sin(ang) * 60;
+                            sim.boss.x = clampN(sim.boss.x, 60, W - 60);
+                            sim.boss.y = clampN(sim.boss.y, 60, H * 0.4);
+                        }
+                    }
+                }
+            }
+
+            // ─── MISSILES ──────────────────────────────────────────────────────────
+            function autoLaunchMissile(x, y) {
+                if (sim.autoMissileCooldown > 0) return;
+                let nearest = null,
+                    minD = Infinity;
+                for (const h of sim.hazards) {
+                    if (h.type === 'ast') {
+                        const d = Math.hypot(h.x - x, h.y - y);
+                        if (d < minD) { minD = d;
+                            nearest = h; }
+                    }
+                }
+                if (!nearest) return;
+                const dx = nearest.x - x,
+                    dy = nearest.y - y;
+                const len = Math.hypot(dx, dy) || 1;
+                const speed = 400;
+                const vx = (dx / len) * speed;
+                const vy = (dy / len) * speed;
+                const angleOff = (Math.random() - 0.5) * 0.3;
+                const cos = Math.cos(angleOff),
+                    sin = Math.sin(angleOff);
+                const finalVx = vx * cos - vy * sin;
+                const finalVy = vx * sin + vy * cos;
+                sim.missiles.push({
+                    x: x + (dx / len) * 20,
+                    y: y + (dy / len) * 20,
+                    vx: finalVx,
+                    vy: finalVy,
+                    life: 2.0,
+                    targetX: nearest.x + (Math.random() - 0.5) * 40,
+                    targetY: nearest.y + (Math.random() - 0.5) * 40,
+                    exploded: false,
+                    radius: getShipMissileRadius(),
+                    trail: []
+                });
+                sim.autoMissileCooldown = 0.3;
+                Sfx.missileLaunch();
+                burst(x, y, '255,200,100', 4, 100);
+            }
+
+            function updateMissiles(sdt) {
+                if (sim.missileCooldown > 0) sim.missileCooldown -= sdt;
+                if (sim.autoMissileCooldown > 0) sim.autoMissileCooldown -= sdt;
+                for (let i = sim.missiles.length - 1; i >= 0; i--) {
+                    const m = sim.missiles[i];
+                    m.life -= sdt;
+                    m.x += m.vx * sdt;
+                    m.y += m.vy * sdt;
+                    if (Math.random() < 0.6 && sim.parts.length < 520) {
+                        sim.parts.push({
+                            type: 'trail',
+                            x: m.x + (Math.random() - 0.5) * 6,
+                            y: m.y + (Math.random() - 0.5) * 6,
+                            vx: (Math.random() - 0.5) * 20,
+                            vy: (Math.random() - 0.5) * 20,
+                            life: 0.35,
+                            max: 0.35,
+                            size: 4 + Math.random() * 3,
+                            color: '255,200,80'
+                        });
+                    }
+                    let explode = false;
+                    if (m.life <= 0) explode = true;
+                    if (m.x < -50 || m.x > W + 50 || m.y < -50 || m.y > H + 50) explode = true;
+                    if (Math.hypot(m.x - m.targetX, m.y - m.targetY) < 40) explode = true;
+                    if (explode && !m.exploded) {
+                        m.exploded = true;
+                        const blastRadius = m.radius || getShipMissileRadius();
+                        let destroyed = 0;
+                        for (let j = sim.hazards.length - 1; j >= 0; j--) {
+                            const h = sim.hazards[j];
+                            if (h.type === 'ast' && Math.hypot(m.x - h.x, m.y - h.y) < blastRadius) {
+                                burst(h.x, h.y, '255,200,120', 16, 300);
+                                const bonus = sim.diffCoinBonus || 0;
+                                const techBonus = sim.techCoinBonus || 0;
+                                const total = 1 + bonus + techBonus;
+                                totalCoins += total;
+                                totalCoinsCollected += total;
+                                sim.runCoins += total;
+                                totalAsteroidsDestroyed++;
+                                destroyed++;
+                                sim.hazards.splice(j, 1);
+                                autoLaunchMissile(h.x, h.y);
+                            }
+                        }
+                        if (sim.boss && sim.boss.state === 'fighting' && Math.hypot(m.x - sim.boss.x, m.y - sim.boss
+                                .y) < blastRadius + 40) {
+                            bossHit(15 + sim.zone * 2);
+                        }
+                        if (destroyed > 0) {
+                            pushText(m.x, m.y - 40, '+' + destroyed + ' data', '#ffd700');
+                            Sfx.missileExplode();
+                            sim.shake = Math.max(sim.shake, 12);
+                            sim.flash = 0.3;
+                            sim.flashC = '255,200,100';
+                            burst(m.x, m.y, '255,200,100', 30, 400);
+                            burst(m.x, m.y, '255,150,50', 20, 300);
+                            for (let k = 0; k < 20; k++) {
+                                const ang = Math.random() * Math.PI * 2;
+                                const sp = 100 + Math.random() * 200;
+                                sim.parts.push({
+                                    type: 'spark',
+                                    x: m.x + (Math.random() - 0.5) * 20,
+                                    y: m.y + (Math.random() - 0.5) * 20,
+                                    vx: Math.cos(ang) * sp,
+                                    vy: Math.sin(ang) * sp,
+                                    life: 0.6 + Math.random() * 0.3,
+                                    max: 0.9,
+                                    size: 2 + Math.random() * 3,
+                                    color: '255,180,80'
+                                });
+                            }
+                            checkAchievements();
+                        } else {
+                            burst(m.x, m.y, '180,180,200', 8, 120);
+                        }
+                        sim.missiles.splice(i, 1);
+                    }
+                }
+            }
+
+            function autoFireVestalMissile(sdt) {
+                if (!shipIsVestal() || sim.state !== 'playing') return;
+                const cooldown = getShipMissileCooldown();
+                sim.autoMissileTimer -= sdt;
+                if (sim.autoMissileTimer > 0) return;
+                const count = getShipMissileCount();
+                let targets = [];
+                // Find nearest asteroids
+                const rk = sim.rocket;
+                const candidates = sim.hazards.filter(h => h.type === 'ast').sort((a, b) => {
+                    const da = Math.hypot(a.x - rk.x, a.y - rk.y);
+                    const db = Math.hypot(b.x - rk.x, b.y - rk.y);
+                    return da - db;
+                });
+                for (let i = 0; i < Math.min(count, candidates.length); i++) {
+                    targets.push(candidates[i]);
+                }
+                // If not enough targets, fire at the closest one multiple times or at boss
+                if (targets.length === 0 && sim.boss && sim.boss.state === 'fighting') {
+                    // Fire at boss
+                    const dx = sim.boss.x - rk.x,
+                        dy = sim.boss.y - rk.y;
+                    const len = Math.hypot(dx, dy) || 1;
+                    const speed = 400;
+                    const vx = (dx / len) * speed,
+                        vy = (dy / len) * speed;
+                    const tipX = rk.x + Math.cos(rk.tilt) * 28,
+                        tipY = rk.y + Math.sin(rk.tilt) * 28;
+                    for (let i = 0; i < count; i++) {
+                        const offX = (Math.random() - 0.5) * 40;
+                        const offY = (Math.random() - 0.5) * 40;
+                        sim.missiles.push({
+                            x: tipX + offX,
+                            y: tipY + offY,
+                            vx: vx + (Math.random() - 0.5) * 30,
+                            vy: vy + (Math.random() - 0.5) * 30,
+                            life: 2.0,
+                            targetX: sim.boss.x + (Math.random() - 0.5) * 60,
+                            targetY: sim.boss.y + (Math.random() - 0.5) * 60,
+                            exploded: false,
+                            radius: getShipMissileRadius(),
+                            trail: []
+                        });
+                    }
+                    Sfx.missileLaunch();
+                    burst(tipX, tipY, '255,200,100', 8, 180);
+                    sim.autoMissileTimer = cooldown;
+                    return;
+                }
+                if (targets.length === 0) {
+                    sim.autoMissileTimer = cooldown * 0.5;
+                    return;
+                }
+                const tipX = rk.x + Math.cos(rk.tilt) * 28,
+                    tipY = rk.y + Math.sin(rk.tilt) * 28;
+                for (const target of targets) {
+                    const dx = target.x - rk.x,
+                        dy = target.y - rk.y;
+                    const len = Math.hypot(dx, dy) || 1;
+                    const speed = 400;
+                    const vx = (dx / len) * speed,
+                        vy = (dy / len) * speed;
+                    const offX = (Math.random() - 0.5) * 20;
+                    const offY = (Math.random() - 0.5) * 20;
+                    sim.missiles.push({
+                        x: tipX + offX,
+                        y: tipY + offY,
+                        vx: vx + (Math.random() - 0.5) * 20,
+                        vy: vy + (Math.random() - 0.5) * 20,
+                        life: 2.0,
+                        targetX: target.x + (Math.random() - 0.5) * 30,
+                        targetY: target.y + (Math.random() - 0.5) * 30,
+                        exploded: false,
+                        radius: getShipMissileRadius(),
+                        trail: []
+                    });
+                }
+                Sfx.missileLaunch();
+                burst(tipX, tipY, '255,200,100', 8, 180);
+                sim.autoMissileTimer = cooldown;
+            }
+
+            // ─── BULLETS ──────────────────────────────────────────────────────────
+            function fireBullet() {
+                if (sim.state !== 'playing' || sim.fireCooldown > 0) return;
+                const rk = sim.rocket;
+                const dx = rk.tx - rk.x,
+                    dy = rk.ty - rk.y;
+                const len = Math.hypot(dx, dy) || 1;
+                const speed = 600;
+                const vx = (dx / len) * speed,
+                    vy = (dy / len) * speed;
+                const tipX = rk.x + Math.cos(rk.tilt) * 20,
+                    tipY = rk.y + Math.sin(rk.tilt) * 20;
+                sim.bullets.push({ x: tipX, y: tipY, vx: vx, vy: vy, life: 2.0, r: 3 });
+                sim.fireCooldown = 0.25;
+                Sfx.shoot();
+                burst(tipX, tipY, '255,255,200', 6, 120);
+            }
+
+            function updateBullets(sdt) {
+                if (sim.fireCooldown > 0) sim.fireCooldown -= sdt;
+                for (let i = sim.bullets.length - 1; i >= 0; i--) {
+                    const b = sim.bullets[i];
+                    b.x += b.vx * sdt;
+                    b.y += b.vy * sdt;
+                    b.life -= sdt;
+                    if (b.life <= 0) { sim.bullets.splice(i, 1); continue; }
+                    let hit = false;
+                    for (let j = sim.hazards.length - 1; j >= 0; j--) {
+                        const h = sim.hazards[j];
+                        if (h.type !== 'ast') continue;
+                        if (Math.hypot(b.x - h.x, b.y - h.y) < b.r + h.r) {
+                            burst(h.x, h.y, '255,200,120', 14, 280);
+                            sim.hazards.splice(j, 1);
+                            const bonus = sim.diffCoinBonus || 0;
+                            const techBonus = sim.techCoinBonus || 0;
+                            const total = 1 + bonus + techBonus;
+                            totalCoins += total;
+                            totalCoinsCollected += total;
+                            sim.runCoins += total;
+                            totalAsteroidsDestroyed++;
+                            pushText(h.x, h.y - 20, '+1 data', '#ffd700');
+                            sim.flash = 0.15;
+                            sim.flashC = '255,240,200';
+                            Sfx.shoot();
+                            autoLaunchMissile(h.x, h.y);
+                            checkAchievements();
+                            hit = true;
+                            break;
+                        }
+                    }
+                    if (!hit && sim.boss && sim.boss.state === 'fighting' && Math.hypot(b.x - sim.boss.x, b.y - sim
+                            .boss.y) < b.r + 25) {
+                        bossHit(5 + sim.up.shields * 2);
+                        hit = true;
+                        burst(b.x, b.y, '255,200,100', 8, 150);
+                    }
+                    if (hit) sim.bullets.splice(i, 1);
+                }
+            }
+
+            // ─── CLOUDS ────────────────────────────────────────────────────────────
+            function updateClouds(sdt) {
+                let inside = false;
+                for (let i = sim.clouds.length - 1; i >= 0; i--) {
+                    const c = sim.clouds[i];
+                    c.t += sdt;
+                    c.y += c.vy * sdt;
+                    c.x += Math.sin(c.t * 0.6 + c.seed) * 26 * sdt;
+                    const d = Math.hypot(c.x - sim.rocket.x, c.y - sim.rocket.y);
+                    if (d < c.r * 0.78 && sim.state === 'playing') {
+                        inside = true;
+                        sim.rad += sdt * 1.05;
+                        sim.radTickT -= sdt;
+                        if (sim.radTickT <= 0) { Sfx.tick();
+                            sim.radTickT = 0.28; }
+                        if (sim.rad >= 1) {
+                            burst(c.x, c.y, '140,255,168', 14, 260);
+                            sim.clouds.splice(i, 1);
+                            sim.rad = 0;
+                            if (sim.invincible <= 0 && sim.state === 'playing') damage();
+                        }
+                    }
+                    if (c.y > H + 220) sim.clouds.splice(i, 1);
+                }
+                if (!inside) sim.rad = Math.max(0, sim.rad - sdt * 1.5);
+            }
+
+            // ─── COLLECTIBLES UPDATE ──────────────────────────────────────────────
+            function updateCoins(sdt) {
+                const rk = sim.rocket;
+                let attractR = sim.magnetT > 0 ? sim.magnetRange : 36;
+                if (shipIsCleaner()) attractR = Math.max(attractR, 60 + 20 * sim.up.magnet);
+                for (let i = sim.coins.length - 1; i >= 0; i--) {
+                    const c = sim.coins[i];
+                    c.y += c.vy * sdt;
+                    c.x += Math.sin((c.phase += sdt * 3)) * 14 * sdt;
+                    const dx = rk.x - c.x,
+                        dy = rk.y - c.y,
+                        d = Math.hypot(dx, dy) || 1;
+                    if (d < attractR) { c.x += dx / d * 760 * sdt;
+                        c.y += dy / d * 760 * sdt; }
+                    if (d < 24 + getShipHitR()) { collectCoin(c);
+                        sim.coins.splice(i, 1); } else if (c.y > H + 60) sim.coins.splice(i, 1);
+                }
+            }
+
+            function updatePups(sdt) {
+                const rk = sim.rocket;
+                for (let i = sim.pups.length - 1; i >= 0; i--) {
+                    const p = sim.pups[i];
+                    p.y += p.vy * sdt;
+                    p.t += sdt;
+                    if (Math.hypot(p.x - rk.x, p.y - rk.y) < 32) { applyPup(p);
+                        sim.pups.splice(i, 1); } else if (p.y > H + 60) sim.pups.splice(i, 1);
+                }
+            }
+
+            // ─── WARP ──────────────────────────────────────────────────────────────
+            function startWarp() {
+                if (sim.state !== 'playing') return;
+                sim.state = 'warp';
+                sim.warpT = 0;
+                sim.warpFlash = false;
+                sim.warpK = 1;
+                sim.warpBase = sim.scroll;
+                Sfx.warp();
+                sim.hazards.forEach(h => burst(h.x, h.y, '159,214,255', 6, 220));
+                sim.hazards = [];
+                sim.clouds = [];
+                sim.pups = [];
+                sim.coins = [];
+                sim.bullets = [];
+                sim.missiles = [];
+                sim.bossBullets = [];
+                sim.meteorQ = null;
+                sim.rad = 0;
+                if (sim.boss) { sim.boss = null;
+                    bossHealthContainer.classList.remove('active');
+                    sim.bossDefeated = false;
+                    sim.bossSpawnDist = sim.dist + 800 + Math.random() * 400; }
+                saveProgress();
+            }
+
+            function updateWarp(rdt) {
+                sim.warpT += rdt;
+                sim.time += rdt;
+                const t = Math.min(1, sim.warpT / 0.9);
+                sim.warpK = 1 + 16 * t * t;
+                sim.scroll = sim.warpBase * sim.warpK;
+                updateStars(rdt, sim.scroll);
+                updateNebulas(rdt, sim.scroll * 0.5);
+                updateParts(rdt);
+                if (!sim.warpFlash && sim.warpT > 0.55) {
+                    sim.warpFlash = true;
+                    sim.flash = 0.9;
+                    sim.flashC = '220,240,255';
+                    sim.shake = 8;
+                }
+                if (sim.warpT >= 1.5) { openUpgrades();
+                    sim.state = 'choose'; }
+            }
+
+            // ─── DYING ─────────────────────────────────────────────────────────────
+            function updateDying(rdt) {
+                sim.dyingT += rdt;
+                sim.time += rdt * 0.3;
+                updateStars(rdt * sim.ts, sim.scroll * 0.25);
+                updateParts(rdt * sim.ts);
+                updateTexts(rdt);
+                if (sim.dyingT > 1.35) showGameOver();
+            }
+
+            // ─── UPGRADES ──────────────────────────────────────────────────────────
+            function upgradeLevel(id) {
+                if (id === 'shield') return sim.up.shields;
+                if (id === 'speed') return sim.up.speed;
+                if (id === 'magnet') return sim.up.magnet;
+                if (id === 'multiplier') return Math.round((sim.up.mult - 1) / 0.2);
+                return 0;
+            }
+
+            const UPGRADE_POOL = [
+                { id: 'shield', name: 'Integrity Cell', desc: '+1 max integrity', icon: 'shield',
+                    avail: () => 1 + sim.up.shields + (getShip(equippedShip).shieldBonus || 0) + sim.techShieldBonus <
+                        4 },
+                { id: 'speed', name: 'Agility', desc: '+6% speed & control', icon: 'rocket',
+                avail: () => sim.up.speed < 6 },
+                { id: 'magnet', name: 'Magnet Range', desc: '+50% collection radius', icon: 'coin',
+                    avail: () => sim.up.magnet < 4 },
+                { id: 'multiplier', name: 'Warp Multiplier', desc: '+0.2× range rate', icon: 'star',
+                    avail: () => sim.up.mult < 2 },
+                { id: 'slow', name: 'Slow Field', desc: 'Near misses dilate time', icon: 'bolt',
+                    avail: () => !sim.up.slow },
+                { id: 'refill', name: 'Field Repair', desc: 'Integrity + 15 data points', icon: 'shield',
+                    avail: () => true }
+            ];
+
+            function openUpgrades() {
+                Sfx.arrive();
+                const opts = UPGRADE_POOL.filter(u => u.avail());
+                for (let i = opts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));
+                    const t = opts[i];
+                    opts[i] = opts[j];
+                    opts[j] = t; }
+                const picks = opts.slice(0, 3);
+                while (picks.length < 3) picks.push(UPGRADE_POOL[UPGRADE_POOL.length - 1]);
+                upgradeGrid.innerHTML = picks.map(u => {
+                    const lvl = upgradeLevel(u.id);
+                    return '<div class="upgrade-card" data-id="' + u.id + '">' +
+                        '<span class="icon">' + svgIcon(u.icon, 28) + '</span>' +
+                        '<span class="name">' + u.name + '</span>' +
+                        '<span class="desc">' + u.desc + '</span>' +
+                        (lvl ? '<span class="lvl">Lv ' + lvl + ' → ' + (lvl + 1) + '</span>' : '') +
+                        '</div>';
+                }).join('');
+                upgradeOverlay.classList.add('active');
+            }
+
+            function applyUpgrade(id) {
+                if (id === 'shield') { sim.up.shields++;
+                    recalcStats();
+                    sim.lives = sim.maxLives; } else if (id === 'speed') { sim.up.speed++;
+                    recalcStats(); } else if (id === 'magnet') { sim.up.magnet++;
+                    recalcStats(); } else if (id === 'multiplier') { sim.up.mult = Math.min(2.4, sim.up.mult + 0.2);
+                    recalcStats(); } else if (id === 'slow') { sim.up.slow = true; } else if (id === 'refill') { sim
+                        .lives = sim.maxLives;
+                    totalCoins += 15;
+                    sim.runCoins += 15; }
+                Sfx.power();
+            }
+
+            function advanceZone() {
+                sim.zone++;
+                const z = zoneOf(sim.zone);
+                sim.segStart = sim.dist;
+                sim.goal = z.goal;
+                recalcStats();
+                sim.lives = sim.maxLives;
+                sim.invincible = 2.2 + sim.invincibleBonus;
+                sim.hT = {};
+                sim.astT = 0.9;
+                sim.coinT = 0.8;
+                const bonus = 8 + sim.zone * 2 + sim.diffCoinBonus * 2;
+                totalCoins += bonus;
+                totalCoinsCollected += bonus;
+                sim.runCoins += bonus;
+                missionEvent('reach', sim.zone, true);
+                saveProgress();
+                showToast('Arrived at ' + z.name + ' · +' + bonus + ' data points' + (z.hint ? ' — ' + z.hint : ''));
+                sim.state = 'playing';
+                updateHUD();
+                checkAchievements();
+                sim.bossSpawnDist = sim.dist + 800 + Math.random() * 400;
+                sim.bossDefeated = false;
+                if (sim.zone >= BASE_ZONES.length && currentDifficulty === 'impossible' && !joblessUnlocked) {
+                    joblessUnlocked = true;
+                    saveAchievements();
+                    checkAchievements();
+                    showToast('🏆 Jobless: Reached Deepspace on Impossible!');
+                }
+            }
+
+            function chooseUpgrade(id) {
+                if (sim.state !== 'choose') return;
+                applyUpgrade(id);
+                upgradeOverlay.classList.remove('active');
+                advanceZone();
+            }
+
+            // ─── RESET / START ─────────────────────────────────────────────────────
+            function resetRun() {
+                sim.state = 'playing';
+                sim.zone = 0;
+                sim.segStart = 0;
+                sim.dist = 0;
+                sim.goal = BASE_ZONES[0].goal;
+                sim.hazards = [];
+                sim.clouds = [];
+                sim.coins = [];
+                sim.pups = [];
+                sim.parts = [];
+                sim.texts = [];
+                sim.bullets = [];
+                sim.missiles = [];
+                sim.bossBullets = [];
+                sim.missileCooldown = 0;
+                sim.autoMissileCooldown = 0;
+                sim.autoMissileTimer = getShipMissileCooldown();
+                sim.fireCooldown = 0;
+                sim.flow = 0;
+                sim.flowT = 0;
+                sim.maxFlow = 0;
+                sim.rad = 0;
+                sim.coinStreak = 0;
+                sim.up = { shields: 0, speed: 0, magnet: 0, mult: 1, slow: false };
+                recalcStats();
+                sim.lives = sim.maxLives;
+                sim.runCoins = 0;
+                sim.invincible = 2.2 + sim.invincibleBonus;
+                sim.shake = 0;
+                sim.flash = 0;
+                sim.ts = 1;
+                sim.slowmoT = 0;
+                sim.pupSlowT = 0;
+                sim.magnetT = 0;
+                sim.astT = 1.2;
+                sim.coinT = 1.0;
+                sim.pupT = 9 + Math.random() * 6;
+                sim.meteorQ = null;
+                sim.hT = {};
+                sim.rocket.x = sim.rocket.tx = W / 2;
+                sim.rocket.y = sim.rocket.ty = H - 140;
+                sim.rocket.tilt = 0;
+                sim.rocket.vxS = 0;
+                sim.time = 0;
+                sim.hintT = 5;
+                sim.boss = null;
+                sim.bossDefeated = false;
+                sim.bossSpawnDist = 500 + Math.random() * 200;
+                sim.bossBullets = [];
+                sim.isDeepspace = false;
+                bossHealthContainer.classList.remove('active');
+                const diff = DIFFICULTIES[currentDifficulty];
+                sim.diffSpeedMult = diff.speedMult;
+                sim.diffAstMult = diff.astMult;
+                sim.diffHazardMult = diff.hazardMult;
+                sim.diffExtraLives = diff.extraLives || 0;
+                sim.diffCoinBonus = diff.coinBonus || 0;
+                recalcStats();
+                sim.lives = sim.maxLives;
+                updateHUD();
+            }
+
+            function startRun() {
+                Sfx.init();
+                Sfx.resume();
+                Sfx.humStart();
+                sessionCount++;
+                store.set('fps_sessions', sessionCount);
+                menuOverlay.classList.add('hidden');
+                gameOverOverlay.classList.remove('active');
+                pauseOverlay.classList.remove('active');
+                upgradeOverlay.classList.remove('active');
+                customOverlay.classList.remove('active');
+                difficultyOverlay.classList.remove('active');
+                techOverlay.classList.remove('active');
+                hud.classList.add('active');
+                progressContainer.classList.add('active');
+                pauseBtn.style.display = 'flex';
+                currentDifficulty = selectedDifficulty;
+                resetRun();
+            }
+
+            function quitToMenu() {
+                if (['playing', 'paused', 'warp', 'choose', 'dying'].includes(sim.state)) {
+                    totalFlown += Math.floor(sim.dist);
+                    store.set('fps_total_dist', totalFlown);
+                }
+                saveProgress();
+                Sfx.humStop();
+                sim.state = 'menu';
+                menuOverlay.classList.remove('hidden');
+                gameOverOverlay.classList.remove('active');
+                pauseOverlay.classList.remove('active');
+                upgradeOverlay.classList.remove('active');
+                customOverlay.classList.remove('active');
+                difficultyOverlay.classList.remove('active');
+                techOverlay.classList.remove('active');
+                hud.classList.remove('active');
+                progressContainer.classList.remove('active');
+                pauseBtn.style.display = 'none';
+                bossHealthContainer.classList.remove('active');
+                sim.boss = null;
+                sim.bossBullets = [];
+                updateMenuStats();
+                renderMissions();
+                renderShop();
+                renderTechTree();
+            }
+
+            function showGameOver() {
+                const d = Math.floor(sim.dist);
+                const newBest = d > bestScore;
+                bestScore = Math.max(bestScore, d);
+                totalFlown += d;
+                store.set('fps_total_dist', totalFlown);
+                saveProgress();
+                missionEvent('runDist', d);
+                goIcon.innerHTML = svgIcon('boom', 44);
+                goScore.textContent = d;
+                goBest.textContent = String(bestScore) + (newBest ? ' · new best' : '');
+                goPlanet.textContent = zoneOf(sim.zone).name;
+                goCoins.textContent = '+' + sim.runCoins + ' data points';
+                gameOverOverlay.classList.add('active');
+                sim.state = 'dead';
+                updateMenuStats();
+                renderMissions();
+            }
+
+            function pauseGame() {
+                if (sim.state !== 'playing') return;
+                sim.state = 'paused';
+                pauseOverlay.classList.add('active');
+                Sfx.humSet(0.15);
+            }
+
+            function resumeGame() {
+                if (sim.state !== 'paused') return;
+                pauseOverlay.classList.remove('active');
+                sim.state = 'playing';
+            }
+
+            // ─── MISSION SYSTEM ────────────────────────────────────────────────────
+            const MISSION_POOL = [
+                { id: 'coins25', name: 'Collect 25 data points', goal: 25, key: 'coins', reward: 20, icon: 'coin' },
+                { id: 'near15', name: 'Graze 15 hazards', goal: 15, key: 'near', reward: 20, icon: 'comet' },
+                { id: 'reachJup', name: 'Reach Jupiter', goal: 2, key: 'reach', reward: 25, icon: 'planet' },
+                { id: 'reachSat', name: 'Reach Saturn', goal: 3, key: 'reach', reward: 30, icon: 'planet' },
+                { id: 'dist600', name: 'Travel 600 in one run', goal: 600, key: 'runDist', reward: 30, icon: 'rocket' },
+                { id: 'flow6', name: 'Reach Sync ×6', goal: 6, key: 'flow', reward: 20, icon: 'bolt' },
+                { id: 'coins50', name: 'Collect 50 data points', goal: 50, key: 'coins', reward: 35, icon: 'coin' },
+                { id: 'pups3', name: 'Grab 3 power-ups', goal: 3, key: 'pups', reward: 15, icon: 'star' },
+                { id: 'bosskill', name: 'Defeat the Alien Warship', goal: 1, key: 'bosskill', reward: 40, icon: 'boss' }
+            ];
+
+            function todayKey() { return new Date().toISOString().slice(0, 10); }
+
+            function initDailyMissions() {
+                const today = todayKey();
+                if (!dailyMissions || dailyMissions.date !== today || !Array.isArray(dailyMissions.list)) {
+                    let seed = 0;
+                    for (const ch of today) seed += ch.charCodeAt(0);
+                    const arr = MISSION_POOL.map((m, i) => ({ m: m, r: Math.sin(seed * 9.7 + i * 13.3) * 0.5 + 0.5 }));
+                    arr.sort((a, b) => a.r - b.r);
+                    dailyMissions = {
+                        date: today,
+                        list: arr.slice(0, 3).map(o => ({ id: o.m.id, name: o.m.name, goal: o.m.goal, key: o.m.key,
+                            reward: o.m.reward, icon: o.m.icon, prog: 0, done: false }))
+                    };
+                    store.set('fps_daily_missions', JSON.stringify(dailyMissions));
+                }
+                renderMissions();
+            }
+
+            function renderMissions() {
+                if (!dailyMissions || !Array.isArray(dailyMissions.list)) return;
+                let html = '<div class="m-head">Research objectives</div>';
+                dailyMissions.list.forEach(m => {
+                    const pct = Math.min(100, m.prog / m.goal * 100);
+                    html += '<div class="mission-row' + (m.done ? ' done' : '') + '">' +
+                        '<div class="m-icon">' + (m.done ? svgIcon('check', 14) : svgIcon(m.icon, 14)) + '</div>' +
+                        '<div class="m-body"><div class="m-name">' + m.name + '</div>' +
+                        '<div class="m-bar"><div class="m-fill" style="width:' + pct + '%"></div></div></div>' +
+                        '<div class="m-prog">' + (m.done ? 'done' : Math.floor(m.prog) + '/' + m.goal) + '</div>' +
+                        '</div>';
+                });
+                missionsList.innerHTML = html;
+            }
+
+            function missionEvent(key, val, isMax) {
+                if (!dailyMissions || !Array.isArray(dailyMissions.list)) return;
+                let changed = false;
+                for (const m of dailyMissions.list) {
+                    if (m.done || m.key !== key) continue;
+                    if (isMax) m.prog = Math.max(m.prog, val);
+                    else m.prog += val;
+                    if (m.prog >= m.goal) {
+                        m.done = true;
+                        m.prog = m.goal;
+                        totalCoins += m.reward;
+                        showToast('Complete · ' + m.name + ' · +' + m.reward + ' data points');
+                        changed = true;
+                    } else changed = true;
+                }
+                if (changed) { saveProgress();
+                    renderMissions();
+                    updateMenuStats(); }
+            }
+
+            let toastTO = null;
+
+            function showToast(msg) {
+                missionToast.textContent = msg;
+                missionToast.classList.add('show');
+                clearTimeout(toastTO);
+                toastTO = setTimeout(() => missionToast.classList.remove('show'), 3400);
+            }
+
+            // ─── UPDATE LOOP ──────────────────────────────────────────────────────
+            function updateGame(sdt, rdt) {
+                const zone = zoneOf(sim.zone);
+                const segProg = Math.min(1, (sim.dist - sim.segStart) / sim.goal);
+                const ramp = 1 + 0.22 * segProg;
+                const expM = getExpMult();
+                sim.scroll = 200 * zone.speed * sim.speedFactor;
+                const hzBase = 200 * zone.speed * sim.diffSpeedMult;
+                sim.time += sdt;
+                if (sim.invincible > 0) sim.invincible -= rdt;
+                if (sim.magnetT > 0) sim.magnetT -= rdt;
+                if (sim.pupSlowT > 0) sim.pupSlowT -= rdt;
+                if (sim.slowmoT > 0) sim.slowmoT -= rdt;
+                if (sim.hintT > 0) sim.hintT -= rdt;
+                if (sim.flowT > 0) sim.flowT -= rdt;
+                else if (sim.flow > 0) { sim.flow--;
+                    sim.flowT = 0.7; }
+                if (sim.coinStreakT > 0) sim.coinStreakT -= rdt;
+                else sim.coinStreak = 0;
+                const flowMult = 1 + Math.min(0.5, sim.flow * 0.05);
+                sim.dist += sim.scroll * 0.08 * flowMult * sim.distMult * sdt;
+                if (sim.dist > maxDistanceEver) { maxDistanceEver = Math.floor(sim.dist);
+                    checkAchievements(); }
+                moveRocket(sdt);
+                updateStars(sdt, sim.scroll);
+                updateNebulas(sdt, sim.scroll);
+                spawnLogic(sdt, zone, ramp, expM, hzBase);
+                updateHazards(sdt);
+                updateClouds(sdt);
+                updateCoins(sdt);
+                updatePups(sdt);
+                updateBullets(sdt);
+                updateMissiles(sdt);
+                updateBoss(sdt);
+                updateBossBullets(sdt);
+                updateParts(sdt);
+                updateTexts(rdt);
+                Sfx.humSet(sim.ts);
+                autoFireVestalMissile(sdt);
+
+                const isDeep = sim.zone >= BASE_ZONES.length;
+                if (isDeep && !sim.isDeepspace) {
+                    sim.isDeepspace = true;
+                    if (currentDifficulty === 'impossible' && !joblessUnlocked) {
+                        joblessUnlocked = true;
+                        saveAchievements();
+                        checkAchievements();
+                        showToast('🏆 Jobless: Reached Deepspace on Impossible!');
+                    }
+                }
+
+                if (!sim.boss && !sim.bossDefeated && sim.dist >= sim.bossSpawnDist && sim.state === 'playing') {
+                    spawnBoss();
+                }
+
+                if (sim.dist - sim.segStart >= sim.goal) startWarp();
+            }
+
+            // ─── DRAW ──────────────────────────────────────────────────────────────
+            function drawStars() {
+                const wk = sim.state === 'warp' ? Math.min(sim.warpK, 22) : 1;
+                const drawLines = (sim.state === 'warp' && !sim.isDeepspace);
+                for (const s of stars) {
+                    const a = s.b * (0.65 + 0.35 * Math.sin(sim.time * s.tw + s.ph));
+                    if (wk > 1.4 && drawLines) {
+                        const len = Math.min(230, sim.scroll * SPEEDF[s.layer - 1] * 0.05 * wk);
+                        ctx.strokeStyle = 'rgba(190,215,255,' + a.toFixed(3) + ')';
+                        ctx.lineWidth = Math.max(0.6, s.size * 0.8);
+                        ctx.beginPath();
+                        ctx.moveTo(s.x, s.y - len);
+                        ctx.lineTo(s.x, s.y);
+                        ctx.stroke();
+                    } else {
+                        ctx.fillStyle = s.color || 'rgba(220,235,255,' + a.toFixed(3) + ')';
+                        ctx.beginPath();
+                        ctx.arc(s.x, s.y, s.size, 0, 7);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            function drawNebulas() {
+                if (sim.isDeepspace) return;
+                const hue = zoneOf(sim.zone).hue;
+                for (const n of nebulas) {
+                    const h = hue + n.ho;
+                    const nx = n.x + Math.sin(sim.time * 0.05 + n.ph) * 40;
+                    const g = ctx.createRadialGradient(nx, n.y, 0, nx, n.y, n.r);
+                    g.addColorStop(0, 'hsla(' + h + ',70%,60%,0.05)');
+                    g.addColorStop(1, 'hsla(' + h + ',70%,60%,0)');
+                    ctx.fillStyle = g;
+                    ctx.beginPath();
+                    ctx.arc(nx, n.y, n.r, 0, 7);
+                    ctx.fill();
+                }
+            }
+
+            function drawPlanetBody(x, y, r, zone, alpha) {
+                if (r < 1) return;
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                const hue = zone.hue,
+                    sat = zone.gray ? 10 : 60;
+                if (zone.ring && r > 26) {
+                    ctx.strokeStyle = 'hsla(' + hue + ',55%,70%,0.45)';
+                    ctx.lineWidth = Math.max(2, r * 0.16);
+                    ctx.beginPath();
+                    ctx.ellipse(x, y, r * 1.6, r * 0.52, -0.35, 0, 7);
+                    ctx.stroke();
+                }
+                const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.12, x, y, r);
+                g.addColorStop(0, 'hsl(' + hue + ',' + sat + '%,74%)');
+                g.addColorStop(0.6, 'hsl(' + hue + ',' + sat + '%,50%)');
+                g.addColorStop(1, 'hsl(' + hue + ',' + sat + '%,22%)');
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, 7);
+                ctx.fill();
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, 7);
+                ctx.clip();
+                if (zone.kind === 'gas' || zone.ring) {
+                    for (let i = 0; i < 4; i++) {
+                        ctx.fillStyle = 'hsla(' + hue + ',' + sat + '%,28%,0.16)';
+                        ctx.beginPath();
+                        ctx.ellipse(x + (i % 2 ? r * 0.15 : -r * 0.1), y - r * 0.6 + i * r * 0.4, r * 1.15, r * 0.09,
+                            0, 0, 7);
+                        ctx.fill();
+                    }
+                }
+                if (zone.kind === 'rocky') {
+                    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+                    ctx.beginPath();
+                    ctx.arc(x - r * 0.3, y - r * 0.15, r * 0.2, 0, 7);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(x + r * 0.25, y + r * 0.28, r * 0.14, 0, 7);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(x + r * 0.05, y + r * 0.55, r * 0.1, 0, 7);
+                    ctx.fill();
+                }
+                if (zone.kind === 'earth') {
+                    ctx.fillStyle = 'hsla(140,45%,42%,0.75)';
+                    ctx.beginPath();
+                    ctx.ellipse(x - r * 0.3, y - r * 0.1, r * 0.4, r * 0.25, 0.5, 0, 7);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(x + r * 0.35, y + r * 0.3, r * 0.3, r * 0.2, -0.4, 0, 7);
+                    ctx.fill();
+                }
+                if (zone.kind === 'star') {
+                    ctx.globalCompositeOperation = 'lighter';
+                    const cg = ctx.createRadialGradient(x, y, 0, x, y, r * 0.8);
+                    cg.addColorStop(0, 'rgba(255,250,220,0.8)');
+                    cg.addColorStop(1, 'rgba(255,220,150,0)');
+                    ctx.fillStyle = cg;
+                    ctx.beginPath();
+                    ctx.arc(x, y, r * 0.8, 0, 7);
+                    ctx.fill();
+                    ctx.globalCompositeOperation = 'source-over';
+                }
+                ctx.restore();
+                ctx.strokeStyle = 'hsla(' + hue + ',80%,80%,0.35)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, 7);
+                ctx.stroke();
+                if (zone.ring && r > 26) {
+                    ctx.strokeStyle = 'hsla(' + hue + ',60%,78%,0.6)';
+                    ctx.lineWidth = Math.max(2, r * 0.16);
+                    ctx.beginPath();
+                    ctx.ellipse(x, y, r * 1.6, r * 0.52, -0.35, 0.15 * Math.PI, 0.85 * Math.PI);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            function drawApproachPlanet() {
+                if (sim.state === 'menu') return;
+                const segP = sim.goal > 0 ? Math.min(1, (sim.dist - sim.segStart) / sim.goal) : 0;
+                let t = 0;
+                if (segP > 0.55) t = (segP - 0.55) / 0.45;
+                if (sim.state === 'choose') t = 1;
+                if (sim.state === 'warp') t = 1 + sim.warpT;
+                if (t <= 0) return;
+                const nz = zoneOf(sim.zone + 1);
+                let r = 12 + t * t * 110;
+                if (sim.state === 'warp') r += sim.warpK * sim.warpK * 12;
+                drawPlanetBody(W / 2, 46, Math.min(r, W * 1.5), nz, Math.min(1, t + 0.25));
+            }
+
+            function drawClouds() {
+                for (const c of sim.clouds) {
+                    const pulse = 0.5 + 0.5 * Math.sin(c.t * 2);
+                    for (let i = 0; i < 5; i++) {
+                        const ang = c.t * 0.5 + i * 1.256;
+                        const bx = c.x + Math.cos(ang) * c.r * 0.32;
+                        const by = c.y + Math.sin(ang * 1.3) * c.r * 0.22;
+                        const br = c.r * (0.5 + 0.1 * Math.sin(c.t * 2 + i));
+                        const g = ctx.createRadialGradient(bx, by, 0, bx, by, br);
+                        g.addColorStop(0, 'hsla(130,90%,62%,0.14)');
+                        g.addColorStop(1, 'hsla(130,90%,62%,0)');
+                        ctx.fillStyle = g;
+                        ctx.beginPath();
+                        ctx.arc(bx, by, br, 0, 7);
+                        ctx.fill();
+                    }
+                    ctx.fillStyle = 'rgba(160,255,190,' + (0.3 + pulse * 0.25) + ')';
+                    for (let i = 0; i < 7; i++) {
+                        const a = c.t * 0.9 + i * 0.9,
+                            d = c.r * 0.55;
+                        ctx.beginPath();
+                        ctx.arc(c.x + Math.cos(a + c.seed) * d, c.y + Math.sin(a * 1.2 + c.seed) * d * 0.7, 1.8, 0, 7);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            function drawRock(h) {
+                ctx.beginPath();
+                h.verts.forEach((v, i) => {
+                    const px = Math.cos(v.a) * v.d,
+                        py = Math.sin(v.a) * v.d;
+                    i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+                });
+                ctx.closePath();
+                ctx.fillStyle = '#8b8178';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(40,36,32,0.8)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.fillStyle = 'rgba(0,0,0,0.18)';
+                ctx.beginPath();
+                ctx.arc(-h.r * 0.3, -h.r * 0.15, h.r * 0.22, 0, 7);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(h.r * 0.25, h.r * 0.3, h.r * 0.14, 0, 7);
+                ctx.fill();
+            }
+
+            function drawHazards() {
+                for (const h of sim.hazards) {
+                    if (h.type === 'ring' || h.type === 'meteor' || h.type === 'comet') {
+                        const sp = Math.hypot(h.vx, h.vy) || 1;
+                        const nx = h.vx / sp,
+                            ny = h.vy / sp;
+                        const len = h.type === 'comet' ? 70 : 26;
+                        ctx.strokeStyle = h.type === 'comet' ? 'rgba(170,220,255,0.35)' : 'rgba(255,170,90,0.25)';
+                        ctx.lineWidth = h.r * 0.8;
+                        ctx.beginPath();
+                        ctx.moveTo(h.x - nx * len, h.y - ny * len);
+                        ctx.lineTo(h.x, h.y);
+                        ctx.stroke();
+                    }
+                    if (h.type === 'comet') {
+                        ctx.save();
+                        ctx.globalCompositeOperation = 'lighter';
+                        const g = ctx.createRadialGradient(h.x, h.y, 2, h.x, h.y, h.r * 2.6);
+                        g.addColorStop(0, 'rgba(200,235,255,0.7)');
+                        g.addColorStop(1, 'rgba(150,200,255,0)');
+                        ctx.fillStyle = g;
+                        ctx.beginPath();
+                        ctx.arc(h.x, h.y, h.r * 2.6, 0, 7);
+                        ctx.fill();
+                        ctx.fillStyle = '#fff';
+                        ctx.beginPath();
+                        ctx.arc(h.x, h.y, h.r * 0.55, 0, 7);
+                        ctx.fill();
+                        ctx.restore();
+                        continue;
+                    }
+                    ctx.save();
+                    ctx.translate(h.x, h.y);
+                    if (h.type === 'ast') { ctx.rotate(h.rot);
+                        drawRock(h); } else if (h.type === 'ring') { ctx.rotate(h.rot);
+                        drawRock(h);
+                        ctx.strokeStyle = 'rgba(200,190,170,0.4)';
+                        ctx.lineWidth = 1; } else if (h.type === 'meteor') { ctx.rotate(h.rot);
+                        drawRock(h);
+                        ctx.globalCompositeOperation = 'lighter';
+                        ctx.fillStyle = 'rgba(255,150,60,0.3)';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, h.r * 1.7, 0, 7);
+                        ctx.fill(); } else if (h.type === 'shard') {
+                        ctx.rotate(h.rot);
+                        ctx.beginPath();
+                        ctx.moveTo(0, -h.r);
+                        ctx.lineTo(h.r * 0.55, 0);
+                        ctx.lineTo(0, h.r);
+                        ctx.lineTo(-h.r * 0.55, 0);
+                        ctx.closePath();
+                        ctx.fillStyle = '#dff4fb';
+                        ctx.fill();
+                        ctx.strokeStyle = '#8fd0e0';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                        ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+                        ctx.beginPath();
+                        ctx.moveTo(-1.5, -h.r * 0.5);
+                        ctx.lineTo(1.5, -h.r * 0.1);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+            }
+
+            function drawCoins() {
+                for (const c of sim.coins) {
+                    ctx.save();
+                    ctx.translate(c.x, c.y);
+                    ctx.globalCompositeOperation = 'lighter';
+                    ctx.fillStyle = 'rgba(255,215,80,0.16)';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 12, 0, 7);
+                    ctx.fill();
+                    ctx.globalCompositeOperation = 'source-over';
+                    const sx = 0.35 + 0.65 * Math.abs(Math.cos(c.phase));
+                    ctx.scale(sx, 1);
+                    ctx.fillStyle = '#ffd24a';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 9, 0, 7);
+                    ctx.fill();
+                    ctx.strokeStyle = '#a87b12';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                    ctx.fillStyle = '#ffe9a3';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 5.2, 0, 7);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            function drawPups() {
+                const COL = { shield: '#6fcbff', magnet: '#ffd700', slow: '#a78bfa' };
+                for (const p of sim.pups) {
+                    const col = COL[p.type] || '#6fcbff';
+                    ctx.save();
+                    ctx.translate(p.x, p.y + Math.sin(p.t * 3) * 3);
+                    ctx.globalCompositeOperation = 'lighter';
+                    ctx.fillStyle = col;
+                    ctx.globalAlpha = 0.12;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 22, 0, 7);
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.save();
+                    ctx.rotate(p.t * 0.8);
+                    ctx.strokeStyle = col;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    for (let i = 0; i < 6; i++) {
+                        const a = i / 6 * Math.PI * 2;
+                        i ? ctx.lineTo(Math.cos(a) * 14, Math.sin(a) * 14) : ctx.moveTo(Math.cos(a) * 14, Math.sin(
+                            a) * 14);
+                    }
+                    ctx.closePath();
+                    ctx.stroke();
+                    ctx.restore();
+                    ctx.strokeStyle = col;
+                    ctx.fillStyle = col;
+                    ctx.lineWidth = 2.4;
+                    if (p.type === 'shield') {
+                        ctx.beginPath();
+                        ctx.moveTo(0, -6);
+                        ctx.lineTo(5, -4);
+                        ctx.lineTo(5, 1);
+                        ctx.quadraticCurveTo(5, 5, 0, 7);
+                        ctx.quadraticCurveTo(-5, 5, -5, 1);
+                        ctx.lineTo(-5, -4);
+                        ctx.closePath();
+                        ctx.fill();
+                    } else if (p.type === 'magnet') {
+                        ctx.beginPath();
+                        ctx.arc(0, 1.5, 5, Math.PI, 0);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(-5, 1.5);
+                        ctx.lineTo(-5, -3);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(5, 1.5);
+                        ctx.lineTo(5, -3);
+                        ctx.stroke();
+                    } else {
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 6, 0, 7);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(0, 0);
+                        ctx.lineTo(0, -4);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(0, 0);
+                        ctx.lineTo(3, 1);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+            }
+
+            function drawBullets() {
+                for (const b of sim.bullets) {
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'lighter';
+                    ctx.fillStyle = '#fff';
+                    ctx.shadowColor = '#6fcbff';
+                    ctx.shadowBlur = 18;
+                    ctx.beginPath();
+                    ctx.arc(b.x, b.y, b.r, 0, 7);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            function drawMissiles() {
+                for (const m of sim.missiles) {
+                    const ang = Math.atan2(m.vy, m.vx);
+                    ctx.save();
+                    ctx.translate(m.x, m.y);
+                    ctx.rotate(ang);
+                    ctx.globalCompositeOperation = 'lighter';
+                    const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 18);
+                    g.addColorStop(0, 'rgba(255,200,80,0.5)');
+                    g.addColorStop(1, 'rgba(255,200,80,0)');
+                    ctx.fillStyle = g;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 18, 0, 7);
+                    ctx.fill();
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.fillStyle = '#ff6b4a';
+                    ctx.beginPath();
+                    ctx.moveTo(12, 0);
+                    ctx.lineTo(-6, -4);
+                    ctx.lineTo(-8, -2);
+                    ctx.lineTo(-8, 2);
+                    ctx.lineTo(-6, 4);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.strokeStyle = '#cc5533';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    ctx.fillStyle = '#ffd93d';
+                    ctx.beginPath();
+                    ctx.moveTo(14, 0);
+                    ctx.lineTo(10, -3);
+                    ctx.lineTo(10, 3);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.fillStyle = '#ff6b4a';
+                    ctx.beginPath();
+                    ctx.moveTo(-6, -4);
+                    ctx.lineTo(-10, -7);
+                    ctx.lineTo(-6, -2);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(-6, 4);
+                    ctx.lineTo(-10, 7);
+                    ctx.lineTo(-6, 2);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            function flamePath(hw, y0, len) {
+                ctx.beginPath();
+                ctx.moveTo(-hw, y0);
+                ctx.quadraticCurveTo(0, y0 + len * 1.3, hw, y0);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            function drawRocket() {
+                const rk = sim.rocket,
+                    ship = getShip(equippedShip);
+                const hull = custom.hull || ship.hull || '#c9d4e2';
+                const accent = custom.accent || ship.accent || '#6fcbff';
+                const auraCol = custom.aura || '#6fcbff';
+                const auraInt = custom.auraIntensity || 0.5;
+                ctx.save();
+                ctx.translate(rk.x, rk.y);
+                ctx.rotate(rk.tilt);
+                if (auraInt > 0.01) {
+                    ctx.globalCompositeOperation = 'lighter';
+                    const grad = ctx.createRadialGradient(0, -2, 4, 0, -2, 50 + 30 * auraInt);
+                    grad.addColorStop(0, 'rgba(' + hexToRgb(auraCol) + ',' + (0.25 * auraInt) + ')');
+                    grad.addColorStop(0.4, 'rgba(' + hexToRgb(auraCol) + ',' + (0.12 * auraInt) + ')');
+                    grad.addColorStop(1, 'rgba(' + hexToRgb(auraCol) + ',0)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(0, -2, 50 + 30 * auraInt, 0, 7);
+                    ctx.fill();
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.strokeStyle = 'rgba(' + hexToRgb(auraCol) + ',' + (0.15 * auraInt) + ')';
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([4, 8]);
+                    ctx.beginPath();
+                    ctx.arc(0, -2, 28 + 18 * auraInt, 0, 7);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+                if (ship.glow) {
+                    ctx.globalCompositeOperation = 'lighter';
+                    const g = ctx.createRadialGradient(0, -2, 4, 0, -2, 34);
+                    g.addColorStop(0, 'rgba(196,165,255,0.2)');
+                    g.addColorStop(1, 'rgba(196,165,255,0)');
+                    ctx.fillStyle = g;
+                    ctx.beginPath();
+                    ctx.arc(0, -2, 34, 0, 7);
+                    ctx.fill();
+                    ctx.globalCompositeOperation = 'source-over';
+                }
+                const th = sim.state === 'playing' ? 1 : 0.4;
+                const L = (20 + Math.sin(sim.time * 30) * 4 + Math.random() * 4) * th;
+                ctx.globalCompositeOperation = 'lighter';
+                const trailCol = custom.trail || '#ff9640';
+                ctx.fillStyle = 'rgba(' + hexToRgb(trailCol) + ',0.55)';
+                flamePath(ship.w * 0.55, 13, 14 + L);
+                ctx.fillStyle = 'rgba(255,230,120,0.9)';
+                flamePath(ship.w * 0.3, 13, 8 + L * 0.55);
+                ctx.globalCompositeOperation = 'source-over';
+                const w = ship.w;
+                if (ship.vestal) {
+                    ctx.fillStyle = hull;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -24);
+                    ctx.quadraticCurveTo(w * 0.95, -12, w * 1.0, 6);
+                    ctx.lineTo(w * 0.7, 16);
+                    ctx.lineTo(w * 0.4, 18);
+                    ctx.lineTo(-w * 0.4, 18);
+                    ctx.lineTo(-w * 0.7, 16);
+                    ctx.lineTo(-w * 1.0, 6);
+                    ctx.quadraticCurveTo(-w * 0.95, -12, 0, -24);
+                    ctx.fill();
+                    ctx.fillStyle = accent;
+                    ctx.beginPath();
+                    ctx.ellipse(0, -4, 5, 7, 0, 0, 7);
+                    ctx.fill();
+                    ctx.fillStyle = '#6fcbff';
+                    ctx.beginPath();
+                    ctx.ellipse(0, -4, 3.5, 5, 0, 0, 7);
+                    ctx.fill();
+                    ctx.fillStyle = accent;
+                    ctx.beginPath();
+                    ctx.moveTo(-w * 0.6, 2);
+                    ctx.lineTo(w * 0.6, 2);
+                    ctx.lineTo(w * 0.4, 8);
+                    ctx.lineTo(-w * 0.4, 8);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.fillStyle = '#4a5a6a';
+                    ctx.beginPath();
+                    ctx.arc(-w * 0.7, 10, 3, 0, 7);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(w * 0.7, 10, 3, 0, 7);
+                    ctx.fill();
+                    ctx.fillStyle = accent;
+                    ctx.beginPath();
+                    ctx.arc(-w * 0.7, 10, 1.5, 0, 7);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(w * 0.7, 10, 1.5, 0, 7);
+                    ctx.fill();
+                    ctx.globalCompositeOperation = 'lighter';
+                    ctx.fillStyle = 'rgba(255,100,50,0.3)';
+                    ctx.beginPath();
+                    ctx.arc(0, 18, 10, 0, 7);
+                    ctx.fill();
+                    ctx.globalCompositeOperation = 'source-over';
+                } else {
+                    ctx.fillStyle = hull;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -22);
+                    ctx.quadraticCurveTo(w * 0.9, -10, w * 0.95, 6);
+                    ctx.lineTo(w * 0.6, 15);
+                    ctx.lineTo(-w * 0.6, 15);
+                    ctx.lineTo(-w * 0.95, 6);
+                    ctx.quadraticCurveTo(-w * 0.9, -10, 0, -22);
+                    ctx.fill();
+                    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+                    ctx.beginPath();
+                    ctx.moveTo(0, -22);
+                    ctx.quadraticCurveTo(w * 0.9, -10, w * 0.95, 6);
+                    ctx.lineTo(w * 0.6, 15);
+                    ctx.lineTo(0, 15);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.fillStyle = accent;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -22);
+                    ctx.quadraticCurveTo(w * 0.62, -13, w * 0.72, -7);
+                    ctx.lineTo(-w * 0.72, -7);
+                    ctx.quadraticCurveTo(-w * 0.62, -13, 0, -22);
+                    ctx.fill();
+                    ctx.fillStyle = accent;
+                    ctx.beginPath();
+                    ctx.moveTo(w * 0.95, 4);
+                    ctx.lineTo(w + 8, 17);
+                    ctx.lineTo(w * 0.6, 15);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(-w * 0.95, 4);
+                    ctx.lineTo(-w - 8, 17);
+                    ctx.lineTo(-w * 0.6, 15);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.fillStyle = '#0a1622';
+                    ctx.beginPath();
+                    ctx.arc(0, -2, 5.4, 0, 7);
+                    ctx.fill();
+                    ctx.fillStyle = '#9ee0ff';
+                    ctx.beginPath();
+                    ctx.arc(0, -2, 3.9, 0, 7);
+                    ctx.fill();
+                    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+                    ctx.beginPath();
+                    ctx.arc(-1.4, -3.4, 1.3, 0, 7);
+                    ctx.fill();
+                    if (sim.lives > 1) {
+                        ctx.strokeStyle = 'rgba(111,203,255,0.5)';
+                        ctx.setLineDash([5, 6]);
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.arc(0, -2, 24, 0, 7);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                }
+                ctx.restore();
+            }
+
+            function drawBoss() {
+                if (!sim.boss || sim.boss.state === 'dying') return;
+                const b = sim.boss;
+                const pulse = 0.5 + 0.5 * Math.sin(sim.time * 3);
+                ctx.save();
+                ctx.translate(b.x, b.y);
+                const g = ctx.createRadialGradient(0, 0, 10, 0, 0, 70);
+                g.addColorStop(0, 'rgba(255,80,80,0.3)');
+                g.addColorStop(1, 'rgba(255,80,80,0)');
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.arc(0, 0, 70, 0, 7);
+                ctx.fill();
+                ctx.fillStyle = '#cc3333';
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 45, 25, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ff5555';
+                ctx.beginPath();
+                ctx.ellipse(0, -6, 28, 15, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ff8888';
+                ctx.beginPath();
+                ctx.ellipse(0, -12, 16, 10, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ffcccc';
+                ctx.beginPath();
+                ctx.ellipse(0, -16, 8, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ffdddd';
+                ctx.beginPath();
+                ctx.arc(-3, -18, 2, 0, 7);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(3, -18, 2, 0, 7);
+                ctx.fill();
+                ctx.fillStyle = '#aa2222';
+                ctx.fillRect(-34, -2, 14, 4);
+                ctx.fillRect(20, -2, 14, 4);
+                ctx.fillStyle = '#ff6666';
+                ctx.fillRect(-36, -1, 6, 2);
+                ctx.fillRect(30, -1, 6, 2);
+                ctx.strokeStyle = '#cc3333';
+                ctx.lineWidth = 3;
+                for (let i = -2; i <= 2; i++) {
+                    const ang = Math.PI / 2 + i * 0.3 + Math.sin(sim.time * 2 + i) * 0.15;
+                    ctx.beginPath();
+                    ctx.moveTo(i * 12, 22);
+                    ctx.quadraticCurveTo(i * 20, 30 + 8 * Math.sin(sim.time * 1.5 + i), i * 16, 38);
+                    ctx.stroke();
+                }
+                ctx.strokeStyle = 'rgba(255,80,80,0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 6]);
+                ctx.beginPath();
+                ctx.arc(0, 0, 55, 0, 7);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                if (b.hp / b.maxHp < 0.3) {
+                    ctx.strokeStyle = 'rgba(255,0,0,' + (0.3 + 0.3 * pulse) + ')';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 60 + 4 * pulse, 0, 7);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            function drawBossBullets() {
+                for (const b of sim.bossBullets) {
+                    ctx.save();
+                    ctx.shadowColor = '#ff4444';
+                    ctx.shadowBlur = 16;
+                    ctx.fillStyle = '#ff4444';
+                    ctx.beginPath();
+                    ctx.arc(b.x, b.y, b.r, 0, 7);
+                    ctx.fill();
+                    ctx.fillStyle = '#ffaa44';
+                    ctx.beginPath();
+                    ctx.arc(b.x - 1.5, b.y - 1.5, b.r * 0.6, 0, 7);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            function drawParticles() {
+                for (const p of sim.parts) {
+                    if (p.type !== 'puff') continue;
+                    const t = 1 - p.life / p.max;
+                    ctx.fillStyle = 'rgba(90,90,105,' + (0.3 * p.life / p.max).toFixed(3) + ')';
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * (1 + t * 1.6), 0, 7);
+                    ctx.fill();
+                }
+                ctx.globalCompositeOperation = 'lighter';
+                for (const p of sim.parts) {
+                    if (p.type === 'puff') continue;
+                    const a = Math.max(0, p.life / p.max);
+                    ctx.fillStyle = 'rgba(' + p.color + ',' + (a * 0.9).toFixed(3) + ')';
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * (0.4 + 0.6 * a), 0, 7);
+                    ctx.fill();
+                }
+                ctx.globalCompositeOperation = 'source-over';
+            }
+
+            function drawTexts() {
+                ctx.font = '600 13px "Space Grotesk",sans-serif';
+                ctx.textAlign = 'center';
+                for (const t of sim.texts) {
+                    const a = Math.max(0, t.life / t.max);
+                    ctx.fillStyle = t.color;
+                    ctx.globalAlpha = a;
+                    ctx.fillText(t.str, t.x, t.y);
+                }
+                ctx.globalAlpha = 1;
+            }
+
+            function drawRadiationUI() {
+                if (sim.rad <= 0 || sim.state !== 'playing') return;
+                const rk = sim.rocket;
+                ctx.save();
+                ctx.translate(rk.x, rk.y);
+                ctx.strokeStyle = 'rgba(255,120,90,0.22)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(0, 0, 30, 0, 7);
+                ctx.stroke();
+                ctx.strokeStyle = sim.rad > 0.7 ? 'rgba(255,90,70,0.95)' : 'rgba(255,200,80,0.9)';
+                ctx.beginPath();
+                ctx.arc(0, 0, 30, -Math.PI / 2, -Math.PI / 2 + sim.rad * Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            function drawHint() {
+                if (sim.state !== 'playing' || sim.hintT <= 0) return;
+                ctx.save();
+                ctx.globalAlpha = Math.min(1, sim.hintT) * 0.75;
+                ctx.fillStyle = '#cfe2ff';
+                ctx.font = '500 14px Inter,sans-serif';
+                ctx.textAlign = 'center';
+                let ves = '';
+                if (shipIsVestal()) ves = ' · Auto-missile every ' + getShipMissileCooldown().toFixed(1) +
+                    's (' + getShipMissileCount() + ' missile' + (getShipMissileCount() > 1 ? 's' : '') + ')';
+                else if (shipIsCleaner()) ves = ' · Auto-magnet collects data';
+                ctx.fillText('Navigate with mouse, touch or arrows — graze hazards to build Sync' + ves, W / 2, H * 0.42);
+                ctx.restore();
+            }
+
+            // ─── RENDER ────────────────────────────────────────────────────────────
+            function render() {
+                ctx.fillStyle = '#0a0e1a';
+                ctx.fillRect(0, 0, W, H);
+                ctx.save();
+                if (sim.shake > 0.5) ctx.translate((Math.random() - 0.5) * sim.shake, (Math.random() - 0.5) * sim.shake);
+                drawNebulas();
+                drawStars();
+                drawApproachPlanet();
+                drawClouds();
+                drawBoss();
+                drawBossBullets();
+                drawHazards();
+                drawCoins();
+                drawPups();
+                drawBullets();
+                drawMissiles();
+                if (['playing', 'warp', 'choose', 'paused'].includes(sim.state)) drawRocket();
+                drawParticles();
+                drawTexts();
+                drawRadiationUI();
+                ctx.restore();
+                drawHint();
+                if (sim.flash > 0) {
+                    ctx.globalAlpha = Math.min(1, sim.flash);
+                    ctx.fillStyle = 'rgb(' + sim.flashC + ')';
+                    ctx.fillRect(0, 0, W, H);
+                    ctx.globalAlpha = 1;
+                }
+                if (vigCanvas) ctx.drawImage(vigCanvas, 0, 0, W, H);
+            }
+
+            // ─── HUD ──────────────────────────────────────────────────────────────
+            const hudCache = {};
+
+            function setT(el, key, v) { if (hudCache[key] !== v) { hudCache[key] = v;
+                    el.textContent = v; } }
+
+            function updateHUD() {
+                setT(hudScore, 'score', String(Math.floor(sim.dist)));
+                setT(hudCoins, 'coins', String(totalCoins));
+                setT(hudLives, 'lives', String(Math.max(0, sim.lives)));
+                setT(hudBest, 'best', String(Math.max(bestScore, Math.floor(sim.dist))));
+                const showFlow = sim.flow >= 2;
+                if (hudCache.flowOn !== showFlow) { hudCache.flowOn = showFlow;
+                    hudComboWrap.style.display = showFlow ? 'block' : 'none'; }
+                if (showFlow) setT(hudCombo, 'flow', '×' + sim.flow);
+                const fx = [];
+                if (sim.magnetT > 0) fx.push('Magnet ' + Math.ceil(sim.magnetT) + 's');
+                if (sim.pupSlowT > 0) fx.push('Slow ' + Math.ceil(sim.pupSlowT) + 's');
+                if (sim.invincible > 0) fx.push('Shield');
+                const fs = fx.join(' · ');
+                if (hudCache.fx !== fs) {
+                    hudCache.fx = fs;
+                    hudPowerup.style.display = fs ? 'block' : 'none';
+                    if (fs) hudPowerupText.textContent = fs;
+                }
+                const segD = Math.max(0, Math.floor(sim.dist - sim.segStart));
+                setT(progressLabel, 'pl', segD + ' / ' + sim.goal);
+                const pct = Math.min(100, (sim.dist - sim.segStart) / sim.goal * 100);
+                if (Math.abs((hudCache.pct || 0) - pct) > 0.4) { hudCache.pct = pct;
+                    progressBarFill.style.width = pct + '%'; }
+                const zi = sim.zone;
+                let pl;
+                if (zi >= BASE_ZONES.length) {
+                    const z = zoneOf(zi);
+                    pl = z.name + ' · ∞';
+                } else {
+                    const z = zoneOf(zi);
+                    const nz = zoneOf(zi + 1);
+                    pl = z.name + ' → <span>' + nz.name + '</span>';
+                }
+                if (hudCache.plZone !== pl) {
+                    hudCache.plZone = pl;
+                    if (zi >= BASE_ZONES.length) progressPlanet.textContent = pl;
+                    else progressPlanet.innerHTML = pl;
+                }
+            }
+
+            function updateMenuStats() {
+                menuBest.textContent = bestScore;
+                menuCoins.textContent = totalCoins;
+                const em = getExpMult();
+                const rank = Math.round((em - 1) * 10) + 1;
+                menuSessions.textContent = rank;
+                rankChip.innerHTML = svgIcon('rank', 13) + '<span>Level ' + rank + ' · speed +' + Math
+                    .round((em - 1) * 100) + '%</span>';
+            }
+
+            // ─── TECH TREE RENDER ──────────────────────────────────────────────────
+            function renderTechTree() {
+                techCoins.textContent = totalCoins;
+                let html = '';
+                SHIPS.forEach(ship => {
+                    const defs = SHIP_UPGRADE_DEFS[ship.id];
+                    if (!defs) return;
+                    let upgradesHtml = '';
+                    Object.keys(defs).forEach(key => {
+                        const def = defs[key];
+                        const level = getUpgradeLevel(ship.id, key);
+                        const maxed = level >= def.maxLevel;
+                        const cost = getUpgradeCost(ship.id, key);
+                        const canBuy = !maxed && cost <= totalCoins;
+                        // Build level dots
+                        let dots = '';
+                        for (let i = 0; i < def.maxLevel; i++) {
+                            dots += '<span class="lvl-dot' + (i < level ? ' filled' : '') + (i < level ?
+                                ' gold' : '') + '"></span>';
+                        }
+                        const btnText = maxed ? 'MAX' : (cost === Infinity ? 'MAX' : cost + '⚡');
+                        const btnClass = maxed ? 'tu-btn maxed' : (canBuy ? 'tu-btn buyable' : 'tu-btn');
+                        upgradesHtml += `
+                            <div class="tech-upgrade">
+                                <div class="tu-row">
+                                    <span class="tu-name">${def.name}</span>
+                                    <span class="tu-level">${dots}</span>
+                                    <button class="${btnClass}" data-ship="${ship.id}" data-upgrade="${key}" ${!canBuy && !maxed ? 'disabled' : ''}>${btnText}</button>
+                                </div>
+                                <div class="tu-desc">${def.desc}</div>
+                            </div>
+                        `;
+                    });
+                    const isEquipped = equippedShip === SHIPS.indexOf(ship);
+                    html += `
+                        <div class="tech-ship-card" style="border-color:${isEquipped ? '#6fcbff' : 'rgba(255,255,255,0.05)'}">
+                            <div class="ts-icon">${svgIcon(ship.icon, 24)}</div>
+                            <div class="ts-name">${ship.name} ${isEquipped ? '⭐' : ''}</div>
+                            ${upgradesHtml}
+                        </div>
+                    `;
+                });
+                techGrid.innerHTML = html;
+            }
+
+            // ─── TECH TREE EVENT HANDLER ──────────────────────────────────────────
+            techGrid.addEventListener('click', e => {
+                const btn = e.target.closest('button[data-ship]');
+                if (!btn) return;
+                if (btn.classList.contains('maxed')) return;
+                const shipId = btn.dataset.ship;
+                const upgradeId = btn.dataset.upgrade;
+                const success = buyUpgrade(shipId, upgradeId);
+                if (success) {
+                    techPurchases++;
+                    saveAchievements();
+                    checkAchievements();
+                    // Recalc if this is the currently equipped ship
+                    const shipIdx = SHIPS.findIndex(s => s.id === shipId);
+                    if (shipIdx === equippedShip) {
+                        recalcStats();
+                        if (sim.state === 'playing' || sim.state === 'warp') {
+                            sim.lives = Math.min(sim.lives, sim.maxLives);
+                            sim.invincible = Math.max(sim.invincible, 0.5);
+                        }
+                    }
+                    renderTechTree();
+                    updateMenuStats();
+                    // Update HUD if in game
+                    if (sim.state === 'playing' || sim.state === 'warp') updateHUD();
+                } else {
+                    if (totalCoins < getUpgradeCost(shipId, upgradeId)) {
+                        showToast('Not enough data points!');
+                    }
+                }
+            });
+
+            // ─── SHOP ──────────────────────────────────────────────────────────────
+            function renderShop() {
+                shopCoinsSpan.textContent = totalCoins;
+                let html = '';
+                SHIPS.forEach((ship, i) => {
+                    const owned = unlockedShips.includes(i),
+                        eq = equippedShip === i;
+                    let status, cls, btn;
+                    if (owned && eq) { status = 'Equipped';
+                        cls = 'equipped';
+                        btn = '<button class="shop-btn" disabled>Equipped</button>'; } else if (owned) { status =
+                            'Owned';
+                        cls = 'owned';
+                        btn = '<button class="shop-btn primary" data-act="equip" data-idx="' + i +
+                        '">Equip</button>'; } else { status = ship.cost + ' data';
+                        cls = 'locked';
+                        btn = '<button class="shop-btn primary" data-act="buy" data-idx="' + i + '"' + (totalCoins <
+                            ship.cost ? ' disabled' : '') + '>Buy</button>'; }
+                    const isVestal = ship.vestal ? ' ✦' : '';
+                    const isCleaner = ship.cleaner ? ' ✧' : '';
+                    html += '<div class="shop-item" style="border-color:' + (eq ? '#ff6b4a' :
+                            'rgba(255,255,255,0.04)') + '">' +
+                        '<div class="ship-icon">' + svgIcon(ship.icon, 26) + '</div>' +
+                        '<div class="ship-name">' + ship.name + (isVestal || isCleaner ? ' ' + (isVestal ? '✦' :
+                            '✧') : '') + '</div>' +
+                        '<div class="ship-stats">' + ship.desc + '</div>' +
+                        '<div class="ship-status ' + cls + '">' + status + '</div>' +
+                        '<div>' + btn + '</div>' +
+                        '</div>';
+                });
+                shopGrid.innerHTML = html;
+            }
+
+            // ─── CUSTOM UI ─────────────────────────────────────────────────────────
+            function loadCustomToUI() {
+                hullColor.value = custom.hull;
+                accentColor.value = custom.accent;
+                trailColor.value = custom.trail;
+                auraColor.value = custom.aura;
+                auraIntensity.value = Math.round(custom.auraIntensity * 100);
+                auraIntensityVal.textContent = Math.round(custom.auraIntensity * 100) + '%';
+                styleBtns.forEach(b => b.classList.toggle('active', parseInt(b.dataset.style) === custom.bodyStyle));
+                updatePreview();
+            }
+
+            function updatePreview() {
+                const h = custom.hull,
+                    a = custom.accent,
+                    t = custom.trail,
+                    au = custom.aura;
+                const style = custom.bodyStyle;
+                let shape = '';
+                switch (style) {
+                    case 0:
+                        shape = 'polygon(50% 0%, 85% 35%, 90% 65%, 70% 85%, 30% 85%, 10% 65%, 15% 35%)';
+                        break;
+                    case 1:
+                        shape = 'polygon(50% 0%, 75% 30%, 95% 50%, 80% 80%, 50% 95%, 20% 80%, 5% 50%, 25% 30%)';
+                        break;
+                    case 2:
+                        shape = 'polygon(50% 0%, 80% 15%, 95% 45%, 85% 75%, 55% 90%, 45% 90%, 15% 75%, 5% 45%, 20% 15%)';
+                        break;
+                    case 3:
+                        shape = 'polygon(50% 0%, 75% 30%, 80% 60%, 70% 85%, 30% 85%, 20% 60%, 25% 30%)';
+                        break;
+                    default:
+                        shape = 'polygon(50% 0%, 85% 35%, 90% 65%, 70% 85%, 30% 85%, 10% 65%, 15% 35%)';
+                }
+                customPreview.innerHTML =
+                    `<svg width="60" height="60" viewBox="0 0 60 60">
+                        <defs>
+                            <radialGradient id="previewAura" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="${au}" stop-opacity="${0.3 + 0.5 * custom.auraIntensity}"/>
+                                <stop offset="100%" stop-color="${au}" stop-opacity="0"/>
+                            </radialGradient>
+                        </defs>
+                        <circle cx="30" cy="30" r="28" fill="url(#previewAura)"/>
+                        <polygon points="${shape}" fill="${h}" stroke="${a}" stroke-width="1.5"/>
+                        <circle cx="30" cy="26" r="4" fill="${a}" opacity="0.6"/>
+                        <rect x="24" y="38" width="12" height="4" rx="1" fill="${t}" opacity="0.7"/>
+                        <rect x="26" y="42" width="8" height="3" rx="1" fill="${t}" opacity="0.4"/>
+                    </svg>`;
+            }
+
+            function updateSensitivityDisplay() { sensToggle.textContent = sensitivity.toFixed(1) + '×'; }
+
+            function updateMuteDisplay() { muteToggle.textContent = muted ? 'Off' : 'On'; }
+
+            // ─── EVENT BINDINGS ────────────────────────────────────────────────────
+            // Shop
+            shopGrid.addEventListener('click', e => {
+                const btn = e.target.closest('button[data-act]');
+                if (!btn || btn.disabled) return;
+                const idx = parseInt(btn.dataset.idx, 10);
+                const ship = SHIPS[idx];
+                if (!ship) return;
+                if (btn.dataset.act === 'buy') {
+                    if (totalCoins >= ship.cost && !unlockedShips.includes(idx)) {
+                        totalCoins -= ship.cost;
+                        unlockedShips.push(idx);
+                        equippedShip = idx;
+                        recalcStats();
+                        saveProgress();
+                        renderShop();
+                        renderTechTree();
+                        updateMenuStats();
+                        showToast(ship.name + ' purchased & equipped');
+                    }
+                } else if (btn.dataset.act === 'equip' && unlockedShips.includes(idx)) {
+                    equippedShip = idx;
+                    recalcStats();
+                    saveProgress();
+                    renderShop();
+                    renderTechTree();
+                }
+            });
+
+            // Upgrades
+            upgradeGrid.addEventListener('click', e => {
+                const card = e.target.closest('.upgrade-card');
+                if (card) chooseUpgrade(card.dataset.id);
+            });
+
+            // Difficulty
+            diffBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    diffBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedDifficulty = btn.dataset.diff;
+                });
+            });
+            diffConfirm.addEventListener('click', startRun);
+
+            // Custom
+            customBtn.addEventListener('click', () => { loadCustomToUI();
+                customOverlay.classList.add('active'); });
+            customCloseBtn.addEventListener('click', () => {
+                custom.hull = hullColor.value;
+                custom.accent = accentColor.value;
+                custom.trail = trailColor.value;
+                custom.aura = auraColor.value;
+                custom.auraIntensity = parseInt(auraIntensity.value) / 100;
+                const activeStyle = document.querySelector('.style-btn.active');
+                custom.bodyStyle = activeStyle ? parseInt(activeStyle.dataset.style) : 0;
+                saveCustom();
+                customOverlay.classList.remove('active');
+                showToast('Customization applied!');
+            });
+            [hullColor, accentColor, trailColor, auraColor].forEach(el => {
+                el.addEventListener('input', () => {
+                    custom.hull = hullColor.value;
+                    custom.accent = accentColor.value;
+                    custom.trail = trailColor.value;
+                    custom.aura = auraColor.value;
+                    updatePreview();
+                });
+            });
+            auraIntensity.addEventListener('input', () => {
+                custom.auraIntensity = parseInt(auraIntensity.value) / 100;
+                auraIntensityVal.textContent = Math.round(custom.auraIntensity * 100) + '%';
+                updatePreview();
+            });
+            styleBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    styleBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    custom.bodyStyle = parseInt(btn.dataset.style);
+                    updatePreview();
+                });
+            });
+
+            // Settings
+            const SENS_STEPS = [0.6, 0.8, 1.0, 1.3, 1.6];
+            sensToggle.addEventListener('click', () => {
+                let i = 0;
+                for (let k = 0; k < SENS_STEPS.length; k++)
+                    if (Math.abs(SENS_STEPS[k] - sensitivity) < 0.01) i = k;
+                sensitivity = SENS_STEPS[(i + 1) % SENS_STEPS.length];
+                store.set('fps_sensitivity', String(sensitivity));
+                updateSensitivityDisplay();
+            });
+            muteToggle.addEventListener('click', () => { Sfx.init();
+                Sfx.setMuted(!muted);
+                updateMuteDisplay(); });
+            resetBestBtn.addEventListener('click', () => { bestScore = 0;
+                saveProgress();
+                updateMenuStats();
+                showToast('Max range reset'); });
+            resetAllBtn.addEventListener('click', () => {
+                bestScore = 0;
+                totalCoins = 0;
+                totalFlown = 0;
+                sessionCount = 0;
+                equippedShip = 0;
+                unlockedShips = [0];
+                dailyMissions = {};
+                custom = { ...CUSTOM_DEFAULTS };
+                techTree = {};
+                SHIPS.forEach(ship => {
+                    techTree[ship.id] = {};
+                    const defs = SHIP_UPGRADE_DEFS[ship.id] || {};
+                    Object.keys(defs).forEach(key => { techTree[ship.id][key] = 0; });
+                });
+                saveCustom();
+                saveTechTree();
+                store.set('fps_best', '0');
+                store.set('fps_coins', '0');
+                store.set('fps_total_dist', '0');
+                store.set('fps_sessions', '0');
+                store.set('fps_equipped_ship', '0');
+                store.set('fps_unlocked_ships', '[0]');
+                store.set('fps_daily_missions', '{}');
+                achProgress = {};
+                totalAsteroidsDestroyed = 0;
+                totalCoinsCollected = 0;
+                maxDistanceEver = 0;
+                maxComboEver = 0;
+                bossDefeatedCount = 0;
+                joblessUnlocked = false;
+                techPurchases = 0;
+                saveAchievements();
+                recalcStats();
+                initDailyMissions();
+                updateMenuStats();
+                renderShop();
+                renderTechTree();
+                loadCustomToUI();
+                showToast('All data & customizations reset');
+            });
+
+            // Tech Tree
+            techBtn.addEventListener('click', () => { renderTechTree();
+                techOverlay.classList.add('active'); });
+            techCloseBtn.addEventListener('click', () => techOverlay.classList.remove('active'));
+
+            // Overlays
+            configBtn.addEventListener('click', () => configOverlay.classList.add('active'));
+            configCloseBtn.addEventListener('click', () => configOverlay.classList.remove('active'));
+            shopBtn.addEventListener('click', () => { renderShop();
+                shopOverlay.classList.add('active'); });
+            shopCloseBtn.addEventListener('click', () => shopOverlay.classList.remove('active'));
+            upgradeCloseBtn.addEventListener('click', () => {
+                if (sim.state === 'choose') { upgradeOverlay.classList.remove('active');
+                    advanceZone(); }
+            });
+            playBtn.addEventListener('click', () => difficultyOverlay.classList.add('active'));
+            goRetryBtn.addEventListener('click', startRun);
+            goMenuBtn.addEventListener('click', quitToMenu);
+            pauseBtn.addEventListener('click', pauseGame);
+            pauseResumeBtn.addEventListener('click', resumeGame);
+            pauseQuitBtn.addEventListener('click', quitToMenu);
+
+            // ─── FRAME LOOP ──────────────────────────────────────────────────────
+            function computeTargetTS() {
+                if (sim.slowmoT > 0) return sim.slowmoF;
+                if (sim.pupSlowT > 0) return 0.55;
+                return 1;
+            }
+
+            let lastT = performance.now();
+
+            function frame(now) {
+                requestAnimationFrame(frame);
+                let rdt = (now - lastT) / 1000;
+                lastT = now;
+                if (rdt > 0.06) rdt = 0.06;
+                if (rdt < 0) rdt = 0;
+                const tts = computeTargetTS();
+                sim.ts += (tts - sim.ts) * Math.min(1, 10 * rdt);
+                const sdt = rdt * sim.ts;
+                switch (sim.state) {
+                    case 'menu':
+                        sim.time += rdt;
+                        sim.scroll = 46;
+                        updateStars(rdt, 46);
+                        updateNebulas(rdt, 46);
+                        break;
+                    case 'playing':
+                        updateGame(sdt, rdt);
+                        break;
+                    case 'warp':
+                        updateWarp(rdt);
+                        break;
+                    case 'dying':
+                        updateDying(rdt);
+                        break;
+                }
+                sim.flash = Math.max(0, sim.flash - rdt * 2.2);
+                sim.shake *= Math.exp(-6 * rdt);
+                if (sim.shake < 0.3) sim.shake = 0;
+                render();
+                if (sim.state === 'playing' || sim.state === 'warp') updateHUD();
+            }
+
+            // ─── INIT ──────────────────────────────────────────────────────────────
+            // Inject icons
+            document.querySelectorAll('[data-icon]').forEach(el => {
+                el.innerHTML = svgIcon(el.dataset.icon, parseInt(el.dataset.size, 10) || 24);
+            });
+
+            loadAchievements();
+            initDailyMissions();
+            recalcStats();
+            resizeCanvas();
+            sim.rocket.x = sim.rocket.tx = W / 2;
+            sim.rocket.y = sim.rocket.ty = H - 140;
+            renderShop();
+            renderTechTree();
+            updateMenuStats();
+            updateSensitivityDisplay();
+            updateMuteDisplay();
+            loadCustomToUI();
+            document.querySelector('.difficulty-btn[data-diff="normal"]')?.classList.add('active');
+            selectedDifficulty = 'normal';
+            checkAchievements();
+            requestAnimationFrame(frame);
+
+        })();
+    </script>
+</body>
+</html>
