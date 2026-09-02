@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Solar System Explorer</title>
+    <title>Solar System Explorer – Warship Encounter</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
     <style>
@@ -1102,6 +1102,34 @@
             pointer-events: none;
             display: none;
         }
+        /* crown checkbox */
+        .crown-toggle-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 4px;
+        }
+        .crown-toggle-wrap input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #ffd700;
+            cursor: pointer;
+        }
+        .crown-toggle-wrap label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .crown-toggle-wrap label.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .crown-toggle-wrap input[type="checkbox"]:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
         @media (max-width:500px) {
             .menu-card {
                 padding: 26px 18px 22px;
@@ -1312,6 +1340,17 @@
                         <button class="style-btn" data-style="3">Sleek</button>
                     </div>
                 </div>
+                <!-- Crown toggle -->
+                <div class="custom-item" style="grid-column:1/3; margin-top:4px;">
+                    <div class="crown-toggle-wrap">
+                        <input type="checkbox" id="crownToggle" disabled />
+                        <label for="crownToggle" id="crownToggleLabel">
+                            <span data-icon="crown" data-size="16" style="color:#ffd700;"></span>
+                            <span>Show Crown</span>
+                            <span id="crownStatus" style="font-size:10px;color:rgba(255,255,255,0.3);">(locked)</span>
+                        </label>
+                    </div>
+                </div>
             </div>
             <button class="modal-close" id="customCloseBtn">Apply &amp; Close</button>
         </div>
@@ -1403,7 +1442,8 @@
                     accent: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></svg>`,
                     trail: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M4 12L8 8M20 12L16 8M4 12L8 16M20 12L16 16M12 4v4M12 20v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
                     aura: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="6" fill="currentColor" opacity="0.3"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.2" opacity="0.4"/><circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.6"/></svg>`,
-                    boss: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="12" rx="9" ry="6" fill="#ff4444"/><ellipse cx="12" cy="10" rx="5" ry="3" fill="#ff8888"/><circle cx="9" cy="10" r="1.2" fill="#fff"/><circle cx="15" cy="10" r="1.2" fill="#fff"/><ellipse cx="12" cy="13" rx="2" ry="1" fill="#0a0e1a"/><path d="M5 18l-2 4M19 18l2 4" stroke="#ff4444" stroke-width="1.5" stroke-linecap="round"/></svg>`
+                    boss: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="12" rx="9" ry="6" fill="#ff4444"/><ellipse cx="12" cy="10" rx="5" ry="3" fill="#ff8888"/><circle cx="9" cy="10" r="1.2" fill="#fff"/><circle cx="15" cy="10" r="1.2" fill="#fff"/><ellipse cx="12" cy="13" rx="2" ry="1" fill="#0a0e1a"/><path d="M5 18l-2 4M19 18l2 4" stroke="#ff4444" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+                    crown: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M4 8l3 12h10l3-12-4 6-4-6-4 6-4-6z" fill="#ffd700" stroke="#b8860b" stroke-width="1.5"/><circle cx="8" cy="8" r="2" fill="#ff4d4d"/><circle cx="12" cy="6" r="2" fill="#ff4d4d"/><circle cx="16" cy="8" r="2" fill="#ff4d4d"/></svg>`
                 };
                 return M[name] || '';
             }
@@ -1497,13 +1537,39 @@
                 bossHealthBar = $('bossHealthBar'),
                 bossHealthLabel = $('bossHealthLabel'),
                 devPanel = $('devPanel'),
-                bossMusicIndicator = $('bossMusicIndicator');
+                bossMusicIndicator = $('bossMusicIndicator'),
+                crownToggle = $('crownToggle'),
+                crownToggleLabel = $('crownToggleLabel'),
+                crownStatus = $('crownStatus');
 
             // ─── STORE ────────────────────────────────────────────────────────────
             const store = {
                 get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } },
                 set(k, v) { try { localStorage.setItem(k, String(v)); } catch (e) {} }
             };
+
+            // ─── CROWN STATE ───────────────────────────────────────────────────────
+            let crownUnlocked = store.get('fps_crown_unlocked', '0') === '1';
+            let crownEquipped = store.get('fps_crown_equipped', crownUnlocked ? '1' : '0') === '1';
+
+            function saveCrownState() {
+                store.set('fps_crown_unlocked', crownUnlocked ? '1' : '0');
+                store.set('fps_crown_equipped', crownEquipped ? '1' : '0');
+            }
+
+            function updateCrownUI() {
+                if (crownUnlocked) {
+                    crownToggle.disabled = false;
+                    crownStatus.textContent = '(unlocked)';
+                    crownToggleLabel.className = '';
+                    crownToggle.checked = crownEquipped;
+                } else {
+                    crownToggle.disabled = true;
+                    crownStatus.textContent = '(locked)';
+                    crownToggleLabel.className = 'disabled';
+                    crownToggle.checked = false;
+                }
+            }
 
             // ─── DIFFICULTIES ──────────────────────────────────────────────────────
             const DIFFICULTIES = {
@@ -1969,11 +2035,9 @@
                     this.tone(100, 1.0, 'sawtooth', 0.3, -150);
                     [523, 659, 784, 1046].forEach((f, i) => this.tone(f, 0.3, 'sine', 0.08, 0, i * 0.12)); },
                 laser() {
-                    // Laser sound with electrical zap
                     this.tone(200, 0.4, 'sawtooth', 0.12, 400);
                     this.noise(0.3, 0.2, 3000, 'bandpass', 0.05);
                     this.tone(80, 0.3, 'square', 0.06, 0, 0.1);
-                    // Electrical zap
                     this.noise(0.08, 0.2, 8000, 'highpass', 0.15);
                     this.tone(1200, 0.05, 'square', 0.15, 0, 0.15);
                 }
@@ -1986,7 +2050,6 @@
             let stars = [],
                 nebulas = [];
             const SPEEDF = [0.12, 0.30, 0.60];
-            // Supernova particles
             let supernovaParticles = [];
 
             function initStarsAndNebulas() {
@@ -2011,7 +2074,6 @@
                         ho: (Math.random() - 0.5) * 130, ph: Math.random() * 6.28, alpha: 0.04 + Math.random() *
                             0.06 });
                 }
-                // Supernova particles
                 supernovaParticles = [];
                 for (let i = 0; i < 60; i++) {
                     const angle = Math.random() * Math.PI * 2;
@@ -2167,6 +2229,7 @@
                 store.set('fps_daily_missions', JSON.stringify(dailyMissions));
                 saveCustom();
                 saveAchievements();
+                saveCrownState();
             }
 
             function getExpMult() { return 1 + Math.min(0.6, totalFlown / 9000); }
@@ -2506,7 +2569,7 @@
                     maxHp: hp,
                     state: 'entering',
                     timer: 0,
-                    phase: 0, // based on hp: 3->2->1
+                    phase: 0,
                     shootTimer: 1.0,
                     missileTimer: 2.0,
                     laserTimer: 3.2,
@@ -2526,7 +2589,6 @@
                 sim.flash = 0.3;
                 sim.flashC = '255,50,50';
                 sim.shake = 10;
-                // Start boss music
                 BossMusic.init();
                 BossMusic.play();
             }
@@ -2556,23 +2618,21 @@
                     return;
                 }
                 boss.timer += sdt;
-                // Movement: sine wave
                 boss.x += Math.sin(boss.timer * 0.8) * 100 * sdt;
                 boss.y += Math.cos(boss.timer * 0.5) * 40 * sdt;
                 boss.x = clampN(boss.x, 60, W - 60);
                 boss.y = clampN(boss.y, 60, H * 0.4);
 
-                // Attack patterns based on health
                 const healthPercent = boss.hp / boss.maxHp;
                 let shootInterval = 1.0;
                 let missileInterval = 2.0;
                 let laserInterval = 3.2;
-                if (healthPercent <= 0.66) { // phase 2
+                if (healthPercent <= 0.66) {
                     shootInterval = 0.8;
                     missileInterval = 1.6;
                     laserInterval = 2.4;
                 }
-                if (healthPercent <= 0.33) { // phase 3
+                if (healthPercent <= 0.33) {
                     shootInterval = 0.6;
                     missileInterval = 1.2;
                     laserInterval = 1.6;
@@ -2622,13 +2682,12 @@
                     boss.missileTimer = missileInterval;
                 }
 
-                // Laser with electrical zap
                 boss.laserTimer -= sdt;
                 if (boss.laserTimer <= 0 && !boss.laserActive) {
                     boss.laserActive = true;
                     boss.laserDuration = 1.0;
                     boss.laserAngle = Math.atan2(sim.rocket.y - boss.y, sim.rocket.x - boss.x);
-                    Sfx.laser(); // includes zap
+                    Sfx.laser();
                     sim.flash = 0.2;
                     sim.flashC = '255,100,50';
                     boss.laserTimer = laserInterval;
@@ -2701,6 +2760,14 @@
                 burst(sim.boss.x, sim.boss.y, '255,200,100', 12, 250);
                 updateBossHealthBar();
                 if (sim.boss.hp <= 0) {
+                    // Boss defeated → unlock crown
+                    if (!crownUnlocked) {
+                        crownUnlocked = true;
+                        crownEquipped = true;
+                        saveCrownState();
+                        showToast('👑 Crown unlocked! You earned the royal crown!');
+                        updateCrownUI();
+                    }
                     sim.boss.state = 'dying';
                     sim.boss.deathTimer = 0;
                     Sfx.bossDie();
@@ -3688,7 +3755,6 @@
                 const cx = W / 2;
                 const cy = H * 0.2;
                 const time = sim.time;
-                // Glowing green supernova ring
                 const radius = 120 + 20 * Math.sin(time * 0.5);
                 const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius * 1.8);
                 grad.addColorStop(0, 'rgba(50,255,50,0.02)');
@@ -3700,7 +3766,6 @@
                 ctx.arc(cx, cy, radius * 1.8, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Bright core
                 const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius * 0.4);
                 core.addColorStop(0, 'rgba(100,255,100,0.5)');
                 core.addColorStop(0.5, 'rgba(50,200,50,0.2)');
@@ -3710,7 +3775,6 @@
                 ctx.arc(cx, cy, radius * 0.4, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Particles
                 for (const p of supernovaParticles) {
                     p.x += p.vx * 0.01;
                     p.y += p.vy * 0.01;
@@ -4312,36 +4376,38 @@
                     }
                 }
 
-                // 👑 CROWN
-                ctx.save();
-                ctx.translate(0, -24);
-                ctx.scale(0.4, 0.4);
-                ctx.fillStyle = '#ffd700';
-                ctx.strokeStyle = '#b8860b';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(-18, 0);
-                ctx.lineTo(-18, -12);
-                ctx.lineTo(-10, -6);
-                ctx.lineTo(0, -18);
-                ctx.lineTo(10, -6);
-                ctx.lineTo(18, -12);
-                ctx.lineTo(18, 0);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-                ctx.fillStyle = '#ff4d4d';
-                ctx.beginPath();
-                ctx.arc(0, -12, 3, 0, 7);
-                ctx.fill();
-                ctx.fillStyle = '#4dff4d';
-                ctx.beginPath();
-                ctx.arc(-8, -8, 2, 0, 7);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(8, -8, 2, 0, 7);
-                ctx.fill();
-                ctx.restore();
+                // 👑 CROWN – draw only if crownEquipped is true
+                if (crownEquipped) {
+                    ctx.save();
+                    ctx.translate(0, -24);
+                    ctx.scale(0.4, 0.4);
+                    ctx.fillStyle = '#ffd700';
+                    ctx.strokeStyle = '#b8860b';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(-18, 0);
+                    ctx.lineTo(-18, -12);
+                    ctx.lineTo(-10, -6);
+                    ctx.lineTo(0, -18);
+                    ctx.lineTo(10, -6);
+                    ctx.lineTo(18, -12);
+                    ctx.lineTo(18, 0);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.fillStyle = '#ff4d4d';
+                    ctx.beginPath();
+                    ctx.arc(0, -12, 3, 0, 7);
+                    ctx.fill();
+                    ctx.fillStyle = '#4dff4d';
+                    ctx.beginPath();
+                    ctx.arc(-8, -8, 2, 0, 7);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(8, -8, 2, 0, 7);
+                    ctx.fill();
+                    ctx.restore();
+                }
 
                 ctx.restore();
             }
@@ -4665,6 +4731,15 @@
                 auraIntensityVal.textContent = Math.round(custom.auraIntensity * 100) + '%';
                 styleBtns.forEach(b => b.classList.toggle('active', parseInt(b.dataset.style) === custom.bodyStyle));
                 updatePreview();
+                updateCrownUI();
+                // If crown is locked, uncheck and disable
+                if (!crownUnlocked) {
+                    crownToggle.checked = false;
+                    crownToggle.disabled = true;
+                } else {
+                    crownToggle.disabled = false;
+                    crownToggle.checked = crownEquipped;
+                }
             }
 
             function updatePreview() {
@@ -4690,6 +4765,7 @@
                     default:
                         shape = 'polygon(50% 0%, 85% 35%, 90% 65%, 70% 85%, 30% 85%, 10% 65%, 15% 35%)';
                 }
+                // Include crown if equipped in preview? For simplicity, we won't show it in preview.
                 customPreview.innerHTML =
                     `<svg width="60" height="60" viewBox="0 0 60 60">
                         <defs>
@@ -4764,10 +4840,24 @@
                 custom.auraIntensity = parseInt(auraIntensity.value) / 100;
                 const activeStyle = document.querySelector('.style-btn.active');
                 custom.bodyStyle = activeStyle ? parseInt(activeStyle.dataset.style) : 0;
+                // Crown toggle
+                crownEquipped = crownToggle.checked;
+                saveCrownState();
                 saveCustom();
                 customOverlay.classList.remove('active');
                 showToast('Customization applied!');
             });
+
+            // Crown toggle change
+            crownToggle.addEventListener('change', () => {
+                if (crownUnlocked) {
+                    crownEquipped = crownToggle.checked;
+                    saveCrownState();
+                } else {
+                    crownToggle.checked = false;
+                }
+            });
+
             [hullColor, accentColor, trailColor, auraColor].forEach(el => {
                 el.addEventListener('input', () => {
                     custom.hull = hullColor.value;
@@ -4817,6 +4907,9 @@
                 unlockedShips = [0];
                 dailyMissions = {};
                 custom = { ...CUSTOM_DEFAULTS };
+                crownUnlocked = false;
+                crownEquipped = false;
+                saveCrownState();
                 saveCustom();
                 store.set('fps_best', '0');
                 store.set('fps_coins', '0');
