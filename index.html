@@ -1549,7 +1549,9 @@
                 { id: 'dist_5000', name: 'Pioneer', desc: 'Reach distance 5000', target: 5000, reward: 150 },
                 { id: 'combo_10', name: 'Sync Master', desc: 'Reach Sync ×10', target: 10, reward: 30 },
                 { id: 'combo_20', name: 'Sync Legend', desc: 'Reach Sync ×20', target: 20, reward: 70 },
-                { id: 'boss_defeated', name: 'Alien Hunter', desc: 'Defeat the Alien Warship', target: 1, reward: 100 }
+                { id: 'boss_defeated', name: 'Alien Hunter', desc: 'Defeat the Alien Warship', target: 1, reward: 100 },
+                { id: 'jobless', name: 'Jobless', desc: 'Reach Deepspace on Impossible difficulty', target: 1,
+                    reward: 200 }
             ];
 
             let achProgress = {};
@@ -1558,6 +1560,7 @@
             let maxDistanceEver = 0;
             let maxComboEver = 0;
             let bossDefeatedCount = 0;
+            let joblessUnlocked = false;
 
             function loadAchievements() {
                 const saved = parseJSON(store.get('fps_achievements', '{}'), {});
@@ -1567,6 +1570,7 @@
                 maxDistanceEver = saved.maxDistanceEver || 0;
                 maxComboEver = saved.maxComboEver || 0;
                 bossDefeatedCount = saved.bossDefeatedCount || 0;
+                joblessUnlocked = saved.joblessUnlocked || false;
                 ACHIEVEMENTS.forEach(a => {
                     if (!(a.id in achProgress)) achProgress[a.id] = 0;
                 });
@@ -1579,7 +1583,8 @@
                     totalCoinsCollected,
                     maxDistanceEver,
                     maxComboEver,
-                    bossDefeatedCount
+                    bossDefeatedCount,
+                    joblessUnlocked
                 }));
             }
 
@@ -1598,6 +1603,8 @@
                         if (maxComboEver >= a.target) completed = true;
                     } else if (a.id === 'boss_defeated') {
                         if (bossDefeatedCount >= a.target) completed = true;
+                    } else if (a.id === 'jobless') {
+                        if (joblessUnlocked) completed = true;
                     }
                     if (completed) {
                         achProgress[a.id] = a.target;
@@ -1645,7 +1652,8 @@
 
             function getExpMult() { return 1 + Math.min(0.6, totalFlown / 9000); }
 
-            const ZONES = [
+            // ─── ZONES & DEEPSPACE ──────────────────────────────────────────────────
+            const BASE_ZONES = [
                 { name: 'Earth', goal: 500, speed: 1.00, astInt: 1.35, hue: 205, kind: 'earth', hazards: ['ast'] },
                 { name: 'Mars', goal: 650, speed: 1.22, astInt: 1.12, hue: 14, kind: 'rocky', hazards: ['ast', 'meteor'],
                     hint: 'meteor activity detected' },
@@ -1662,11 +1670,31 @@
                 { name: 'Oort Cloud', goal: 1800, speed: 2.75, astInt: 0.62, hue: 262, kind: 'cloud',
                     hazards: ['ast', 'comet'], hint: 'long-period comets' },
                 { name: 'Alpha Centauri', goal: 2000, speed: 3.05, astInt: 0.56, hue: 46, kind: 'star',
-                    hazards: ['ast', 'meteor', 'comet'], hint: 'stellar flares' },
-                { name: 'Deep Space', goal: 2000, speed: 3.40, astInt: 0.52, hue: 285, kind: 'cloud', endless: true,
-                    hazards: ['ast', 'meteor', 'comet', 'rad', 'ring', 'ice'], hint: 'frontier zone' }
+                    hazards: ['ast', 'meteor', 'comet'], hint: 'stellar flares' }
             ];
-            const zoneOf = i => ZONES[Math.max(0, Math.min(i, ZONES.length - 1))];
+
+            // Deepspace generator
+            function getZone(index) {
+                if (index < BASE_ZONES.length) return BASE_ZONES[index];
+                const level = index - BASE_ZONES.length + 1;
+                const goal = Math.round(2000 * Math.pow(1.2, level - 1));
+                const speed = Math.min(6.0, 3.4 + 0.08 * (level - 1));
+                const astInt = Math.max(0.15, 0.52 - 0.015 * (level - 1));
+                const hue = (285 + level * 12) % 360;
+                return {
+                    name: 'Deepspace ' + level,
+                    goal: goal,
+                    speed: speed,
+                    astInt: astInt,
+                    hue: hue,
+                    kind: 'deep',
+                    hazards: ['ast', 'meteor', 'comet', 'rad', 'ring', 'ice'],
+                    endless: true,
+                    hint: 'deep space frontier'
+                };
+            }
+
+            function zoneOf(i) { return getZone(i); }
 
             // ─── SHIPS ─────────────────────────────────────────────────────────────
             const SHIPS = [
@@ -1846,17 +1874,19 @@
             function clampN(v, a, b) { return v < a ? a : (v > b ? b : v); }
 
             function initStarsAndNebulas() {
+                const count = Math.min(1200, Math.floor((W * H) / 1800));
+                const colors = ['#ffffff', '#aaccff', '#ffdd99', '#ffccaa', '#99ddff'];
                 stars = [];
-                const count = Math.min(700, Math.floor((W * H) / 2600));
                 for (let i = 0; i < count; i++) {
                     stars.push({
                         x: Math.random() * W,
                         y: Math.random() * H,
-                        size: Math.random() * 2.4 + 0.3,
+                        size: Math.random() * 2.8 + 0.4,
                         layer: 1 + Math.floor(Math.random() * 3),
                         b: Math.random() * 0.6 + 0.4,
                         tw: Math.random() * 2.5 + 0.5,
-                        ph: Math.random() * 6.28
+                        ph: Math.random() * 6.28,
+                        color: colors[Math.floor(Math.random() * colors.length)]
                     });
                 }
                 nebulas = [];
@@ -1866,7 +1896,8 @@
                         y: Math.random() * H,
                         r: Math.random() * 380 + 240,
                         ho: (Math.random() - 0.5) * 130,
-                        ph: Math.random() * 6.28
+                        ph: Math.random() * 6.28,
+                        alpha: 0.04 + Math.random() * 0.06
                     });
                 }
             }
@@ -1903,7 +1934,6 @@
                     rk.y = rk.ty = H - 140; }
                 rk.y = clampN(rk.y || H - 140, H * 0.3, H - 90);
                 rk.ty = clampN(rk.ty || rk.y, H * 0.3, H - 90);
-                // reposition boss if active
                 if (sim.boss) {
                     sim.boss.x = clampN(sim.boss.x || W / 2, 60, W - 60);
                     sim.boss.y = clampN(sim.boss.y || 100, 60, H * 0.4);
@@ -1966,7 +1996,6 @@
                 shake: 0,
                 flash: 0,
                 flashC: '255,255,255',
-                // Boss
                 boss: null,
                 bossSpawnDist: 500,
                 bossDefeated: false,
@@ -1975,7 +2004,8 @@
                 diffAstMult: 1,
                 diffHazardMult: 1,
                 diffExtraLives: 0,
-                diffCoinBonus: 0
+                diffCoinBonus: 0,
+                isDeepspace: false
             };
 
             function recalcStats() {
@@ -2154,7 +2184,6 @@
                         });
                     } }
             };
-            // Removed 'bolt' hazard – replaced by boss.
 
             function spawnCoins(b) {
                 const cluster = Math.random() < 0.3 ? 3 : 1;
@@ -2404,6 +2433,8 @@
             }
 
             function updateNebulas(dt, scroll) {
+                // For deepspace, reduce nebula opacity
+                const alphaMult = sim.isDeepspace ? 0.2 : 1.0;
                 for (const n of nebulas) {
                     n.y += scroll * 0.04 * dt;
                     if (n.y - n.r > H) { n.y = -n.r;
@@ -2417,14 +2448,15 @@
                 if (sim.boss) return;
                 const x = W / 2 + (Math.random() - 0.5) * 300;
                 const y = 80 + Math.random() * 60;
-                const hp = 60 + (sim.zone * 10) + 20 * (currentDifficulty === 'hard' ? 1 : 0) + 40 * (currentDifficulty ===
-                    'extreme' || currentDifficulty === 'impossible' ? 1 : 0);
+                const zoneMult = 1 + sim.zone * 0.15;
+                const hp = Math.round((60 + (sim.zone * 10) + 20 * (currentDifficulty === 'hard' ? 1 : 0) + 40 * (
+                    currentDifficulty === 'extreme' || currentDifficulty === 'impossible' ? 1 : 0)) * zoneMult);
                 sim.boss = {
                     x: clampN(x, 60, W - 60),
                     y: clampN(y, 60, H * 0.4),
                     hp: hp,
                     maxHp: hp,
-                    state: 'entering', // entering, fighting, dying
+                    state: 'entering',
                     timer: 0,
                     phase: 0,
                     shootTimer: 2.0 + Math.random(),
@@ -2432,7 +2464,7 @@
                     targetX: x,
                     targetY: y,
                     speed: 80 + 20 * (currentDifficulty === 'hard' ? 1 : 0) + 30 * (currentDifficulty === 'extreme' ||
-                        currentDifficulty === 'impossible' ? 1 : 0),
+                        currentDifficulty === 'impossible' ? 1 : 0) + sim.zone * 2,
                     entered: false,
                     deathTimer: 0
                 };
@@ -2481,26 +2513,22 @@
                     return;
                 }
 
-                // Fighting state
                 boss.timer += sdt;
                 boss.moveTimer += sdt;
 
-                // Move in a pattern: sinusoidal
                 boss.x += Math.sin(boss.timer * 0.6 + boss.phase) * 60 * sdt;
                 boss.y += Math.cos(boss.timer * 0.4 + boss.phase * 1.2) * 40 * sdt;
                 boss.x = clampN(boss.x, 60, W - 60);
                 boss.y = clampN(boss.y, 60, H * 0.4);
 
-                // Shoot bullets
                 boss.shootTimer -= sdt;
                 if (boss.shootTimer <= 0) {
-                    // Fire a spread of 5 bullets
-                    const angleStep = 0.7;
+                    const angleStep = 0.7 + 0.1 * (sim.zone / 10);
                     const baseAngle = Math.atan2(sim.rocket.y - boss.y, sim.rocket.x - boss.x);
                     for (let i = -2; i <= 2; i++) {
                         const angle = baseAngle + i * angleStep * 0.3;
                         const speed = 180 + 30 * (currentDifficulty === 'hard' ? 1 : 0) + 50 * (currentDifficulty ===
-                            'extreme' || currentDifficulty === 'impossible' ? 1 : 0);
+                            'extreme' || currentDifficulty === 'impossible' ? 1 : 0) + sim.zone * 2;
                         sim.bossBullets.push({
                             x: boss.x,
                             y: boss.y + 16,
@@ -2512,12 +2540,11 @@
                         });
                     }
                     Sfx.bossShoot();
-                    boss.shootTimer = 1.8 - Math.min(0.8, sim.zone * 0.05);
-                    if (boss.shootTimer < 0.6) boss.shootTimer = 0.6;
+                    boss.shootTimer = 1.8 - Math.min(0.8, sim.zone * 0.03);
+                    if (boss.shootTimer < 0.4) boss.shootTimer = 0.4;
                 }
 
-                // Spawn asteroids as additional attack
-                if (Math.random() < sdt * 0.15) {
+                if (Math.random() < sdt * (0.15 + sim.zone * 0.005)) {
                     const side = Math.random() < 0.5 ? -1 : 1;
                     const x = side < 0 ? -30 : W + 30;
                     const y = 20 + Math.random() * H * 0.5;
@@ -2526,8 +2553,8 @@
                         type: 'ast',
                         x: x,
                         y: y,
-                        vx: -side * (100 + Math.random() * 100),
-                        vy: 60 + Math.random() * 120,
+                        vx: -side * (100 + Math.random() * 100 + sim.zone * 5),
+                        vy: 60 + Math.random() * 120 + sim.zone * 2,
                         r: r,
                         rot: Math.random() * 6,
                         vr: (Math.random() - 0.5) * 2,
@@ -2536,7 +2563,6 @@
                     });
                 }
 
-                // Update boss health bar
                 updateBossHealthBar();
             }
 
@@ -2550,7 +2576,6 @@
                         sim.bossBullets.splice(i, 1);
                         continue;
                     }
-                    // Collision with player
                     const rk = sim.rocket;
                     const d = Math.hypot(b.x - rk.x, b.y - rk.y);
                     if (d < b.r + shipHitR()) {
@@ -2561,7 +2586,6 @@
                         sim.bossBullets.splice(i, 1);
                         continue;
                     }
-                    // Can be destroyed by bullets? we can allow player bullets to destroy boss bullets? Not needed.
                 }
             }
 
@@ -2576,36 +2600,28 @@
                     sim.boss.state = 'dying';
                     sim.boss.deathTimer = 0;
                     Sfx.bossDie();
-                    // Big explosion
                     for (let i = 0; i < 8; i++) {
                         setTimeout(() => {
                             burst(sim.boss.x + (Math.random() - 0.5) * 120, sim.boss.y + (Math.random() -
                                 0.5) * 80, '255,80,80', 20, 350);
                         }, i * 150);
                     }
-                    // Drop coins
                     const drop = 30 + sim.zone * 5;
                     totalCoins += drop;
                     totalCoinsCollected += drop;
                     sim.runCoins += drop;
                     pushText(sim.boss.x, sim.boss.y - 40, 'BOSS DEFEATED +' + drop + ' DATA', '#ffd700');
-                    // Mission
                     missionEvent('bosskill', 1, true);
-                    // Achievement
                     bossDefeatedCount++;
                     checkAchievements();
-                    // Save
                     saveProgress();
-                    // Remove boss after a while
                     setTimeout(() => {
                         if (sim.boss) {
                             sim.boss = null;
                             bossHealthContainer.classList.remove('active');
-                            // Spawn next boss further
                             sim.bossSpawnDist = sim.dist + 800 + Math.random() * 400;
                         }
                     }, 2000);
-                    // Also mark boss defeated for spawning next
                     sim.bossDefeated = true;
                 }
             }
@@ -2653,15 +2669,12 @@
                     }
                     if (h.y > H + 180 || h.x < -280 || h.x > W + 280) sim.hazards.splice(i, 1);
                 }
-                // Boss collision with player
                 if (sim.boss && sim.boss.state === 'fighting') {
                     const db = Math.hypot(sim.boss.x - rk.x, sim.boss.y - rk.y);
                     if (db < 40 + hr) {
-                        // Boss collides with player
                         if (sim.invincible <= 0 && sim.state === 'playing') {
                             damage();
                             burst(sim.boss.x, sim.boss.y, '255,100,100', 16, 250);
-                            // Push boss back
                             const ang = Math.atan2(sim.boss.y - rk.y, sim.boss.x - rk.x);
                             sim.boss.x += Math.cos(ang) * 60;
                             sim.boss.y += Math.sin(ang) * 60;
@@ -2672,7 +2685,6 @@
                 }
             }
 
-            // ─── AUTO-MISSILE (from destroyed asteroids) ──────────────────────────
             function autoLaunchMissile(x, y) {
                 if (sim.autoMissileCooldown > 0) return;
                 let nearest = null,
@@ -2789,7 +2801,6 @@
                                 }
                             }
                         }
-                        // Also damage boss if missile hits it
                         if (sim.boss && sim.boss.state === 'fighting') {
                             const db = Math.hypot(m.x - sim.boss.x, m.y - sim.boss.y);
                             if (db < blastRadius + 40) {
@@ -2862,7 +2873,6 @@
                     b.life -= sdt;
                     if (b.life <= 0) { sim.bullets.splice(i, 1); continue; }
                     let hit = false;
-                    // Check against asteroids
                     for (let j = sim.hazards.length - 1; j >= 0; j--) {
                         const h = sim.hazards[j];
                         if (h.type !== 'ast') continue;
@@ -2886,7 +2896,6 @@
                             break;
                         }
                     }
-                    // Check against boss
                     if (!hit && sim.boss && sim.boss.state === 'fighting') {
                         const db = Math.hypot(b.x - sim.boss.x, b.y - sim.boss.y);
                         if (db < b.r + 25) {
@@ -2932,12 +2941,10 @@
                 }
             }
 
-            // ─── AUTO MISSILE FIRING (Vestal) ─────────────────────────────────────
             function autoFireVestalMissile(sdt) {
                 if (!shipIsVestal() || sim.state !== 'playing') return;
                 sim.autoMissileTimer -= sdt;
                 if (sim.autoMissileTimer > 0) return;
-                // Find nearest asteroid
                 let nearest = null,
                     minD = Infinity;
                 const rk = sim.rocket;
@@ -3016,10 +3023,21 @@
                 updateParts(sdt);
                 updateTexts(rdt);
                 Sfx.humSet(sim.ts);
-                // Vestal auto-fire
                 autoFireVestalMissile(sdt);
 
-                // Boss spawn check
+                // Check deepspace and jobless achievement
+                const isDeep = sim.zone >= BASE_ZONES.length;
+                if (isDeep && !sim.isDeepspace) {
+                    sim.isDeepspace = true;
+                    // Jobless: reached deepspace on impossible
+                    if (currentDifficulty === 'impossible' && !joblessUnlocked) {
+                        joblessUnlocked = true;
+                        saveAchievements();
+                        checkAchievements();
+                        showToast('🏆 Jobless: Reached Deepspace on Impossible!');
+                    }
+                }
+
                 if (!sim.boss && !sim.bossDefeated && sim.dist >= sim.bossSpawnDist && sim.state === 'playing') {
                     spawnBoss();
                 }
@@ -3047,11 +3065,10 @@
                 sim.bossBullets = [];
                 sim.meteorQ = null;
                 sim.rad = 0;
-                // If boss is alive, we don't warp? Actually we warp but boss is removed. Let's remove boss on warp.
                 if (sim.boss) {
                     sim.boss = null;
                     bossHealthContainer.classList.remove('active');
-                    sim.bossDefeated = false; // allow respawn later
+                    sim.bossDefeated = false;
                     sim.bossSpawnDist = sim.dist + 800 + Math.random() * 400;
                 }
                 saveProgress();
@@ -3150,9 +3167,15 @@
                 sim.state = 'playing';
                 updateHUD();
                 checkAchievements();
-                // Reset boss spawn distance to next milestone
                 sim.bossSpawnDist = sim.dist + 800 + Math.random() * 400;
                 sim.bossDefeated = false;
+                // Check if deepspace and impossible for jobless
+                if (sim.zone >= BASE_ZONES.length && currentDifficulty === 'impossible' && !joblessUnlocked) {
+                    joblessUnlocked = true;
+                    saveAchievements();
+                    checkAchievements();
+                    showToast('🏆 Jobless: Reached Deepspace on Impossible!');
+                }
             }
 
             function chooseUpgrade(id) {
@@ -3169,7 +3192,7 @@
                 sim.zone = 0;
                 sim.segStart = 0;
                 sim.dist = 0;
-                sim.goal = ZONES[0].goal;
+                sim.goal = BASE_ZONES[0].goal;
                 sim.hazards = [];
                 sim.clouds = [];
                 sim.coins = [];
@@ -3210,11 +3233,11 @@
                 sim.rocket.vxS = 0;
                 sim.time = 0;
                 sim.hintT = 5;
-                // Boss reset
                 sim.boss = null;
                 sim.bossDefeated = false;
                 sim.bossSpawnDist = 500 + Math.random() * 200;
                 sim.bossBullets = [];
+                sim.isDeepspace = false;
                 bossHealthContainer.classList.remove('active');
                 const diff = DIFFICULTIES[currentDifficulty];
                 sim.diffSpeedMult = diff.speedMult;
@@ -3311,7 +3334,6 @@
                 const pulse = 0.5 + 0.5 * Math.sin(sim.time * 3);
                 ctx.save();
                 ctx.translate(b.x, b.y);
-                // Glow
                 const g = ctx.createRadialGradient(0, 0, 10, 0, 0, 70);
                 g.addColorStop(0, 'rgba(255,80,80,0.3)');
                 g.addColorStop(1, 'rgba(255,80,80,0)');
@@ -3319,7 +3341,6 @@
                 ctx.beginPath();
                 ctx.arc(0, 0, 70, 0, 7);
                 ctx.fill();
-                // Main body
                 ctx.fillStyle = '#cc3333';
                 ctx.beginPath();
                 ctx.ellipse(0, 0, 45, 25, 0, 0, Math.PI * 2);
@@ -3332,7 +3353,6 @@
                 ctx.beginPath();
                 ctx.ellipse(0, -12, 16, 10, 0, 0, Math.PI * 2);
                 ctx.fill();
-                // Cockpit
                 ctx.fillStyle = '#ffcccc';
                 ctx.beginPath();
                 ctx.ellipse(0, -16, 8, 5, 0, 0, Math.PI * 2);
@@ -3344,14 +3364,12 @@
                 ctx.beginPath();
                 ctx.arc(3, -18, 2, 0, 7);
                 ctx.fill();
-                // Weapon barrels
                 ctx.fillStyle = '#aa2222';
                 ctx.fillRect(-34, -2, 14, 4);
                 ctx.fillRect(20, -2, 14, 4);
                 ctx.fillStyle = '#ff6666';
                 ctx.fillRect(-36, -1, 6, 2);
                 ctx.fillRect(30, -1, 6, 2);
-                // Tentacles
                 ctx.strokeStyle = '#cc3333';
                 ctx.lineWidth = 3;
                 for (let i = -2; i <= 2; i++) {
@@ -3361,7 +3379,6 @@
                     ctx.quadraticCurveTo(i * 20, 30 + 8 * Math.sin(sim.time * 1.5 + i), i * 16, 38);
                     ctx.stroke();
                 }
-                // Health ring
                 ctx.strokeStyle = 'rgba(255,80,80,0.5)';
                 ctx.lineWidth = 2;
                 ctx.setLineDash([4, 6]);
@@ -3369,7 +3386,6 @@
                 ctx.arc(0, 0, 55, 0, 7);
                 ctx.stroke();
                 ctx.setLineDash([]);
-                // Warning pulse
                 if (b.hp / b.maxHp < 0.3) {
                     ctx.strokeStyle = 'rgba(255,0,0,' + (0.3 + 0.3 * pulse) + ')';
                     ctx.lineWidth = 3;
@@ -3401,9 +3417,11 @@
 
             function drawStars() {
                 const wk = sim.state === 'warp' ? Math.min(sim.warpK, 22) : 1;
+                // For deepspace, we want a plain starfield without warp lines
+                const drawLines = (sim.state !== 'warp' || sim.isDeepspace) ? false : true;
                 for (const s of stars) {
                     const a = s.b * (0.65 + 0.35 * Math.sin(sim.time * s.tw + s.ph));
-                    if (wk > 1.4) {
+                    if (wk > 1.4 && drawLines) {
                         const len = Math.min(230, sim.scroll * SPEEDF[s.layer - 1] * 0.05 * wk);
                         ctx.strokeStyle = 'rgba(190,215,255,' + a.toFixed(3) + ')';
                         ctx.lineWidth = Math.max(0.6, s.size * 0.8);
@@ -3412,7 +3430,7 @@
                         ctx.lineTo(s.x, s.y);
                         ctx.stroke();
                     } else {
-                        ctx.fillStyle = 'rgba(220,235,255,' + a.toFixed(3) + ')';
+                        ctx.fillStyle = s.color || 'rgba(220,235,255,' + a.toFixed(3) + ')';
                         ctx.beginPath();
                         ctx.arc(s.x, s.y, s.size, 0, 7);
                         ctx.fill();
@@ -3421,6 +3439,10 @@
             }
 
             function drawNebulas() {
+                if (sim.isDeepspace) {
+                    // In deepspace, no nebulas – plain starfield
+                    return;
+                }
                 const hue = zoneOf(sim.zone).hue;
                 for (const n of nebulas) {
                     const h = hue + n.ho;
@@ -4109,16 +4131,21 @@
                 const pct = Math.min(100, (sim.dist - sim.segStart) / sim.goal * 100);
                 if (Math.abs((hudCache.pct || 0) - pct) > 0.4) { hudCache.pct = pct;
                     progressBarFill.style.width = pct + '%'; }
-                const zi = Math.min(sim.zone, ZONES.length - 1);
+                const zi = sim.zone;
                 let pl;
-                if (zi >= ZONES.length - 1) pl = ZONES[zi].name + ' · endless';
-                else pl = ZONES[zi].name + '|' + ZONES[zi + 1].name;
+                if (zi >= BASE_ZONES.length) {
+                    const z = zoneOf(zi);
+                    pl = z.name + ' · ∞';
+                } else {
+                    const z = zoneOf(zi);
+                    const nz = zoneOf(zi + 1);
+                    pl = z.name + ' → <span>' + nz.name + '</span>';
+                }
                 if (hudCache.plZone !== pl) {
                     hudCache.plZone = pl;
-                    if (zi >= ZONES.length - 1) progressPlanet.textContent = pl;
-                    else progressPlanet.innerHTML = ZONES[zi].name + ' → <span>' + ZONES[zi + 1].name + '</span>';
+                    if (zi >= BASE_ZONES.length) progressPlanet.textContent = pl;
+                    else progressPlanet.innerHTML = pl;
                 }
-                // Boss health bar is updated in updateBoss
             }
 
             function updateMenuStats() {
@@ -4349,6 +4376,7 @@
                 maxDistanceEver = 0;
                 maxComboEver = 0;
                 bossDefeatedCount = 0;
+                joblessUnlocked = false;
                 saveAchievements();
                 recalcStats();
                 initDailyMissions();
