@@ -1029,6 +1029,44 @@
             margin-top: 4px;
         }
 
+        /* Boss health bar */
+        #bossHealthContainer {
+            position: fixed;
+            top: 56px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 6;
+            pointer-events: none;
+            display: none;
+            width: 300px;
+            max-width: 60vw;
+            background: rgba(0,0,0,0.6);
+            border-radius: 12px;
+            padding: 4px 8px;
+            border: 1px solid rgba(255,80,80,0.4);
+            backdrop-filter: blur(4px);
+        }
+        #bossHealthContainer.active {
+            display: block;
+        }
+        #bossHealthBar {
+            height: 12px;
+            background: #ff3b3b;
+            border-radius: 8px;
+            width: 100%;
+            transition: width 0.15s ease;
+            box-shadow: 0 0 16px rgba(255,0,0,0.3);
+        }
+        #bossHealthLabel {
+            text-align: center;
+            font-size: 10px;
+            color: rgba(255,255,255,0.6);
+            margin-top: 2px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-shadow: 0 0 8px rgba(0,0,0,0.8);
+        }
+
         @media (max-width:500px) {
             .menu-card {
                 padding: 26px 18px 22px
@@ -1096,6 +1134,13 @@
             .achievement-toast .ach-title {
                 font-size: 15px;
             }
+            #bossHealthContainer {
+                top: 48px;
+                width: 200px;
+            }
+            #bossHealthBar {
+                height: 8px;
+            }
         }
     </style>
 </head>
@@ -1107,6 +1152,11 @@
         <div id="progressPlanet">Earth → <span>Mars</span></div>
         <div id="progressBarBg"><div id="progressBarFill" style="width:0%"></div></div>
         <div id="progressLabel">0 / 500</div>
+    </div>
+
+    <div id="bossHealthContainer">
+        <div id="bossHealthBar" style="width:100%"></div>
+        <div id="bossHealthLabel">ALIEN WARSHIP</div>
     </div>
 
     <div id="hud">
@@ -1298,7 +1348,8 @@
                     fill: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></svg>`,
                     accent: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></svg>`,
                     trail: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><path d="M4 12L8 8M20 12L16 8M4 12L8 16M20 12L16 16M12 4v4M12 20v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
-                    aura: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="6" fill="currentColor" opacity="0.3"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.2" opacity="0.4"/><circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.6"/></svg>`
+                    aura: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="6" fill="currentColor" opacity="0.3"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.2" opacity="0.4"/><circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.6"/></svg>`,
+                    boss: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="12" rx="9" ry="6" fill="#ff4444"/><ellipse cx="12" cy="10" rx="5" ry="3" fill="#ff8888"/><circle cx="9" cy="10" r="1.2" fill="#fff"/><circle cx="15" cy="10" r="1.2" fill="#fff"/><ellipse cx="12" cy="13" rx="2" ry="1" fill="#0a0e1a"/><path d="M5 18l-2 4M19 18l2 4" stroke="#ff4444" stroke-width="1.5" stroke-linecap="round"/></svg>`
                 };
                 return M[name] || '';
             }
@@ -1371,7 +1422,10 @@
                 achievementToast = $('achievementToast'),
                 achTitle = $('achTitle'),
                 achDesc = $('achDesc'),
-                achReward = $('achReward');
+                achReward = $('achReward'),
+                bossHealthContainer = $('bossHealthContainer'),
+                bossHealthBar = $('bossHealthBar'),
+                bossHealthLabel = $('bossHealthLabel');
 
             const store = {
                 get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } },
@@ -1495,6 +1549,7 @@
                 { id: 'dist_5000', name: 'Pioneer', desc: 'Reach distance 5000', target: 5000, reward: 150 },
                 { id: 'combo_10', name: 'Sync Master', desc: 'Reach Sync ×10', target: 10, reward: 30 },
                 { id: 'combo_20', name: 'Sync Legend', desc: 'Reach Sync ×20', target: 20, reward: 70 },
+                { id: 'boss_defeated', name: 'Alien Hunter', desc: 'Defeat the Alien Warship', target: 1, reward: 100 }
             ];
 
             let achProgress = {};
@@ -1502,6 +1557,7 @@
             let totalCoinsCollected = 0;
             let maxDistanceEver = 0;
             let maxComboEver = 0;
+            let bossDefeatedCount = 0;
 
             function loadAchievements() {
                 const saved = parseJSON(store.get('fps_achievements', '{}'), {});
@@ -1510,6 +1566,7 @@
                 totalCoinsCollected = saved.totalCoinsCollected || 0;
                 maxDistanceEver = saved.maxDistanceEver || 0;
                 maxComboEver = saved.maxComboEver || 0;
+                bossDefeatedCount = saved.bossDefeatedCount || 0;
                 ACHIEVEMENTS.forEach(a => {
                     if (!(a.id in achProgress)) achProgress[a.id] = 0;
                 });
@@ -1521,7 +1578,8 @@
                     totalAsteroidsDestroyed,
                     totalCoinsCollected,
                     maxDistanceEver,
-                    maxComboEver
+                    maxComboEver,
+                    bossDefeatedCount
                 }));
             }
 
@@ -1529,7 +1587,6 @@
                 let unlocked = [];
                 ACHIEVEMENTS.forEach(a => {
                     if (achProgress[a.id] >= a.target) return;
-                    let current = achProgress[a.id] || 0;
                     let completed = false;
                     if (a.id.startsWith('destroy_')) {
                         if (totalAsteroidsDestroyed >= a.target) completed = true;
@@ -1539,6 +1596,8 @@
                         if (maxDistanceEver >= a.target) completed = true;
                     } else if (a.id.startsWith('combo_')) {
                         if (maxComboEver >= a.target) completed = true;
+                    } else if (a.id === 'boss_defeated') {
+                        if (bossDefeatedCount >= a.target) completed = true;
                     }
                     if (completed) {
                         achProgress[a.id] = a.target;
@@ -1597,15 +1656,15 @@
                 { name: 'Uranus', goal: 1200, speed: 1.92, astInt: 0.82, hue: 185, kind: 'ice', hazards: ['ast', 'ice'],
                     hint: 'ice shards detected' },
                 { name: 'Neptune', goal: 1400, speed: 2.18, astInt: 0.75, hue: 222, kind: 'ice',
-                    hazards: ['ast', 'bolt'], hint: 'storm cells' },
+                    hazards: ['ast', 'comet'], hint: 'long-period comets' },
                 { name: 'Pluto', goal: 1600, speed: 2.45, astInt: 0.68, hue: 0, kind: 'rocky', gray: true,
                     hazards: ['ast', 'ice', 'meteor'], hint: 'high debris density' },
                 { name: 'Oort Cloud', goal: 1800, speed: 2.75, astInt: 0.62, hue: 262, kind: 'cloud',
                     hazards: ['ast', 'comet'], hint: 'long-period comets' },
                 { name: 'Alpha Centauri', goal: 2000, speed: 3.05, astInt: 0.56, hue: 46, kind: 'star',
-                    hazards: ['ast', 'meteor', 'bolt', 'comet'], hint: 'full hazard spectrum' },
+                    hazards: ['ast', 'meteor', 'comet'], hint: 'stellar flares' },
                 { name: 'Deep Space', goal: 2000, speed: 3.40, astInt: 0.52, hue: 285, kind: 'cloud', endless: true,
-                    hazards: ['ast', 'meteor', 'bolt', 'comet', 'rad', 'ring', 'ice'], hint: 'frontier zone' }
+                    hazards: ['ast', 'meteor', 'comet', 'rad', 'ring', 'ice'], hint: 'frontier zone' }
             ];
             const zoneOf = i => ZONES[Math.max(0, Math.min(i, ZONES.length - 1))];
 
@@ -1650,7 +1709,8 @@
                 { id: 'dist600', name: 'Travel 600 in one run', goal: 600, key: 'runDist', reward: 30, icon: 'rocket' },
                 { id: 'flow6', name: 'Reach Sync ×6', goal: 6, key: 'flow', reward: 20, icon: 'bolt' },
                 { id: 'coins50', name: 'Collect 50 data points', goal: 50, key: 'coins', reward: 35, icon: 'coin' },
-                { id: 'pups3', name: 'Grab 3 power-ups', goal: 3, key: 'pups', reward: 15, icon: 'star' }
+                { id: 'pups3', name: 'Grab 3 power-ups', goal: 3, key: 'pups', reward: 15, icon: 'star' },
+                { id: 'bosskill', name: 'Defeat the Alien Warship', goal: 1, key: 'bosskill', reward: 40, icon: 'boss' }
             ];
 
             const Sfx = {
@@ -1766,7 +1826,14 @@
                     this.noise(0.2, 0.08, 400); },
                 missileExplode() { this.noise(0.6, 0.5, 700);
                     this.tone(80, 0.5, 'sawtooth', 0.3, -60);
-                    this.tone(300, 0.2, 'sine', 0.15, 0, 0.05); }
+                    this.tone(300, 0.2, 'sine', 0.15, 0, 0.05); },
+                bossShoot() { this.tone(600, 0.2, 'square', 0.12, 0);
+                    this.tone(1200, 0.15, 'sine', 0.08, 0, 0.05); },
+                bossHit() { this.tone(200, 0.2, 'sawtooth', 0.15, -100);
+                    this.noise(0.15, 0.2, 500); },
+                bossDie() { this.noise(1.2, 0.6, 300);
+                    this.tone(100, 1.0, 'sawtooth', 0.3, -150);
+                    [523, 659, 784, 1046].forEach((f, i) => this.tone(f, 0.3, 'sine', 0.08, 0, i * 0.12)); }
             };
 
             let W = 0,
@@ -1836,6 +1903,11 @@
                     rk.y = rk.ty = H - 140; }
                 rk.y = clampN(rk.y || H - 140, H * 0.3, H - 90);
                 rk.ty = clampN(rk.ty || rk.y, H * 0.3, H - 90);
+                // reposition boss if active
+                if (sim.boss) {
+                    sim.boss.x = clampN(sim.boss.x || W / 2, 60, W - 60);
+                    sim.boss.y = clampN(sim.boss.y || 100, 60, H * 0.4);
+                }
             }
             window.addEventListener('resize', resizeCanvas);
 
@@ -1847,7 +1919,6 @@
                 rocket: { x: 0, y: 0, tx: 0, ty: 0, tilt: 0, vxS: 0 },
                 hazards: [],
                 clouds: [],
-                bolts: [],
                 coins: [],
                 pups: [],
                 parts: [],
@@ -1856,7 +1927,7 @@
                 missiles: [],
                 missileCooldown: 0,
                 autoMissileCooldown: 0,
-                autoMissileTimer: 2.5, // start ready
+                autoMissileTimer: 2.5,
                 fireCooldown: 0,
                 dist: 0,
                 segStart: 0,
@@ -1895,7 +1966,11 @@
                 shake: 0,
                 flash: 0,
                 flashC: '255,255,255',
-                aliens: [],
+                // Boss
+                boss: null,
+                bossSpawnDist: 500,
+                bossDefeated: false,
+                bossBullets: [],
                 diffSpeedMult: 1,
                 diffAstMult: 1,
                 diffHazardMult: 1,
@@ -1955,7 +2030,6 @@
                     e.preventDefault(); }
                 if (k === ' ') {
                     e.preventDefault();
-                    // Always fire bullet (manual missiles removed)
                     fireBullet();
                 }
                 if (k === 'Escape') {
@@ -2067,25 +2141,6 @@
                             });
                         }
                     } },
-                bolt: { iv: 6.4, spawn(b) {
-                        const side = Math.random() < 0.5 ? -1 : 1;
-                        const x = side < 0 ? -60 : W + 60;
-                        const y = 40 + Math.random() * H * 0.3;
-                        sim.aliens.push({
-                            x: x,
-                            y: y,
-                            targetX: 60 + Math.random() * (W - 120),
-                            side: side,
-                            state: 'warn',
-                            warnT: 0.85 + Math.random() * 0.3,
-                            laserT: 0,
-                            laserDuration: 0.35 + Math.random() * 0.15,
-                            w: 70 + Math.random() * 40,
-                            tick: 0,
-                            phase: Math.random() * 6.28,
-                            fired: false
-                        });
-                    } },
                 comet: { iv: 7.5, spawn(b) {
                         const fromLeft = Math.random() < 0.5;
                         sim.hazards.push({
@@ -2099,6 +2154,7 @@
                         });
                     } }
             };
+            // Removed 'bolt' hazard – replaced by boss.
 
             function spawnCoins(b) {
                 const cluster = Math.random() < 0.3 ? 3 : 1;
@@ -2355,7 +2411,207 @@
                 }
             }
 
-            // ─── FIXED: updateHazards — asteroid destroyed on collision even when invincible ───
+            // ─── BOSS FUNCTIONS ──────────────────────────────────────────────────
+
+            function spawnBoss() {
+                if (sim.boss) return;
+                const x = W / 2 + (Math.random() - 0.5) * 300;
+                const y = 80 + Math.random() * 60;
+                const hp = 60 + (sim.zone * 10) + 20 * (currentDifficulty === 'hard' ? 1 : 0) + 40 * (currentDifficulty ===
+                    'extreme' || currentDifficulty === 'impossible' ? 1 : 0);
+                sim.boss = {
+                    x: clampN(x, 60, W - 60),
+                    y: clampN(y, 60, H * 0.4),
+                    hp: hp,
+                    maxHp: hp,
+                    state: 'entering', // entering, fighting, dying
+                    timer: 0,
+                    phase: 0,
+                    shootTimer: 2.0 + Math.random(),
+                    moveTimer: 0,
+                    targetX: x,
+                    targetY: y,
+                    speed: 80 + 20 * (currentDifficulty === 'hard' ? 1 : 0) + 30 * (currentDifficulty === 'extreme' ||
+                        currentDifficulty === 'impossible' ? 1 : 0),
+                    entered: false,
+                    deathTimer: 0
+                };
+                sim.bossDefeated = false;
+                bossHealthContainer.classList.add('active');
+                updateBossHealthBar();
+                showToast('⚠️ ALIEN WARSHIP DETECTED!');
+                Sfx.bossShoot();
+                sim.flash = 0.3;
+                sim.flashC = '255,50,50';
+                sim.shake = 10;
+            }
+
+            function updateBossHealthBar() {
+                if (!sim.boss) {
+                    bossHealthContainer.classList.remove('active');
+                    return;
+                }
+                const pct = Math.max(0, (sim.boss.hp / sim.boss.maxHp) * 100);
+                bossHealthBar.style.width = pct + '%';
+                bossHealthLabel.textContent = 'ALIEN WARSHIP [' + Math.floor(sim.boss.hp) + '/' + sim.boss.maxHp + ']';
+                if (pct < 30) {
+                    bossHealthBar.style.background = '#ff6b6b';
+                } else if (pct < 60) {
+                    bossHealthBar.style.background = '#ffa94d';
+                } else {
+                    bossHealthBar.style.background = '#ff3b3b';
+                }
+            }
+
+            function updateBoss(sdt) {
+                if (!sim.boss || sim.boss.state === 'dying') return;
+
+                const boss = sim.boss;
+                if (boss.state === 'entering') {
+                    boss.timer += sdt;
+                    boss.y += (100 - boss.y) * 0.06;
+                    if (boss.timer > 1.0) {
+                        boss.state = 'fighting';
+                        boss.timer = 0;
+                        boss.phase = 0;
+                        boss.shootTimer = 1.5 + Math.random() * 1.5;
+                        boss.moveTimer = 0;
+                    }
+                    updateBossHealthBar();
+                    return;
+                }
+
+                // Fighting state
+                boss.timer += sdt;
+                boss.moveTimer += sdt;
+
+                // Move in a pattern: sinusoidal
+                boss.x += Math.sin(boss.timer * 0.6 + boss.phase) * 60 * sdt;
+                boss.y += Math.cos(boss.timer * 0.4 + boss.phase * 1.2) * 40 * sdt;
+                boss.x = clampN(boss.x, 60, W - 60);
+                boss.y = clampN(boss.y, 60, H * 0.4);
+
+                // Shoot bullets
+                boss.shootTimer -= sdt;
+                if (boss.shootTimer <= 0) {
+                    // Fire a spread of 5 bullets
+                    const angleStep = 0.7;
+                    const baseAngle = Math.atan2(sim.rocket.y - boss.y, sim.rocket.x - boss.x);
+                    for (let i = -2; i <= 2; i++) {
+                        const angle = baseAngle + i * angleStep * 0.3;
+                        const speed = 180 + 30 * (currentDifficulty === 'hard' ? 1 : 0) + 50 * (currentDifficulty ===
+                            'extreme' || currentDifficulty === 'impossible' ? 1 : 0);
+                        sim.bossBullets.push({
+                            x: boss.x,
+                            y: boss.y + 16,
+                            vx: Math.cos(angle) * speed,
+                            vy: Math.sin(angle) * speed,
+                            life: 4.0,
+                            r: 6,
+                            color: '#ff4444'
+                        });
+                    }
+                    Sfx.bossShoot();
+                    boss.shootTimer = 1.8 - Math.min(0.8, sim.zone * 0.05);
+                    if (boss.shootTimer < 0.6) boss.shootTimer = 0.6;
+                }
+
+                // Spawn asteroids as additional attack
+                if (Math.random() < sdt * 0.15) {
+                    const side = Math.random() < 0.5 ? -1 : 1;
+                    const x = side < 0 ? -30 : W + 30;
+                    const y = 20 + Math.random() * H * 0.5;
+                    const r = 10 + Math.random() * 12;
+                    sim.hazards.push({
+                        type: 'ast',
+                        x: x,
+                        y: y,
+                        vx: -side * (100 + Math.random() * 100),
+                        vy: 60 + Math.random() * 120,
+                        r: r,
+                        rot: Math.random() * 6,
+                        vr: (Math.random() - 0.5) * 2,
+                        verts: rockVerts(r),
+                        nm: false
+                    });
+                }
+
+                // Update boss health bar
+                updateBossHealthBar();
+            }
+
+            function updateBossBullets(sdt) {
+                for (let i = sim.bossBullets.length - 1; i >= 0; i--) {
+                    const b = sim.bossBullets[i];
+                    b.x += b.vx * sdt;
+                    b.y += b.vy * sdt;
+                    b.life -= sdt;
+                    if (b.life <= 0 || b.x < -50 || b.x > W + 50 || b.y < -50 || b.y > H + 50) {
+                        sim.bossBullets.splice(i, 1);
+                        continue;
+                    }
+                    // Collision with player
+                    const rk = sim.rocket;
+                    const d = Math.hypot(b.x - rk.x, b.y - rk.y);
+                    if (d < b.r + shipHitR()) {
+                        if (sim.invincible <= 0 && sim.state === 'playing') {
+                            damage();
+                            burst(b.x, b.y, '255,100,100', 10, 200);
+                        }
+                        sim.bossBullets.splice(i, 1);
+                        continue;
+                    }
+                    // Can be destroyed by bullets? we can allow player bullets to destroy boss bullets? Not needed.
+                }
+            }
+
+            function bossHit(damage) {
+                if (!sim.boss || sim.boss.state !== 'fighting') return;
+                sim.boss.hp -= damage;
+                Sfx.bossHit();
+                sim.shake = Math.max(sim.shake, 6);
+                burst(sim.boss.x, sim.boss.y, '255,200,100', 6, 180);
+                updateBossHealthBar();
+                if (sim.boss.hp <= 0) {
+                    sim.boss.state = 'dying';
+                    sim.boss.deathTimer = 0;
+                    Sfx.bossDie();
+                    // Big explosion
+                    for (let i = 0; i < 8; i++) {
+                        setTimeout(() => {
+                            burst(sim.boss.x + (Math.random() - 0.5) * 120, sim.boss.y + (Math.random() -
+                                0.5) * 80, '255,80,80', 20, 350);
+                        }, i * 150);
+                    }
+                    // Drop coins
+                    const drop = 30 + sim.zone * 5;
+                    totalCoins += drop;
+                    totalCoinsCollected += drop;
+                    sim.runCoins += drop;
+                    pushText(sim.boss.x, sim.boss.y - 40, 'BOSS DEFEATED +' + drop + ' DATA', '#ffd700');
+                    // Mission
+                    missionEvent('bosskill', 1, true);
+                    // Achievement
+                    bossDefeatedCount++;
+                    checkAchievements();
+                    // Save
+                    saveProgress();
+                    // Remove boss after a while
+                    setTimeout(() => {
+                        if (sim.boss) {
+                            sim.boss = null;
+                            bossHealthContainer.classList.remove('active');
+                            // Spawn next boss further
+                            sim.bossSpawnDist = sim.dist + 800 + Math.random() * 400;
+                        }
+                    }, 2000);
+                    // Also mark boss defeated for spawning next
+                    sim.bossDefeated = true;
+                }
+            }
+
+            // ─── UPDATE HAZARDS (with boss collision) ────────────────────────────
+
             function updateHazards(sdt) {
                 const rk = sim.rocket,
                     hr = shipHitR();
@@ -2396,6 +2652,23 @@
                             nearMiss(h); }
                     }
                     if (h.y > H + 180 || h.x < -280 || h.x > W + 280) sim.hazards.splice(i, 1);
+                }
+                // Boss collision with player
+                if (sim.boss && sim.boss.state === 'fighting') {
+                    const db = Math.hypot(sim.boss.x - rk.x, sim.boss.y - rk.y);
+                    if (db < 40 + hr) {
+                        // Boss collides with player
+                        if (sim.invincible <= 0 && sim.state === 'playing') {
+                            damage();
+                            burst(sim.boss.x, sim.boss.y, '255,100,100', 16, 250);
+                            // Push boss back
+                            const ang = Math.atan2(sim.boss.y - rk.y, sim.boss.x - rk.x);
+                            sim.boss.x += Math.cos(ang) * 60;
+                            sim.boss.y += Math.sin(ang) * 60;
+                            sim.boss.x = clampN(sim.boss.x, 60, W - 60);
+                            sim.boss.y = clampN(sim.boss.y, 60, H * 0.4);
+                        }
+                    }
                 }
             }
 
@@ -2470,58 +2743,6 @@
                 if (!inside) sim.rad = Math.max(0, sim.rad - sdt * 1.5);
             }
 
-            // ─── FIXED: updateAliens — laser hit effects only when not invincible ───
-            function updateAliens(sdt) {
-                const rk = sim.rocket,
-                    hr = shipHitR();
-                for (let i = sim.aliens.length - 1; i >= 0; i--) {
-                    const a = sim.aliens[i];
-                    if (a.state === 'warn') {
-                        a.warnT -= sdt;
-                        a.tick -= sdt;
-                        if (a.tick <= 0) { Sfx.tick();
-                            a.tick = 0.2; }
-                        const targetX = a.targetX;
-                        const dx = targetX - a.x;
-                        a.x += dx * Math.min(1, 3 * sdt);
-                        a.y += Math.sin(a.phase + sim.time * 0.5) * 16 * sdt;
-                        if (a.warnT <= 0) {
-                            a.state = 'fire';
-                            a.laserT = a.laserDuration;
-                            a.fired = true;
-                            Sfx.bolt();
-                            sim.shake = Math.max(sim.shake, 8);
-                        }
-                    } else if (a.state === 'fire') {
-                        a.laserT -= sdt;
-                        const beamWidth = a.w * 0.3;
-                        const dx = rk.x - a.x;
-                        const dy = rk.y - a.y;
-                        if (Math.abs(dx) < beamWidth + hr && dy > 0 && dy < H) {
-                            a.state = 'done';
-                            a.laserT = 0;
-                            if (sim.invincible <= 0 && sim.state === 'playing') {
-                                damage();
-                                burst(a.x, rk.y, '255,100,100', 12, 300);
-                                pushText(a.x, rk.y - 30, 'LASER HIT', '#ff4444');
-                                sim.flash = 0.3;
-                                sim.flashC = '255,80,80';
-                            }
-                        }
-                        if (a.laserT <= 0) {
-                            a.state = 'done';
-                        }
-                    } else {
-                        sim.aliens.splice(i, 1);
-                    }
-                }
-                if (sim.aliens.length > 6) sim.aliens.splice(0, sim.aliens.length - 6);
-            }
-
-            // Manual missile removed — now only used by auto systems.
-            // We'll keep the fireMissile function for internal use (autoLaunchMissile already uses direct creation).
-            // But we remove the manual trigger.
-
             function updateMissiles(sdt) {
                 if (sim.missileCooldown > 0) sim.missileCooldown -= sdt;
                 if (sim.autoMissileCooldown > 0) sim.autoMissileCooldown -= sdt;
@@ -2566,6 +2787,13 @@
                                     sim.hazards.splice(j, 1);
                                     autoLaunchMissile(h.x, h.y);
                                 }
+                            }
+                        }
+                        // Also damage boss if missile hits it
+                        if (sim.boss && sim.boss.state === 'fighting') {
+                            const db = Math.hypot(m.x - sim.boss.x, m.y - sim.boss.y);
+                            if (db < blastRadius + 40) {
+                                bossHit(15 + sim.zone * 2);
                             }
                         }
                         if (destroyed > 0) {
@@ -2634,6 +2862,7 @@
                     b.life -= sdt;
                     if (b.life <= 0) { sim.bullets.splice(i, 1); continue; }
                     let hit = false;
+                    // Check against asteroids
                     for (let j = sim.hazards.length - 1; j >= 0; j--) {
                         const h = sim.hazards[j];
                         if (h.type !== 'ast') continue;
@@ -2655,6 +2884,15 @@
                             }
                             hit = true;
                             break;
+                        }
+                    }
+                    // Check against boss
+                    if (!hit && sim.boss && sim.boss.state === 'fighting') {
+                        const db = Math.hypot(b.x - sim.boss.x, b.y - sim.boss.y);
+                        if (db < b.r + 25) {
+                            bossHit(5 + sim.up.shields * 2);
+                            hit = true;
+                            burst(b.x, b.y, '255,200,100', 8, 150);
                         }
                     }
                     if (hit) sim.bullets.splice(i, 1);
@@ -2711,7 +2949,6 @@
                     }
                 }
                 if (nearest) {
-                    // Fire missile towards nearest
                     const dx = nearest.x - rk.x;
                     const dy = nearest.y - rk.y;
                     const len = Math.hypot(dx, dy) || 1;
@@ -2735,8 +2972,10 @@
                     Sfx.missileLaunch();
                     burst(tipX, tipY, '255,200,100', 8, 180);
                 }
-                sim.autoMissileTimer = 2.5; // reset
+                sim.autoMissileTimer = 2.5;
             }
+
+            // ─── MAIN GAME UPDATE ──────────────────────────────────────────────────
 
             function updateGame(sdt, rdt) {
                 const zone = zoneOf(sim.zone);
@@ -2768,18 +3007,27 @@
                 spawnLogic(sdt, zone, ramp, expM, hzBase);
                 updateHazards(sdt);
                 updateClouds(sdt);
-                updateAliens(sdt);
                 updateCoins(sdt);
                 updatePups(sdt);
                 updateBullets(sdt);
                 updateMissiles(sdt);
+                updateBoss(sdt);
+                updateBossBullets(sdt);
                 updateParts(sdt);
                 updateTexts(rdt);
                 Sfx.humSet(sim.ts);
                 // Vestal auto-fire
                 autoFireVestalMissile(sdt);
+
+                // Boss spawn check
+                if (!sim.boss && !sim.bossDefeated && sim.dist >= sim.bossSpawnDist && sim.state === 'playing') {
+                    spawnBoss();
+                }
+
                 if (sim.dist - sim.segStart >= sim.goal) startWarp();
             }
+
+            // ─── WARP, DYING, etc ──────────────────────────────────────────────────
 
             function startWarp() {
                 if (sim.state !== 'playing') return;
@@ -2792,13 +3040,20 @@
                 sim.hazards.forEach(h => burst(h.x, h.y, '159,214,255', 6, 220));
                 sim.hazards = [];
                 sim.clouds = [];
-                sim.aliens = [];
                 sim.pups = [];
                 sim.coins = [];
                 sim.bullets = [];
                 sim.missiles = [];
+                sim.bossBullets = [];
                 sim.meteorQ = null;
                 sim.rad = 0;
+                // If boss is alive, we don't warp? Actually we warp but boss is removed. Let's remove boss on warp.
+                if (sim.boss) {
+                    sim.boss = null;
+                    bossHealthContainer.classList.remove('active');
+                    sim.bossDefeated = false; // allow respawn later
+                    sim.bossSpawnDist = sim.dist + 800 + Math.random() * 400;
+                }
                 saveProgress();
             }
 
@@ -2829,6 +3084,8 @@
                 updateTexts(rdt);
                 if (sim.dyingT > 1.35) showGameOver();
             }
+
+            // ─── UPGRADES ───────────────────────────────────────────────────────────
 
             function upgradeLevel(id) {
                 if (id === 'shield') return sim.up.shields;
@@ -2893,6 +3150,9 @@
                 sim.state = 'playing';
                 updateHUD();
                 checkAchievements();
+                // Reset boss spawn distance to next milestone
+                sim.bossSpawnDist = sim.dist + 800 + Math.random() * 400;
+                sim.bossDefeated = false;
             }
 
             function chooseUpgrade(id) {
@@ -2902,6 +3162,8 @@
                 advanceZone();
             }
 
+            // ─── RESET AND START ───────────────────────────────────────────────────
+
             function resetRun() {
                 sim.state = 'playing';
                 sim.zone = 0;
@@ -2910,16 +3172,16 @@
                 sim.goal = ZONES[0].goal;
                 sim.hazards = [];
                 sim.clouds = [];
-                sim.aliens = [];
                 sim.coins = [];
                 sim.pups = [];
                 sim.parts = [];
                 sim.texts = [];
                 sim.bullets = [];
                 sim.missiles = [];
+                sim.bossBullets = [];
                 sim.missileCooldown = 0;
                 sim.autoMissileCooldown = 0;
-                sim.autoMissileTimer = 2.5; // ready to fire
+                sim.autoMissileTimer = 2.5;
                 sim.fireCooldown = 0;
                 sim.flow = 0;
                 sim.flowT = 0;
@@ -2948,6 +3210,12 @@
                 sim.rocket.vxS = 0;
                 sim.time = 0;
                 sim.hintT = 5;
+                // Boss reset
+                sim.boss = null;
+                sim.bossDefeated = false;
+                sim.bossSpawnDist = 500 + Math.random() * 200;
+                sim.bossBullets = [];
+                bossHealthContainer.classList.remove('active');
                 const diff = DIFFICULTIES[currentDifficulty];
                 sim.diffSpeedMult = diff.speedMult;
                 sim.diffAstMult = diff.astMult;
@@ -2995,6 +3263,9 @@
                 hud.classList.remove('active');
                 progressContainer.classList.remove('active');
                 pauseBtn.style.display = 'none';
+                bossHealthContainer.classList.remove('active');
+                sim.boss = null;
+                sim.bossBullets = [];
                 updateMenuStats();
                 renderMissions();
                 renderShop();
@@ -3032,83 +3303,101 @@
                 sim.state = 'playing';
             }
 
-            function drawAliens() {
-                for (const a of sim.aliens) {
-                    const pulse = 0.5 + 0.5 * Math.sin(sim.time * 4 + a.phase);
-                    const alpha = a.state === 'done' ? 0 : 1;
-                    ctx.save();
-                    ctx.globalAlpha = alpha;
-                    const sx = a.x,
-                        sy = a.y;
-                    ctx.shadowColor = a.state === 'fire' ? 'rgba(255,80,80,0.4)' : 'rgba(100,200,255,0.2)';
-                    ctx.shadowBlur = 20;
-                    ctx.fillStyle = a.state === 'fire' ? '#ff5555' : '#4a8fcf';
+            // ─── DRAW FUNCTIONS ────────────────────────────────────────────────────
+
+            function drawBoss() {
+                if (!sim.boss || sim.boss.state === 'dying') return;
+                const b = sim.boss;
+                const pulse = 0.5 + 0.5 * Math.sin(sim.time * 3);
+                ctx.save();
+                ctx.translate(b.x, b.y);
+                // Glow
+                const g = ctx.createRadialGradient(0, 0, 10, 0, 0, 70);
+                g.addColorStop(0, 'rgba(255,80,80,0.3)');
+                g.addColorStop(1, 'rgba(255,80,80,0)');
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.arc(0, 0, 70, 0, 7);
+                ctx.fill();
+                // Main body
+                ctx.fillStyle = '#cc3333';
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 45, 25, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ff5555';
+                ctx.beginPath();
+                ctx.ellipse(0, -6, 28, 15, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ff8888';
+                ctx.beginPath();
+                ctx.ellipse(0, -12, 16, 10, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // Cockpit
+                ctx.fillStyle = '#ffcccc';
+                ctx.beginPath();
+                ctx.ellipse(0, -16, 8, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ffdddd';
+                ctx.beginPath();
+                ctx.arc(-3, -18, 2, 0, 7);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(3, -18, 2, 0, 7);
+                ctx.fill();
+                // Weapon barrels
+                ctx.fillStyle = '#aa2222';
+                ctx.fillRect(-34, -2, 14, 4);
+                ctx.fillRect(20, -2, 14, 4);
+                ctx.fillStyle = '#ff6666';
+                ctx.fillRect(-36, -1, 6, 2);
+                ctx.fillRect(30, -1, 6, 2);
+                // Tentacles
+                ctx.strokeStyle = '#cc3333';
+                ctx.lineWidth = 3;
+                for (let i = -2; i <= 2; i++) {
+                    const ang = Math.PI / 2 + i * 0.3 + Math.sin(sim.time * 2 + i) * 0.15;
                     ctx.beginPath();
-                    ctx.ellipse(sx, sy, 28, 10, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = a.state === 'fire' ? '#ff8888' : '#8fc4e8';
-                    ctx.beginPath();
-                    ctx.ellipse(sx, sy - 4, 14, 8, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = a.state === 'fire' ? '#ffcccc' : '#cfe2ff';
-                    ctx.beginPath();
-                    ctx.ellipse(sx, sy - 6, 8, 5, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.strokeStyle = a.state === 'fire' ? 'rgba(255,100,100,0.5)' : 'rgba(111,203,255,0.4)';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.ellipse(sx, sy, 30, 12, 0, 0, Math.PI * 2);
+                    ctx.moveTo(i * 12, 22);
+                    ctx.quadraticCurveTo(i * 20, 30 + 8 * Math.sin(sim.time * 1.5 + i), i * 16, 38);
                     ctx.stroke();
-                    if (a.state === 'fire') {
-                        ctx.fillStyle = 'rgba(255,50,50,0.7)';
-                        ctx.beginPath();
-                        ctx.arc(sx, sy + 7, 6, 0, Math.PI * 2);
-                        ctx.fill();
-                        const beamAlpha = 0.3 + 0.7 * (1 - a.laserT / a.laserDuration);
-                        ctx.shadowBlur = 0;
-                        ctx.globalCompositeOperation = 'lighter';
-                        const g = ctx.createLinearGradient(sx, sy + 10, sx, H);
-                        g.addColorStop(0, 'rgba(255,80,80,0)');
-                        g.addColorStop(0.05, 'rgba(255,50,50,' + (0.3 * beamAlpha) + ')');
-                        g.addColorStop(0.5, 'rgba(255,30,30,' + (0.2 * beamAlpha) + ')');
-                        g.addColorStop(1, 'rgba(255,30,30,0)');
-                        ctx.fillStyle = g;
-                        ctx.beginPath();
-                        ctx.rect(sx - 20, sy + 10, 40, H - sy);
-                        ctx.fill();
-                        ctx.strokeStyle = 'rgba(255,255,255,' + (0.6 * beamAlpha) + ')';
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.moveTo(sx, sy + 10);
-                        ctx.lineTo(sx, H);
-                        ctx.stroke();
-                        ctx.globalCompositeOperation = 'source-over';
-                    } else {
-                        ctx.fillStyle = 'rgba(111,203,255,0.6)';
-                        ctx.beginPath();
-                        ctx.arc(sx, sy + 7, 4, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                    if (a.state === 'warn') {
-                        ctx.shadowBlur = 0;
-                        ctx.strokeStyle = 'rgba(255,200,50,' + (0.2 + 0.3 * pulse) + ')';
-                        ctx.lineWidth = 2;
-                        ctx.setLineDash([4, 8]);
-                        ctx.beginPath();
-                        ctx.arc(sx, sy, 40 + 6 * pulse, 0, Math.PI * 2);
-                        ctx.stroke();
-                        ctx.setLineDash([]);
-                        ctx.fillStyle = 'rgba(255,200,50,' + (0.3 + 0.4 * pulse) + ')';
-                        ctx.beginPath();
-                        ctx.moveTo(sx, sy - 16);
-                        ctx.lineTo(sx - 8, sy - 6);
-                        ctx.lineTo(sx + 8, sy - 6);
-                        ctx.closePath();
-                        ctx.fill();
-                    }
+                }
+                // Health ring
+                ctx.strokeStyle = 'rgba(255,80,80,0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 6]);
+                ctx.beginPath();
+                ctx.arc(0, 0, 55, 0, 7);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                // Warning pulse
+                if (b.hp / b.maxHp < 0.3) {
+                    ctx.strokeStyle = 'rgba(255,0,0,' + (0.3 + 0.3 * pulse) + ')';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 60 + 4 * pulse, 0, 7);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            function drawBossBullets() {
+                for (const b of sim.bossBullets) {
+                    ctx.save();
+                    ctx.shadowColor = '#ff4444';
+                    ctx.shadowBlur = 16;
+                    ctx.fillStyle = '#ff4444';
+                    ctx.beginPath();
+                    ctx.arc(b.x, b.y, b.r, 0, 7);
+                    ctx.fill();
+                    ctx.fillStyle = '#ffaa44';
+                    ctx.beginPath();
+                    ctx.arc(b.x - 1.5, b.y - 1.5, b.r * 0.6, 0, 7);
+                    ctx.fill();
                     ctx.restore();
                 }
             }
+
+            // ─── DRAW STARS, NEBULAS, etc ─────────────────────────────────────────
 
             function drawStars() {
                 const wk = sim.state === 'warp' ? Math.min(sim.warpK, 22) : 1;
@@ -3240,16 +3529,6 @@
                 let r = 12 + t * t * 110;
                 if (sim.state === 'warp') r += sim.warpK * sim.warpK * 12;
                 drawPlanetBody(W / 2, 46, Math.min(r, W * 1.5), nz, Math.min(1, t + 0.25));
-            }
-
-            function rrect(x, y, w, h, r) {
-                ctx.beginPath();
-                ctx.moveTo(x + r, y);
-                ctx.arcTo(x + w, y, x + w, y + h, r);
-                ctx.arcTo(x + w, y + h, x, y + h, r);
-                ctx.arcTo(x, y + h, x, y, r);
-                ctx.arcTo(x, y, x + w, y, r);
-                ctx.closePath();
             }
 
             function drawClouds() {
@@ -3777,7 +4056,8 @@
                 drawStars();
                 drawApproachPlanet();
                 drawClouds();
-                drawAliens();
+                drawBoss();
+                drawBossBullets();
                 drawHazards();
                 drawCoins();
                 drawPups();
@@ -3797,6 +4077,8 @@
                 }
                 if (vigCanvas) ctx.drawImage(vigCanvas, 0, 0, W, H);
             }
+
+            // ─── HUD, MENU, MISSION, SHOP ─────────────────────────────────────────
 
             const hudCache = {};
 
@@ -3836,6 +4118,7 @@
                     if (zi >= ZONES.length - 1) progressPlanet.textContent = pl;
                     else progressPlanet.innerHTML = ZONES[zi].name + ' → <span>' + ZONES[zi + 1].name + '</span>';
                 }
+                // Boss health bar is updated in updateBoss
             }
 
             function updateMenuStats() {
@@ -4065,6 +4348,7 @@
                 totalCoinsCollected = 0;
                 maxDistanceEver = 0;
                 maxComboEver = 0;
+                bossDefeatedCount = 0;
                 saveAchievements();
                 recalcStats();
                 initDailyMissions();
